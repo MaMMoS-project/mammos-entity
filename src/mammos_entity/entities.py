@@ -1,106 +1,170 @@
 from astropy import units as u
-from mammos_entity.onto import mammos_ontology
-from owlready2.entity import ThingClass
-from typing import Sequence
+
+from mammos_entity.base import AbstractScalarEntity, AbstractVectorEntity
 
 
-class Ms:
-    def __init__(self, quantity: u.Quantity):
-        self.quantity = quantity
+class Ms(AbstractScalarEntity):
+    """
+    Represents the Spontaneous Magnetization (Mₛ).
+
+    This is a scalar entity whose units are either A/m or T (tesla),
+    corresponding to the magnetization.
+    """
 
     @property
-    def quantity(self):
+    def quantity(self) -> u.Quantity:
+        """
+        Get the spontaneous magnetization value.
+
+        :return: The magnetization quantity.
+        :rtype: astropy.units.Quantity
+        """
         return self._quantity
 
     @quantity.setter
-    def quantity(self, quantity):
+    def quantity(self, quantity: u.Quantity):
+        """
+        Validate and set the spontaneous magnetization value.
+
+        :param quantity: The magnetization quantity (A/m or T).
+        :type quantity: astropy.units.Quantity
+        :raises TypeError: If the unit is not compatible with A/m or T.
+        """
         if quantity.si.unit not in {(u.A / u.m), u.T}:
             raise TypeError(
-                "The units of the quantity does not match the known units of Spontaneous Magnetisation."
+                "The units does not match the units of Spontaneous Magnetisation."
             )
         else:
             self._quantity = quantity
 
     @property
-    def ontology(self) -> ThingClass:
-        return mammos_ontology.get_by_label("SpontaneousMagnetization")
+    def ontology_label(self) -> str:
+        """
+        str: The ontology label for spontaneous magnetization.
+        """
+        return "SpontaneousMagnetization"
 
-    def __repr__(self):
-        return f"Spontaneous Magnetization (value={self.quantity.value}, unit={self.quantity.unit})"
 
+class A(AbstractScalarEntity):
+    """
+    Represents the Exchange Stiffness Constant (A).
 
-class A:
-    def __init__(self, quantity: u.Quantity):
-        self.quantity = quantity
+    This is a scalar entity whose units must be J/m (joules per meter).
+    """
 
     @property
-    def quantity(self):
+    def quantity(self) -> u.Quantity:
+        """
+        Get the exchange stiffness constant value.
+
+        :return: The exchange stiffness constant (J/m).
+        :rtype: astropy.units.Quantity
+        """
         return self._quantity
 
     @quantity.setter
-    def quantity(self, quantity):
+    def quantity(self, quantity: u.Quantity):
+        """
+        Validate and set the exchange stiffness constant value.
+
+        :param quantity: The exchange stiffness constant (J/m).
+        :type quantity: astropy.units.Quantity
+        :raises TypeError: If the unit is not J/m.
+        """
         if quantity.si.unit != (u.J / u.m):
             raise TypeError(
-                "The units of the quantity does not match the known units of Exchange Stiffness Constant."
+                "The units does not match the units of Exchange Stiffness Constant."
             )
         else:
             self._quantity = quantity
 
     @property
-    def ontology(self) -> ThingClass:
-        return mammos_ontology.get_by_label("ExchangeStiffnessConstant")
+    def ontology_label(self) -> str:
+        """
+        str: The ontology label for the exchange stiffness constant.
+        """
+        return "ExchangeStiffnessConstant"
 
-    def __repr__(self):
-        return f"Exchange Stiffness Constant (value={self.quantity.value}, unit={self.quantity.unit})"
 
+class Ku(AbstractVectorEntity):
+    """
+    Represents the Uniaxial Anisotropy Constant (Kᵤ).
 
-class Ku:
-    def __init__(self, quantity: u.Quantity, direction: Sequence[[float, int]]):
-        self.quantity = quantity
-        self.direction = direction
+    This is a vector entity whose magnitude’s units must be J/m³
+    (joules per cubic meter), and whose direction is a normalized vector in space.
+    """
 
     @property
-    def quantity(self):
+    def quantity(self) -> u.Quantity:
+        """
+        Get the uniaxial anisotropy constant's magnitude.
+
+        :return: The anisotropy constant quantity (J/m³).
+        :rtype: astropy.units.Quantity
+        """
         return self._quantity
 
     @quantity.setter
-    def quantity(self, quantity):
+    def quantity(self, quantity: u.Quantity):
+        """
+        Validate and set the uniaxial anisotropy constant's magnitude.
+
+        :param quantity: The anisotropy constant (J/m³).
+        :type quantity: astropy.units.Quantity
+        :raises TypeError: If the unit is not J/m³.
+        """
         if quantity.si.unit != (u.J / u.m**3):
             raise TypeError(
-                "The units of the quantity does not match the known units of Uniaxial Anisotropy Constant."
+                "The units does not match the units of Uniaxial Anisotropy Constant."
             )
         else:
             self._quantity = quantity
 
     @property
-    def ontology(self) -> ThingClass:
-        return mammos_ontology.get_by_label("UniaxialAnisotropyConstant")
+    def ontology_label(self) -> str:
+        """
+        str: The ontology label for the uniaxial anisotropy constant.
+        """
+        return "UniaxialAnisotropyConstant"
 
-    def __repr__(self):
-        return f"Uniaxial Anisotropy Constant (value={self.quantity.value}, unit={self.quantity.unit}, direction={self.direction})"
 
+class H(AbstractVectorEntity):
+    """
+    Represents the External Magnetic Field (H).
 
-class H:
-    def __init__(self, quantity: u.Quantity, direction: Sequence[[float, int]]):
-        self.quantity = quantity
-        self.direction = direction
+    This is a vector entity whose magnitude’s units are either A/m or T (tesla),
+    representing an external field applied to the material.
+    """
 
     @property
-    def quantity(self):
+    def quantity(self) -> u.Quantity:
+        """
+        Get the external magnetic field's magnitude.
+
+        :return: The external magnetic field quantity.
+        :rtype: astropy.units.Quantity
+        """
         return self._quantity
 
     @quantity.setter
-    def quantity(self, quantity):
+    def quantity(self, quantity: u.Quantity):
+        """
+        Validate and set the external magnetic field's magnitude.
+
+        :param quantity: The magnetic field quantity (A/m or T).
+        :type quantity: astropy.units.Quantity
+        :raises TypeError: If the unit is not compatible with A/m or T.
+        """
         if quantity.si.unit not in {(u.A / u.m), u.T}:
             raise TypeError(
-                "The units of the quantity does not match the known units of External Magnetic Field."
+                "The units does not match the units of External Magnetic Field."
             )
         else:
             self._quantity = quantity
 
     @property
-    def ontology(self) -> ThingClass:
-        return mammos_ontology.get_by_label("ExternalMagneticField")
-
-    def __repr__(self):
-        return f"External Magnetic Field (value={self.quantity.value}, unit={self.quantity.unit}, direction={self.direction})"
+    def ontology_label(self) -> str:
+        """
+        str: The ontology label for the external magnetic field.
+        """
+        return "ExternalMagneticField"

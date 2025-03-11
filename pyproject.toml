@@ -12,7 +12,7 @@ license = { file = "LICENSE" }
 
 authors = [{ name = "Swapneel Amit Pathak" }, { name = "Andrea Petrocchi" }]
 
-dependencies = ["mammosunits", "EMMOntoPy"]
+dependencies = ["astropy", "EMMOntoPy", "numpy"]
 
 
 [tool.ruff.lint]
