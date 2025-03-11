@@ -30,7 +30,7 @@ class Ms(AbstractScalarEntity):
         :type quantity: astropy.units.Quantity
         :raises TypeError: If the unit is not compatible with A/m or T.
         """
-        if quantity.si.unit not in {(u.A / u.m), u.T}:
+        if (quantity.si.unit != (u.A / u.m)) and (quantity.si.unit != u.T):
             raise TypeError(
                 "The units does not match the units of Spontaneous Magnetisation."
             )
@@ -155,7 +155,7 @@ class H(AbstractVectorEntity):
         :type quantity: astropy.units.Quantity
         :raises TypeError: If the unit is not compatible with A/m or T.
         """
-        if quantity.si.unit not in {(u.A / u.m), u.T}:
+        if (quantity.si.unit != (u.A / u.m)) and (quantity.si.unit != u.T):
             raise TypeError(
                 "The units does not match the units of External Magnetic Field."
             )
