@@ -32,20 +32,6 @@ class AbstractScalarEntity(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def quantity(self) -> u.Quantity:
-        """
-        Get or set the entity’s scalar quantity.
-
-        Subclasses must provide a setter that validates units to ensure
-        the quantity corresponds to the intended physical property.
-
-        :return: The scalar quantity of this entity.
-        :rtype: astropy.units.Quantity
-        """
-        pass
-
-    @property
-    @abc.abstractmethod
     def ontology_label(self) -> str:
         """
         str: The ontology label that identifies the underlying concept for this entity.
@@ -54,6 +40,43 @@ class AbstractScalarEntity(abc.ABC):
         concept.
         """
         pass
+
+    @property
+    @abc.abstractclassmethod
+    def si_units(self) -> set[u.Unit]:
+        """
+        set[astropy.units.Unit]: The collection of SI units against which the units of
+        the quantity are checked at assignment.
+
+        Each subclass should provide a set of SI units corresponding to the entity.
+        """
+        pass
+
+    @property
+    def quantity(self) -> u.Quantity:
+        """
+        Get the entity’s scalar quantity.
+
+        :return: The scalar quantity of this entity.
+        :rtype: astropy.units.Quantity
+        """
+        return self._quantity
+
+    @quantity.setter
+    def quantity(self, quantity: u.Quantity):
+        """
+        Validate and set the quantity value.
+
+        :param quantity: The quantity corresponding to the entity.
+        :type quantity: astropy.units.Quantity
+        :raises TypeError: If the unit is not in the `si_units` property.
+        """
+        if not any([quantity.si.unit == unit for unit in self.si_units]):
+            raise TypeError(
+                f"The units does not match the units of {self.ontology_label}"
+            )
+        else:
+            self._quantity = quantity
 
     @property
     def ontology(self) -> ThingClass:

@@ -12,37 +12,18 @@ class Ms(AbstractScalarEntity):
     """
 
     @property
-    def quantity(self) -> u.Quantity:
-        """
-        Get the spontaneous magnetization value.
-
-        :return: The magnetization quantity.
-        :rtype: astropy.units.Quantity
-        """
-        return self._quantity
-
-    @quantity.setter
-    def quantity(self, quantity: u.Quantity):
-        """
-        Validate and set the spontaneous magnetization value.
-
-        :param quantity: The magnetization quantity (A/m or T).
-        :type quantity: astropy.units.Quantity
-        :raises TypeError: If the unit is not compatible with A/m or T.
-        """
-        if (quantity.si.unit != (u.A / u.m)) and (quantity.si.unit != u.T):
-            raise TypeError(
-                "The units does not match the units of Spontaneous Magnetisation."
-            )
-        else:
-            self._quantity = quantity
-
-    @property
     def ontology_label(self) -> str:
         """
         str: The ontology label for spontaneous magnetization.
         """
         return "SpontaneousMagnetization"
+
+    @property
+    def si_units(self) -> set[u.Unit]:
+        """
+        set[astropy.units.Unit]: SI units for spontaneous magnetization, A/m and T.
+        """
+        return {(u.A / u.m), u.T}
 
 
 class A(AbstractScalarEntity):
@@ -53,37 +34,18 @@ class A(AbstractScalarEntity):
     """
 
     @property
-    def quantity(self) -> u.Quantity:
-        """
-        Get the exchange stiffness constant value.
-
-        :return: The exchange stiffness constant (J/m).
-        :rtype: astropy.units.Quantity
-        """
-        return self._quantity
-
-    @quantity.setter
-    def quantity(self, quantity: u.Quantity):
-        """
-        Validate and set the exchange stiffness constant value.
-
-        :param quantity: The exchange stiffness constant (J/m).
-        :type quantity: astropy.units.Quantity
-        :raises TypeError: If the unit is not J/m.
-        """
-        if quantity.si.unit != (u.J / u.m):
-            raise TypeError(
-                "The units does not match the units of Exchange Stiffness Constant."
-            )
-        else:
-            self._quantity = quantity
-
-    @property
     def ontology_label(self) -> str:
         """
         str: The ontology label for the exchange stiffness constant.
         """
         return "ExchangeStiffnessConstant"
+
+    @property
+    def si_units(self) -> set[u.Unit]:
+        """
+        set[astropy.units.Unit]: SI units for exchange stiffness constant, J/m.
+        """
+        return {u.J / u.m}
 
 
 class Ku(AbstractVectorEntity):
@@ -95,37 +57,18 @@ class Ku(AbstractVectorEntity):
     """
 
     @property
-    def quantity(self) -> u.Quantity:
-        """
-        Get the uniaxial anisotropy constant's magnitude.
-
-        :return: The anisotropy constant quantity (J/m³).
-        :rtype: astropy.units.Quantity
-        """
-        return self._quantity
-
-    @quantity.setter
-    def quantity(self, quantity: u.Quantity):
-        """
-        Validate and set the uniaxial anisotropy constant's magnitude.
-
-        :param quantity: The anisotropy constant (J/m³).
-        :type quantity: astropy.units.Quantity
-        :raises TypeError: If the unit is not J/m³.
-        """
-        if quantity.si.unit != (u.J / u.m**3):
-            raise TypeError(
-                "The units does not match the units of Uniaxial Anisotropy Constant."
-            )
-        else:
-            self._quantity = quantity
-
-    @property
     def ontology_label(self) -> str:
         """
         str: The ontology label for the uniaxial anisotropy constant.
         """
         return "UniaxialAnisotropyConstant"
+
+    @property
+    def si_units(self) -> set[u.Unit]:
+        """
+        set[astropy.units.Unit]: SI units for uniaxial anisotropy constant, J/m³.
+        """
+        return {u.J / u.m**3}
 
 
 class H(AbstractVectorEntity):
@@ -137,34 +80,15 @@ class H(AbstractVectorEntity):
     """
 
     @property
-    def quantity(self) -> u.Quantity:
-        """
-        Get the external magnetic field's magnitude.
-
-        :return: The external magnetic field quantity.
-        :rtype: astropy.units.Quantity
-        """
-        return self._quantity
-
-    @quantity.setter
-    def quantity(self, quantity: u.Quantity):
-        """
-        Validate and set the external magnetic field's magnitude.
-
-        :param quantity: The magnetic field quantity (A/m or T).
-        :type quantity: astropy.units.Quantity
-        :raises TypeError: If the unit is not compatible with A/m or T.
-        """
-        if (quantity.si.unit != (u.A / u.m)) and (quantity.si.unit != u.T):
-            raise TypeError(
-                "The units does not match the units of External Magnetic Field."
-            )
-        else:
-            self._quantity = quantity
-
-    @property
     def ontology_label(self) -> str:
         """
         str: The ontology label for the external magnetic field.
         """
         return "ExternalMagneticField"
+
+    @property
+    def si_units(self) -> set[u.Unit]:
+        """
+        set[astropy.units.Unit]: SI units for external magnetic field, A/m and T.
+        """
+        return {(u.A / u.m), u.T}
