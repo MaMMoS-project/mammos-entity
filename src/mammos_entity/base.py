@@ -71,7 +71,7 @@ class AbstractScalarEntity(abc.ABC):
         :type quantity: astropy.units.Quantity
         :raises TypeError: If the unit is not in the `si_units` property.
         """
-        if not any([quantity.si.unit == unit for unit in self.si_units]):
+        if quantity.si.unit not in list(self.si_units):
             raise TypeError(
                 f"The units does not match the units of {self.ontology_label}"
             )
