@@ -14,8 +14,7 @@ class AbstractScalarEntity(abc.ABC):
     An abstract base class representing a scalar physical entity.
 
     This class serves as a base for entities that have a single numeric value
-    with specific physical units. The quantity is enforced through an abstract property
-    and must be validated by subclasses.
+    with specific physical units.
 
     :param quantity: The initial quantity with physical units.
     :type quantity: astropy.units.Quantity
@@ -103,8 +102,7 @@ class AbstractVectorEntity(AbstractScalarEntity):
     An abstract class for vector physical entities.
 
     In addition to a scalar magnitude (`quantity`), this entity includes a direction
-    stored as a normalized vector. Subclasses are expected to ensure proper unit
-    validation of the magnitude.
+    stored as a normalized vector.
     """
 
     def __init__(self, quantity: u.Quantity, direction: Sequence[[float, int]]):
