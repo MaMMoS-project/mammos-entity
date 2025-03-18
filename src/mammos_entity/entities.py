@@ -1,9 +1,9 @@
 from astropy import units as u
 
-from mammos_entity.base import AbstractScalarEntity, AbstractVectorEntity
+from mammos_entity.base import AbstractEntity
 
 
-class Ms(AbstractScalarEntity):
+class Ms(AbstractEntity):
     """
     Represents the Spontaneous Magnetization (Mₛ).
 
@@ -26,7 +26,7 @@ class Ms(AbstractScalarEntity):
         return {(u.A / u.m), u.T}
 
 
-class A(AbstractScalarEntity):
+class A(AbstractEntity):
     """
     Represents the Exchange Stiffness Constant (A).
 
@@ -48,7 +48,7 @@ class A(AbstractScalarEntity):
         return {u.J / u.m}
 
 
-class Ku(AbstractVectorEntity):
+class Ku(AbstractEntity):
     """
     Represents the Uniaxial Anisotropy Constant (Kᵤ).
 
@@ -71,7 +71,7 @@ class Ku(AbstractVectorEntity):
         return {u.J / u.m**3}
 
 
-class H(AbstractVectorEntity):
+class H(AbstractEntity):
     """
     Represents the External Magnetic Field (H).
 
