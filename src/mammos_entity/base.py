@@ -52,3 +52,32 @@ class AbstractEntity(u.Quantity, abc.ABC):
 
     def _repr_latex_(self) -> str:
         return self.__repr__()
+
+    @property
+    def quantity(self):
+        """
+        Return a Astropy Quantity representation of this entity.
+
+        This property creates and returns a new `astropy.units.Quantity` object.
+        The returned Quantity is a standard Astropy Quantity and does
+        not retain any additional metadata or ontology links that may be
+        associated with the entity.
+
+        Returns
+        -------
+        astropy.units.Quantity
+            A Quantity object without the ontology.
+        """
+        return u.Quantity(self.value, self.unit)
+    
+    def __array_ufunc__(self, func, method, *inputs, **kwargs):
+        """
+        Override Astopy's __array_ufunc__ to remove the ontology when
+        performing operations and return astropy.units.Quantity.
+        """
+        result = super().__array_ufunc__(func, method, *inputs, **kwargs)
+
+        if isinstance(result, self.__class__):
+            return result.quantity
+        else:
+            return result
