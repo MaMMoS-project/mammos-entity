@@ -11,19 +11,19 @@ class Ms(AbstractEntity):
     corresponding to the magnetization.
     """
 
+    def __new__(cls, value, unit=(u.A / u.m), **kwargs):
+        if unit not in [(u.A / u.m), u.T]:
+            raise TypeError(
+                "The units does not match the units of Spontaneous Magnetization."
+            )
+        return super().__new__(cls, value, unit, **kwargs)
+
     @property
     def ontology_label(self) -> str:
         """
         str: The ontology label for spontaneous magnetization.
         """
         return "SpontaneousMagnetization"
-
-    @property
-    def si_units(self) -> set[u.Unit]:
-        """
-        set[astropy.units.Unit]: SI units for spontaneous magnetization, A/m and T.
-        """
-        return {(u.A / u.m), u.T}
 
 
 class A(AbstractEntity):
@@ -33,19 +33,19 @@ class A(AbstractEntity):
     This is a scalar entity whose units must be J/m (joules per meter).
     """
 
+    def __new__(cls, value, unit=(u.J / u.m), **kwargs):
+        if unit != (u.J / u.m):
+            raise TypeError(
+                "The units does not match the units of Exchange Stiffness Constant."
+            )
+        return super().__new__(cls, value, unit, **kwargs)
+
     @property
     def ontology_label(self) -> str:
         """
         str: The ontology label for the exchange stiffness constant.
         """
         return "ExchangeStiffnessConstant"
-
-    @property
-    def si_units(self) -> set[u.Unit]:
-        """
-        set[astropy.units.Unit]: SI units for exchange stiffness constant, J/m.
-        """
-        return {u.J / u.m}
 
 
 class Ku(AbstractEntity):
@@ -56,19 +56,19 @@ class Ku(AbstractEntity):
     (joules per cubic meter), and whose direction is a normalized vector in space.
     """
 
+    def __new__(cls, value, unit=(u.J / u.m**3), **kwargs):
+        if unit != (u.J / u.m**3):
+            raise TypeError(
+                "The units does not match the units of Uniaxial Anisotropy Constant."
+            )
+        return super().__new__(cls, value, unit, **kwargs)
+
     @property
     def ontology_label(self) -> str:
         """
         str: The ontology label for the uniaxial anisotropy constant.
         """
         return "UniaxialAnisotropyConstant"
-
-    @property
-    def si_units(self) -> set[u.Unit]:
-        """
-        set[astropy.units.Unit]: SI units for uniaxial anisotropy constant, J/m³.
-        """
-        return {u.J / u.m**3}
 
 
 class H(AbstractEntity):
@@ -79,16 +79,16 @@ class H(AbstractEntity):
     representing an external field applied to the material.
     """
 
+    def __new__(cls, value, unit=(u.A / u.m), **kwargs):
+        if unit not in [(u.A / u.m), u.T]:
+            raise TypeError(
+                "The units does not match the units of External Magnetic Field."
+            )
+        return super().__new__(cls, value, unit, **kwargs)
+
     @property
     def ontology_label(self) -> str:
         """
         str: The ontology label for the external magnetic field.
         """
         return "ExternalMagneticField"
-
-    @property
-    def si_units(self) -> set[u.Unit]:
-        """
-        set[astropy.units.Unit]: SI units for external magnetic field, A/m and T.
-        """
-        return {(u.A / u.m), u.T}

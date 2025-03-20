@@ -17,21 +17,6 @@ class AbstractEntity(u.Quantity, abc.ABC):
     :type quantity: astropy.units.Quantity
     """
 
-    def __new__(cls, *args, **kwargs):
-        return super().__new__(cls, *args, **kwargs)
-
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize the scalar entity with a specified quantity.
-
-        :param quantity: The initial quantity with physical units.
-        :type quantity: astropy.units.Quantity
-        """
-        if self.unit not in list(self.si_units):
-            raise TypeError(
-                f"The units does not match the units of {self.ontology_label}"
-            )
-
     @property
     @abc.abstractmethod
     def ontology_label(self) -> str:
@@ -40,17 +25,6 @@ class AbstractEntity(u.Quantity, abc.ABC):
 
         Each subclass should provide an ontology label that uniquely identifies the
         concept.
-        """
-        pass
-
-    @property
-    @abc.abstractclassmethod
-    def si_units(self) -> set[u.Unit]:
-        """
-        set[astropy.units.Unit]: The collection of SI units against which the units of
-        the quantity are checked at assignment.
-
-        Each subclass should provide a set of SI units corresponding to the entity.
         """
         pass
 
@@ -77,4 +51,4 @@ class AbstractEntity(u.Quantity, abc.ABC):
         return self.__repr__()
 
     def _repr_latex_(self) -> str:
-        return f"{self.ontology_label}({super()._repr_latex_()})"
+        return self.__repr__()
