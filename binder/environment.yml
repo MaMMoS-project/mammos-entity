@@ -6,4 +6,4 @@ dependencies:
   - jupyterlab
   - pip
   - pip:
-      - git+https://github.com/MaMMoS-project/mammos-entity.git#inherit-quantity
+      - git+https://github.com/MaMMoS-project/mammos-entity.git#binder
