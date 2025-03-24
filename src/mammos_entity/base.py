@@ -1,6 +1,6 @@
 import abc
 
-from astropy import units as u
+import mammosunits as u
 from owlready2.entity import ThingClass
 
 from mammos_entity.onto import mammos_ontology
@@ -69,7 +69,7 @@ class AbstractEntity(u.Quantity, abc.ABC):
             A Quantity object without the ontology.
         """
         return u.Quantity(self.value, self.unit)
-    
+
     def __array_ufunc__(self, func, method, *inputs, **kwargs):
         """
         Override Astopy's __array_ufunc__ to remove the ontology when

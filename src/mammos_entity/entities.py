@@ -1,4 +1,4 @@
-from astropy import units as u
+import mammosunits as u
 
 from mammos_entity.base import AbstractEntity
 
@@ -12,7 +12,8 @@ class Ms(AbstractEntity):
     """
 
     def __new__(cls, value, unit=(u.A / u.m), **kwargs):
-        if unit not in [(u.A / u.m), u.T]:
+        unit = u.Unit(unit)
+        if not unit.is_equivalent(u.A / u.m):
             raise TypeError(
                 "The units does not match the units of Spontaneous Magnetization."
             )
@@ -34,7 +35,8 @@ class A(AbstractEntity):
     """
 
     def __new__(cls, value, unit=(u.J / u.m), **kwargs):
-        if unit != (u.J / u.m):
+        unit = u.Unit(unit)
+        if not unit.is_equivalent(u.J / u.m):
             raise TypeError(
                 "The units does not match the units of Exchange Stiffness Constant."
             )
@@ -57,7 +59,8 @@ class Ku(AbstractEntity):
     """
 
     def __new__(cls, value, unit=(u.J / u.m**3), **kwargs):
-        if unit != (u.J / u.m**3):
+        unit = u.Unit(unit)
+        if not unit.is_equivalent(u.J / u.m**3):
             raise TypeError(
                 "The units does not match the units of Uniaxial Anisotropy Constant."
             )
@@ -80,7 +83,8 @@ class H(AbstractEntity):
     """
 
     def __new__(cls, value, unit=(u.A / u.m), **kwargs):
-        if unit not in [(u.A / u.m), u.T]:
+        unit = u.Unit(unit)
+        if not unit.is_equivalent(u.A / u.m):
             raise TypeError(
                 "The units does not match the units of External Magnetic Field."
             )
