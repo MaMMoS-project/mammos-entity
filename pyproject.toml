@@ -10,9 +10,14 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
 
-authors = [{ name = "Swapneel Amit Pathak" }, { name = "Andrea Petrocchi" }]
+authors = [
+  { name = "Swapneel Amit Pathak" },
+  { name = "Andrea Petrocchi" },
+  { name = "Sam Holt" },
+  { name = "Hans Fangohr" },
+]
 
-dependencies = ["astropy", "EMMOntoPy", "numpy"]
+dependencies = ["mammosunits", "EMMOntoPy", "numpy"]
 
 
 [tool.ruff.lint]
