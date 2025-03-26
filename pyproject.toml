@@ -17,7 +17,7 @@ authors = [
   { name = "Hans Fangohr" },
 ]
 
-dependencies = ["mammosunits", "EMMOntoPy", "numpy"]
+dependencies = ["mammos-units", "EMMOntoPy", "numpy"]
 
 
 [tool.ruff.lint]
