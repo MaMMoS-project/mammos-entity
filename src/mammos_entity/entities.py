@@ -1,4 +1,4 @@
-import mammosunits as u
+import mammos_units as u
 
 from mammos_entity.base import AbstractEntity
 
