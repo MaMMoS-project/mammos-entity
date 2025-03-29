@@ -1,6 +1,6 @@
 import abc
 
-import mammosunits as u
+import mammos_units as u
 from owlready2.entity import ThingClass
 
 from mammos_entity.onto import mammos_ontology
