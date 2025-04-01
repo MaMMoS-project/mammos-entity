@@ -79,10 +79,10 @@ class Entity(u.Quantity):
         :return: String representation of the entity.
         :rtype: str
         """
-        if self.unit:
-            repr_str = f"{self.label}(value={self.value}, unit={self.unit})"
-        else:
+        if self.unit.is_equivalent(u.dimensionless_unscaled):
             repr_str = f"{self.label}(value={self.value})"
+        else:
+            repr_str = f"{self.label}(value={self.value}, unit={self.unit})"
         return repr_str
 
     def __str__(self) -> str:
