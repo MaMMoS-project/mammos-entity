@@ -1,4 +1,4 @@
-import mammosunits as u
+import mammos_units as u
 from owlready2.entity import ThingClass
 
 from mammos_entity.onto import mammos_ontology
@@ -79,7 +79,11 @@ class Entity(u.Quantity):
         :return: String representation of the entity.
         :rtype: str
         """
-        return f"{self.label}(value={self.value}, unit={self.unit})"
+        if self.unit:
+            repr_str = f"{self.label}(value={self.value}, unit={self.unit})"
+        else:
+            repr_str = f"{self.label}(value={self.value})"
+        return repr_str
 
     def __str__(self) -> str:
         return self.__repr__()
