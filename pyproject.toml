@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "mammos-entity"
 version = "0.1.0"
-description = "Python package to spacify material parameters for MaMMoS simulation suite."
+description = "Python package to specify material parameters for MaMMoS simulation suite."
 readme = "README.md"
 requires-python = ">=3.8"
 license = { file = "LICENSE" }
