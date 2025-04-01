@@ -1,6 +1,5 @@
 from mammos_entity.base import Entity
 
-
 def Ms(value, unit=None):
     return Entity("SpontaneousMagnetization", value, unit)
 
