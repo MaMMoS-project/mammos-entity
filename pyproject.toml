@@ -62,6 +62,7 @@ platforms = ["osx-arm64", "linux-64", "osx-64", "win-64"]
 mammos-entity = { path = ".", editable = true }
 
 [tool.pixi.tasks]
+example = "jupyter-lab docs/example.ipynb"
 
 [tool.pixi.dependencies]
 jupyter = ">=1.1.1,<2"
