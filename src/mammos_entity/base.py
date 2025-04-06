@@ -117,7 +117,7 @@ class Entity(u.Quantity):
             raise TypeError(
                 f"{label} is a unitless entity. Hence, {unit} is inapropriate."
             )
-        comp_unit = u.Unit(unit if unit else "").si
+        comp_unit = u.Unit(unit if unit else "")
         comp_bases = comp_unit.bases
         comp_powers = comp_unit.powers
         return super().__new__(
