@@ -1,10 +1,35 @@
+"""
+Module: base.py
+
+Defines the core `Entity` class, which extends `mammos_units.Quantity` to
+link physical quantities to ontology concepts. Also includes helper functions
+for inferring the correct SI units from the ontology.
+"""
+
 import mammos_units as u
+from numpy import typing
 from owlready2.entity import ThingClass
 
 from mammos_entity.onto import mammos_ontology
 
 
-def si_unit_from_list(list_cls):
+def si_unit_from_list(list_cls: list[ThingClass]) -> str:
+    """
+    Given a list of ontology classes, determine which class corresponds to
+    a coherent SI derived unit (or if none found, an SI dimensional unit),
+    then return that class's UCUM code.
+
+    Parameters
+    ----------
+    list_cls : list[ThingClass]
+        A list of ontology classes.
+
+    Returns
+    -------
+    str
+        The UCUM code (e.g., "J/m^3", "A/m") for the first identified SI unit
+        in the given list of classes.
+    """
     si_unit_cls = [
         cls
         for cls in list_cls
@@ -19,7 +44,23 @@ def si_unit_from_list(list_cls):
     return si_unit_cls[0].ucumCode[0]
 
 
-def extract_SI_units(label):
+def extract_SI_units(label: str) -> str | None:
+    """
+    Given a label for an ontology concept, retrieve the corresponding SI unit
+    by traversing the class hierarchy. If a valid unit is found, its UCUM code
+    is returned; otherwise, None is returned.
+
+    Parameters
+    ----------
+    label : str
+        The label of an ontology concept (e.g., 'SpontaneousMagnetization').
+
+    Returns
+    -------
+    str or None
+        The UCUM code of the concept's SI unit, or None if no suitable SI unit
+        is found or if the unit is a special case like 'Cel.K-1'.
+    """
     thing = mammos_ontology.get_by_label(label)
     si_unit = None
     for ancestor in thing.ancestors():
@@ -34,16 +75,37 @@ def extract_SI_units(label):
 
 class Entity(u.Quantity):
     """
-    An abstract base class representing a scalar physical entity.
+    Represents a physical property or quantity that is linked to an ontology
+    concept. Inherits from `mammos_units.Quantity` and enforces unit
+    compatibility with the ontology.
 
-    This class serves as a base for entities that have a single numeric value
-    with specific physical units.
+    Parameters
+    ----------
+    label : str
+        The label of an ontology concept (e.g., 'SpontaneousMagnetization').
+    value : float | int | typing.ArrayLike
+        The numeric value of the physical quantity.
+    unit : optional
+        The unit of measure for the value (e.g., 'A/m', 'J/m^3'). If omitted,
+        the SI unit from the ontology is used (if defined). If the ontology
+        indicates no unit (dimensionless), an exception is raised if a unit
+        is provided.
 
-    :param quantity: The initial quantity with physical units.
-    :type quantity: astropy.units.Quantity
+    Examples
+    --------
+    >>> import mammos_entity as me
+    >>> m = me.Ms(800000, 'A/m')
+    >>> m
+    SpontaneousMagnetization(value=800000, unit=A/m)
     """
 
-    def __new__(cls, label, value, unit=None, **kwargs):
+    def __new__(
+        cls,
+        label: str,
+        value: float | int | typing.ArrayLike,
+        unit: str | None = None,
+        **kwargs,
+    ) -> u.Quantity:
         cls.label = label
         si_unit = extract_SI_units(label)
         if (si_unit is not None) and (unit is not None):
@@ -65,20 +127,16 @@ class Entity(u.Quantity):
     @property
     def ontology(self) -> ThingClass:
         """
-        owlready2.entity.ThingClass: The associated ontology class object.
+        Retrieve the ontology class (ThingClass) corresponding to this Entity's label.
 
-        Uses the ontology label to fetch the corresponding class from `mammos_ontology`.
+        Returns
+        -------
+        ThingClass
+            The ontology class from `mammos_ontology` that matches the entity's label.
         """
         return mammos_ontology.get_by_label(self.label)
 
     def __repr__(self) -> str:
-        """
-        Return a string representation of the entity, showing the label,
-        numeric value, and unit.
-
-        :return: String representation of the entity.
-        :rtype: str
-        """
         if self.unit.is_equivalent(u.dimensionless_unscaled):
             repr_str = f"{self.label}(value={self.value})"
         else:
@@ -92,26 +150,23 @@ class Entity(u.Quantity):
         return self.__repr__()
 
     @property
-    def quantity(self):
+    def quantity(self) -> u.Quantity:
         """
-        Return a Astropy Quantity representation of this entity.
-
-        This property creates and returns a new `astropy.units.Quantity` object.
-        The returned Quantity is a standard Astropy Quantity and does
-        not retain any additional metadata or ontology links that may be
-        associated with the entity.
+        Return a standalone `mammos_units.Quantity` object with the same value
+        and unit, detached from the ontology link.
 
         Returns
         -------
-        astropy.units.Quantity
-            A Quantity object without the ontology.
+        mammos_units.Quantity
+            A copy of this entity as a pure physical quantity.
         """
         return u.Quantity(self.value, self.unit)
 
     def __array_ufunc__(self, func, method, *inputs, **kwargs):
         """
-        Override Astopy's __array_ufunc__ to remove the ontology when
-        performing operations and return astropy.units.Quantity.
+        Override NumPy's universal functions to return a regular quantity rather
+        than another `Entity` when performing array operations (e.g., add, multiply)
+        since these oprations change the units.
         """
         result = super().__array_ufunc__(func, method, *inputs, **kwargs)
 

@@ -1,7 +1,9 @@
 """
-This module defines the `mammos_ontology`, which loads a magnetic materials ontology
-from a remote mammos ontology TTL (Turtle) file. The ontology is used by entities to map
-their properties to semantic concepts.
+Module: onto.py
+
+Loads and provides access to the MaMMoS magnetic materials ontology via the
+`EMMOntoPy` library. The ontology is loaded from a remote TTL (Turtle) file
+containing definitions of relevant magnetic material concepts.
 """
 
 from ontopy import ontology
