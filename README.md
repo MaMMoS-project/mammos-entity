@@ -7,8 +7,6 @@ To install `mammos-entity` locally (in editable mode) using `pip`:
 ~> cd mammos-entity
 ~> pip install -e .
 ```
-```
-```
 
 > [!TIP]
 > If you want to install the package how the god wanted it to be :pray:, install (`pixi`)[https://pixi.sh/latest/#installation] and run :raised_hands:
