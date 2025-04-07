@@ -14,6 +14,13 @@ To install `mammos-entity` locally (in editable mode) using `pip`:
 > pixi install --frozen
 > ```
 
+# Tests
+
+To run tests:
+```console
+~> pixi run tests
+```
+
 # MaMMoS Entities
 
 ## Definitions
