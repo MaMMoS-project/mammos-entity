@@ -3650,7 +3650,7 @@ packages:
 - pypi: .
   name: mammos-entity
   version: 0.1.0
-  sha256: cf867b1789cac046845252607e6ad89d3d16097692163d6a66b402033f8f6389
+  sha256: 202aa46daf51bc987525850bb3d42f243e780a1a5fa3c9b91e405f75929bddaf
   requires_dist:
   - mammos-units
   - emmontopy

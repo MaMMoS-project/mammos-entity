@@ -12,7 +12,7 @@ from owlready2.entity import ThingClass
 
 from mammos_entity.onto import mammos_ontology
 
-base_units = [u.J, u.m, u.A, u.T, u.radian, u.kg, u.s]
+base_units = [u.J, u.m, u.A, u.T, u.radian, u.kg, u.s, u.K]
 
 
 def si_unit_from_list(list_cls: list[ThingClass]) -> str:
@@ -114,7 +114,8 @@ class Entity(u.Quantity):
             if not u.Unit(si_unit).is_equivalent(unit):
                 raise TypeError(f"The unit {unit} does not match the units of {label}")
         elif (si_unit is not None) and (unit is None):
-            comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
+            with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
+                comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
             unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
         elif (si_unit is None) and (unit is not None):
             raise TypeError(
