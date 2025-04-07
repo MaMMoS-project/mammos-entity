@@ -107,7 +107,7 @@ The `Quantity` object (which is the AstroPy unit object) [supports many operatio
 
 ```python
 >>> m2**2
-$6.4 \times 10^{11} \; \mathrm{\frac{A^{2}}{m^{2}}}$
+<Quantity 6.4e+11 A2 / m2>
 ```
 
 However, since the units do not correspond to the right ontology object, the `ontology` property is dropped.
