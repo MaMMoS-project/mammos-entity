@@ -12,7 +12,7 @@ pip install -e .
 ```
 
 > [!TIP]
-> If you want to install the package how the god wanted it to be :pray:, install `pixi`(https://pixi.sh/latest/#installation) and run :raised_hands:
+> If you want to install the package how the god wanted it to be :pray:, install [pixi](https://pixi.sh/latest/#installation) and run :raised_hands:
 > ```console
 > pixi install --frozen
 > ```
