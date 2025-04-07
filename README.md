@@ -3,9 +3,9 @@
 # Installation
 To install `mammos-entity` locally (in editable mode) using `pip`:
 ```console
-~> git clone https://github.com/MaMMoS-project/mammos-entity.git
-~> cd mammos-entity
-~> pip install -e .
+git clone https://github.com/MaMMoS-project/mammos-entity.git
+cd mammos-entity
+pip install -e .
 ```
 
 > [!TIP]
@@ -18,7 +18,7 @@ To install `mammos-entity` locally (in editable mode) using `pip`:
 
 To run tests:
 ```console
-~> pixi run tests
+pixi run tests
 ```
 
 # MaMMoS Entities
