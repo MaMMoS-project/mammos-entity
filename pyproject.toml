@@ -71,7 +71,7 @@ jupyter = ">=1.1.1,<2"
 pytest = "*"
 
 [tool.pixi.feature.test.tasks]
-test = "pytest -vv"
+tests = "pytest -vv"
 
 [tool.pixi.feature.format.dependencies]
 ruff = "*"
