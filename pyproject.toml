@@ -66,3 +66,20 @@ example = "jupyter-lab docs/example.ipynb"
 
 [tool.pixi.dependencies]
 jupyter = ">=1.1.1,<2"
+
+[tool.pixi.feature.test.dependencies]
+pytest = "*"
+
+[tool.pixi.feature.test.tasks]
+test = "pytest -vv"
+
+[tool.pixi.feature.format.dependencies]
+ruff = "*"
+
+[tool.pixi.feature.format.tasks]
+format = "ruff format src/ && ruff check --select I --fix src/"
+format-tests = "ruff format tests/ && ruff check --select I --fix tests/"
+
+[tool.pixi.environments]
+test = { features = ["test"], solve-group = "default" }
+format = { features = ["format"], no-default-feature = true }

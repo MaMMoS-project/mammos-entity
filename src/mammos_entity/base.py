@@ -12,7 +12,7 @@ from owlready2.entity import ThingClass
 
 from mammos_entity.onto import mammos_ontology
 
-base_units = [u.J, u.m, u.A, u.T, u.radian]
+base_units = [u.J, u.m, u.A, u.T, u.radian, u.kg, u.s]
 
 
 def si_unit_from_list(list_cls: list[ThingClass]) -> str:
