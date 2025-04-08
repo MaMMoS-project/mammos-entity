@@ -104,7 +104,7 @@ class Entity(u.Quantity):
     def __new__(
         cls,
         label: str,
-        value: float | int | typing.ArrayLike,
+        value: float | int | typing.ArrayLike = 0,
         unit: str | None = None,
         **kwargs,
     ) -> u.Quantity:

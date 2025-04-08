@@ -11,7 +11,7 @@ from numpy import typing
 from mammos_entity.base import Entity
 
 
-def Ms(value: int | float | typing.ArrayLike, unit: None | str = None) -> Entity:
+def Ms(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> Entity:
     """
     Create an Entity representing the spontaneous magnetization (Ms).
 
@@ -32,7 +32,7 @@ def Ms(value: int | float | typing.ArrayLike, unit: None | str = None) -> Entity
     return Entity("SpontaneousMagnetization", value, unit)
 
 
-def A(value: int | float | typing.ArrayLike, unit: None | str = None) -> Entity:
+def A(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> Entity:
     """
     Create an Entity representing the exchange stiffness constant (A).
 
@@ -52,7 +52,7 @@ def A(value: int | float | typing.ArrayLike, unit: None | str = None) -> Entity:
     return Entity("ExchangeStiffnessConstant", value, unit)
 
 
-def Ku(value: int | float | typing.ArrayLike, unit: None | str = None) -> Entity:
+def Ku(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> Entity:
     """
     Create an Entity representing the uniaxial anisotropy constant (Ku).
 
@@ -73,7 +73,7 @@ def Ku(value: int | float | typing.ArrayLike, unit: None | str = None) -> Entity
     return Entity("UniaxialAnisotropyConstant", value, unit)
 
 
-def H(value: int | float | typing.ArrayLike, unit: None | str = None):
+def H(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
     """
     Create an Entity representing the external magnetic field (H).
 
