@@ -80,6 +80,14 @@ ruff = "*"
 format = "ruff format src/ && ruff check --select I --fix src/"
 format-tests = "ruff format tests/ && ruff check --select I --fix tests/"
 
+[tool.pixi.feature.precommit.dependencies]
+pre-commit = "*"
+
+[tool.pixi.feature.precommit.tasks]
+install-precommits = "pre-commit install"
+run-precommits = { cmd = ["pre-commit", "run", "--all-files"], depends-on = ["install-precommits"] }
+
 [tool.pixi.environments]
 test = { features = ["test"], solve-group = "default" }
 format = { features = ["format"], no-default-feature = true }
+dev = { features = ["test", "format", "precommit"], solve-group = "default" }
