@@ -1,13 +1,13 @@
 [build-system]
-requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+
+requires = [ "setuptools" ]
 
 [project]
 name = "mammos-entity"
 version = "0.1.0"
 description = "Python package to specify material parameters for MaMMoS simulation suite."
 readme = "README.md"
-requires-python = ">=3.8"
 license = { file = "LICENSE" }
 
 authors = [
@@ -17,12 +17,20 @@ authors = [
   { name = "Hans Fangohr" },
 ]
 
-dependencies = ["mammos-units", "EMMOntoPy", "numpy"]
+requires-python = ">=3.8"
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [ "emmontopy", "mammos-units", "numpy" ]
 
-
-[tool.ruff.lint]
-ignore-init-module-imports = true # do not remove unused imports in __init__ and warn instead
-select = [
+[tool.ruff]
+lint.select = [
   "B",   # flake8-bugbear
   "E",   # pycodestyle
   "F",   # Pyflakes
@@ -30,12 +38,12 @@ select = [
   "SIM", # flake8-simplify
   "UP",  # pyupgrade
 ]
-ignore = [
+lint.ignore = [
   # conflict with other rules
   "D203", # one-blank-line-before-class (conflicts with D204)
-  "D212", # multi-line-summary-first-line (conflicts with D213)
   # conflict with formatter
   "D206", # indent-with-spaces
+  "D212", # multi-line-summary-first-line (conflicts with D213)
   "D300", # triple-single-quotes
   "E111", # indentation-with-invalid-multiple
   "E114", # indentation-with-invalid-multiple-comment
@@ -43,20 +51,17 @@ ignore = [
   # conflict with Python 3.6 compatibility
   "UP022", # replace-stdout-stderr
 ]
-
-[tool.ruff.lint.isort]
-known-local-folder = ["src/mammos_entity"]
-
-[tool.ruff.lint.per-file-ignores]
-"*.ipynb" = [
+lint.per-file-ignores."*.ipynb" = [
   "B018", # "Found useless expression. Either assign it to a variable or remove it."; false positives when using implicit __repr__ in the notebook
   "E501", # line too long
   "F811", # 'redefined-while-unused'; many false positives in notebooks because ipywidgets decorated functions are not recognised
 ]
+lint.isort.known-local-folder = [ "src/mammos_entity" ]
+lint.ignore-init-module-imports = true # do not remove unused imports in __init__ and warn instead
 
 [tool.pixi.project]
-channels = ["conda-forge"]
-platforms = ["osx-arm64", "linux-64", "osx-64", "win-64"]
+channels = [ "conda-forge" ]
+platforms = [ "osx-arm64", "linux-64", "osx-64", "win-64" ]
 
 [tool.pixi.pypi-dependencies]
 mammos-entity = { path = ".", editable = true }
@@ -85,9 +90,9 @@ pre-commit = "*"
 
 [tool.pixi.feature.precommit.tasks]
 install-precommits = "pre-commit install"
-run-precommits = { cmd = ["pre-commit", "run", "--all-files"], depends-on = ["install-precommits"] }
+run-precommits = { cmd = [ "pre-commit", "run", "--all-files" ], depends-on = [ "install-precommits" ] }
 
 [tool.pixi.environments]
-test = { features = ["test"], solve-group = "default" }
-format = { features = ["format"], no-default-feature = true }
-dev = { features = ["test", "format", "precommit"], solve-group = "default" }
+test = { features = [ "test" ], solve-group = "default" }
+format = { features = [ "format" ], no-default-feature = true }
+dev = { features = [ "test", "format", "precommit" ], solve-group = "default" }
