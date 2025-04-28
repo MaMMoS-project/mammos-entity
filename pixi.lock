@@ -4414,10 +4414,10 @@ packages:
 - pypi: .
   name: mammos-entity
   version: 0.1.0
-  sha256: 8b87807fa38dd7f3bfde8f7604823406eef993848c2342d21bbfcf9989e38b87
+  sha256: f0a14e74f9a0c649ce495e0dab092265b83f2bc97b371ad7f7efcc908fcc065a
   requires_dist:
-  - mammos-units
   - emmontopy
+  - mammos-units
   - numpy
   requires_python: '>=3.8'
   editable: true
