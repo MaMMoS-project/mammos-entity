@@ -17,3 +17,6 @@ jobs:
           cache: true
       - name: Run tests
         run: pixi run -e test tests
+
+      - name: Run code style tests
+        run: pixi run run-precommits
