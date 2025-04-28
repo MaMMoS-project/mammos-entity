@@ -1,4 +1,4 @@
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/MaMMoS-project/mammos-entity/main?urlpath=%2Fdoc%2Ftree%2Fdocs%2Fexample.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/MaMMoS-project/mammos-entity/main?urlpath=%2Fdoc%2Ftree%2Fdocs%2Fexample.ipynb) [![tests](https://github.com/MaMMoS-project/mammos-entity/actions/workflows/tests.yml/badge.svg)](https://github.com/MaMMoS-project/mammos-entity/actions/workflows/tests.yml)
 
 > [!CAUTION]
 > Technically, one can create any entity corresponding to a class defined in the [EMMO](https://github.com/emmo-repo/EMMO). However, we only test against the ontology classes defined in [MaMMoS Ontology](https://mammos-project.github.io/MagneticMaterialsOntology/doc/magnetic_material_mammos.html).
