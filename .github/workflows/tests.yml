@@ -4,6 +4,10 @@ on:
     branches:
       - main
   pull_request:
+  # NOTE: schedule running workflows to stay
+  # updated with the changes in MaMMoS Ontology.
+  schedule:
+    - cron: '0 0 * * 1' # run every Monday
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -17,6 +21,5 @@ jobs:
           cache: true
       - name: Run tests
         run: pixi run -e test tests
-
       - name: Run code style tests
         run: pixi run run-precommits
