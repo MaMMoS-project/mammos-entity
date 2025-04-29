@@ -5,7 +5,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "mammos-entity"
-version = "0.1.0"
+version = "0.1.1"
 description = "Python package to specify material parameters for MaMMoS simulation suite."
 readme = "README.md"
 license = { file = "LICENSE" }
