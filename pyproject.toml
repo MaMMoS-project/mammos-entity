@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "hatchling.build"
 
-requires = [ "setuptools" ]
+requires = [ "hatchling" ]
 
 [project]
 name = "mammos-entity"
@@ -68,9 +68,11 @@ mammos-entity = { path = ".", editable = true }
 
 [tool.pixi.tasks]
 example = "jupyter-lab docs/example.ipynb"
+build = "hatch build"
 
 [tool.pixi.dependencies]
 jupyter = ">=1.1.1,<2"
+hatch = ">=1.14.1,<2"
 
 [tool.pixi.feature.test.dependencies]
 pytest = "*"
