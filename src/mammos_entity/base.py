@@ -108,7 +108,6 @@ class Entity(u.Quantity):
         unit: str | None = None,
         **kwargs,
     ) -> u.Quantity:
-        cls.label = label
         si_unit = extract_SI_units(label)
         if (si_unit is not None) and (unit is not None):
             if not u.Unit(si_unit).is_equivalent(unit):
@@ -123,6 +122,9 @@ class Entity(u.Quantity):
             )
         comp_unit = u.Unit(unit if unit else "")
         return super().__new__(cls, value=value, unit=comp_unit, **kwargs)
+
+    def __init__(self, label: str, *args, **kwargs):
+        self.label = label
 
     @property
     def ontology(self) -> ThingClass:
