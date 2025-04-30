@@ -2767,12 +2767,12 @@ packages:
   timestamp: 1727963768015
 - pypi: .
   name: mammos-entity
-  version: 0.1.1
-  sha256: 2fdca8213bc474c13726444f888fa841884f405e1a8d6bda9863689f64a26ca8
+  version: 0.1.2
+  sha256: a42da07008b4d8e4a32b2f499e23f54e85d8ae55d75d2f8ffeb18375cde486cb
   requires_dist:
-  - emmontopy>=0.8.0,<0.9
-  - numpy>=2.2.5,<3
+  - emmontopy>=0.8,<0.9
   - mammos-units>=0.2.1
+  - numpy>=2.2.5,<3
   requires_python: '>=3.8'
   editable: true
 - pypi: https://files.pythonhosted.org/packages/f8/75/18cde5dcda8bf75ca84cac9101933139fb1d684807a819b3cd4659a63bbc/mammos_units-0.2.1-py3-none-any.whl
