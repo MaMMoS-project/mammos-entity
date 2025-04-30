@@ -27,7 +27,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
-dependencies = [ "emmontopy>=0.8.0,<0.9", "numpy>=2.2.5,<3", "mammos-units>=0.2.1,<0.3"]
+dependencies = [ "emmontopy>=0.8.0,<0.9", "numpy>=2.2.5,<3", "mammos-units>=0.2.1"]
 
 [tool.ruff]
 lint.select = [
@@ -66,35 +66,19 @@ platforms = [ "osx-arm64", "linux-64", "osx-64", "win-64" ]
 [tool.pixi.pypi-dependencies]
 mammos-entity = { path = ".", editable = true }
 
-[tool.pixi.tasks]
-example = "jupyter-lab docs/example.ipynb"
-build = "hatch build"
 
-[tool.pixi.dependencies]
+[tool.pixi.feature.dev.pypi-dependencies]
 jupyter = ">=1.1.1,<2"
 hatch = ">=1.14.1,<2"
-
-[tool.pixi.feature.test.dependencies]
 pytest = "*"
-
-[tool.pixi.feature.test.tasks]
-tests = "pytest -vv"
-
-[tool.pixi.feature.format.dependencies]
-ruff = "*"
-
-[tool.pixi.feature.format.tasks]
-format = "ruff format src/ && ruff check --select I --fix src/"
-format-tests = "ruff format tests/ && ruff check --select I --fix tests/"
-
-[tool.pixi.feature.precommit.dependencies]
 pre-commit = "*"
 
-[tool.pixi.feature.precommit.tasks]
+[tool.pixi.feature.dev.tasks]
+example = "jupyter-lab docs/example.ipynb"
+build = "hatch build"
+tests = "pytest -vv"
 install-precommits = "pre-commit install"
 run-precommits = { cmd = [ "pre-commit", "run", "--all-files" ], depends-on = [ "install-precommits" ] }
 
 [tool.pixi.environments]
-test = { features = [ "test" ], solve-group = "default" }
-format = { features = [ "format" ], no-default-feature = true }
-dev = { features = [ "test", "format", "precommit" ], solve-group = "default" }
+dev = { features = [ "dev" ], solve-group = "default" }

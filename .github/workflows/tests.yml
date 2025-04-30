@@ -22,6 +22,6 @@ jobs:
           pixi-version: v0.46.0
           cache: true
       - name: Run tests
-        run: pixi run -e test tests
+        run: pixi run tests
       - name: Run code style tests
         run: pixi run run-precommits
