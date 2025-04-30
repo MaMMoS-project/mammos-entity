@@ -94,3 +94,7 @@ def test_H_unit_not_allowed():
 def test_H_ontology():
     e = me.H(42)
     assert str(e.ontology.prefLabel[0]) == "ExternalMagneticField"
+
+
+def test_unique_labels():
+    assert len({me.A().label, me.Ms().label, me.Ku().label, me.H().label}) == 4
