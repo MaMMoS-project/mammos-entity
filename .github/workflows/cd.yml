@@ -3,6 +3,8 @@ on:
   workflow_run:
     workflows: [tests]
     types: [completed]
+    tags:        
+      - '*'
     branches:
       - main
 jobs:
