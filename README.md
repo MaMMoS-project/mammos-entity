@@ -23,6 +23,9 @@ pip install -e .
 > pixi install --frozen
 > ```
 
+> [!CAUTION]
+> **For developers**: after each increment in version of the package, do not forget to sync the `pixi.lock` file by running `pixi install` as all the workflows depend on pixi. At the launch of each workflows, the pixi setup action will check that the lock file is in sync, and if found otherwise, will fail.
+
 # Tests
 
 To run tests:
