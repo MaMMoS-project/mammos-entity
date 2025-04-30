@@ -8,7 +8,7 @@ on:
 jobs:
   run-tests:
     name: Run tests again because GitHub workflows suck
-    uses: .github/workflows/tests.yml
+    uses: ./.github/workflows/tests.yml
   build:
     needs:
       - run-tests
