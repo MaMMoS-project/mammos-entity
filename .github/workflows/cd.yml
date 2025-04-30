@@ -1,11 +1,17 @@
 name: Publish Python distribution to PyPI, GitHub, and TestPyPI
 on:
-  workflow_run:
-    workflows: [tests]
-    types: [completed]
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
 jobs:
+  run-tests:
+    name: Run tests again because GitHub workflows suck
+    uses: .github/workflows/tests.yml
   build:
-    if: github.event.workflow_run.conclusion == 'success'
+    needs:
+      - run-tests
     name: Build distribution
     runs-on: ubuntu-latest
     steps:
