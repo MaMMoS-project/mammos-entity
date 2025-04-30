@@ -84,6 +84,7 @@ build = "hatch build"
 tests = "pytest -vv"
 install-precommits = "pre-commit install"
 run-precommits = { cmd = [ "pre-commit", "run", "--all-files" ], depends-on = [ "install-precommits" ] }
+tag-version = "git tag -s -a $(hatch version)"
 
 [tool.pixi.environments]
 dev = { features = [ "dev" ], solve-group = "default" }
