@@ -5,7 +5,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "mammos-entity"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python package to specify material parameters for MaMMoS simulation suite."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -19,6 +19,9 @@ authors = [
 
 requires-python = ">=3.8"
 classifiers = [
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: Science/Research",
   "Programming Language :: Python :: 3 :: Only",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
@@ -27,7 +30,10 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
-dependencies = [ "emmontopy>=0.8.0,<0.9", "numpy>=2.2.5,<3", "mammos-units>=0.2.1"]
+dependencies = [ "emmontopy>=0.8,<0.9", "mammos-units>=0.2.1", "numpy>=2.2.5,<3" ]
+
+[project.urls]
+repository = "https://github.com/MaMMoS-project/mammos-entity"
 
 [tool.ruff]
 lint.select = [
@@ -65,7 +71,6 @@ platforms = [ "osx-arm64", "linux-64", "osx-64", "win-64" ]
 
 [tool.pixi.pypi-dependencies]
 mammos-entity = { path = ".", editable = true }
-
 
 [tool.pixi.feature.dev.pypi-dependencies]
 jupyter = ">=1.1.1,<2"

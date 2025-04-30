@@ -4,7 +4,11 @@
 > Technically, one can create any entity corresponding to a class defined in the [EMMO](https://github.com/emmo-repo/EMMO). However, we only test against the ontology classes defined in [MaMMoS Ontology](https://mammos-project.github.io/MagneticMaterialsOntology/doc/magnetic_material_mammos.html).
 
 # Installation
-To install `mammos-entity` locally (in editable mode) using `pip`:
+To install `mammos-entity`:
+```console
+pip install mammos-entity
+```
+To install locally in editable mode using `pip`:
 ```console
 git clone https://github.com/MaMMoS-project/mammos-entity.git
 cd mammos-entity
@@ -12,8 +16,10 @@ pip install -e .
 ```
 
 > [!TIP]
-> If you want to install the package how the god wanted it to be :pray:, install [pixi](https://pixi.sh/latest/#installation) and run :raised_hands:
+> If you want to install the package in editable mode how the god intended it to be :pray:, install [pixi](https://pixi.sh/latest/#installation) and run :raised_hands:
 > ```console
+> git clone https://github.com/MaMMoS-project/mammos-entity.git
+> cd mammos-entity
 > pixi install --frozen
 > ```
 
@@ -21,6 +27,8 @@ pip install -e .
 
 To run tests:
 ```console
+git clone https://github.com/MaMMoS-project/mammos-entity.git
+cd mammos-entity
 pixi run tests
 ```
 
