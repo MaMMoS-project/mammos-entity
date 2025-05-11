@@ -1,3 +1,4 @@
+import mammos_units as u
 import numpy as np
 import pytest
 
@@ -7,7 +8,17 @@ import mammos_entity as me
 def test_unit_conversion():
     e = me.A(42)  # NOTE: we know that unit by default J/m
     e_same = me.A(42e3, unit="mJ/m")
-    assert np.allclose(e, e_same)  # NOTE: entities are essentually numpy arrays!
+    assert np.allclose(e, e_same)
+
+
+def test_to_method():
+    e = me.H(8e5)
+    e_same = e.to("mA/m")
+    np.allclose(e, e_same)
+    assert e.ontology_label == e_same.ontology_label
+    e_eq = e.to("T", equivalencies=u.magnetic_flux_field())
+    assert not hasattr(e_eq, "label")
+    assert not isinstance(e_eq, me.Entity)
 
 
 def test_numpy_array_as_value():

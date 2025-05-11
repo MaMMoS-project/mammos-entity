@@ -97,4 +97,14 @@ def test_H_ontology():
 
 
 def test_unique_labels():
-    assert len({me.A().label, me.Ms().label, me.Ku().label, me.H().label}) == 4
+    assert (
+        len(
+            {
+                me.A().ontology_label,
+                me.Ms().ontology_label,
+                me.Ku().ontology_label,
+                me.H().ontology_label,
+            }
+        )
+        == 4
+    )

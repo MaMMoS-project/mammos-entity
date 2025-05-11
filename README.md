@@ -140,13 +140,13 @@ SpontaneousMagnetization(value=800000000.0, unit=mA / m)
 
 ## Indirect conversion
 
-Where the conversion needs conversion factors with units (here called "indirect"), we need to be explicit that this is what we want:
+Where the conversion needs conversion factors with units (here called "indirect"), the ontology is dropped and `astropy.Quantity` is returned:
 
 ```python
 >>> import astropy.units as u
 >>> print(m3)
 SpontaneousMagnetization(value=800.0, unit=kA / m)
->>> m4 = m3.quantity.to("T", equivalencies=u.magnetic_flux_field())
+>>> m4 = m3.to("T", equivalencies=u.magnetic_flux_field())
 >>> print(m4)
 1.005309649696 T
 ```

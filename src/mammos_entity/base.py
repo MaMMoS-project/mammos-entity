@@ -46,7 +46,7 @@ def si_unit_from_list(list_cls: list[ThingClass]) -> str:
     return si_unit_cls[0].ucumCode[0]
 
 
-def extract_SI_units(label: str) -> str | None:
+def extract_SI_units(ontology_label: str) -> str | None:
     """
     Given a label for an ontology concept, retrieve the corresponding SI unit
     by traversing the class hierarchy. If a valid unit is found, its UCUM code
@@ -54,7 +54,7 @@ def extract_SI_units(label: str) -> str | None:
 
     Parameters
     ----------
-    label : str
+    ontology_label : str
         The label of an ontology concept (e.g., 'SpontaneousMagnetization').
 
     Returns
@@ -63,14 +63,14 @@ def extract_SI_units(label: str) -> str | None:
         The UCUM code of the concept's SI unit, or None if no suitable SI unit
         is found or if the unit is a special case like 'Cel.K-1'.
     """
-    thing = mammos_ontology.get_by_label(label)
+    thing = mammos_ontology.get_by_label(ontology_label)
     si_unit = None
     for ancestor in thing.ancestors():
         if hasattr(ancestor, "hasMeasurementUnit") and ancestor.hasMeasurementUnit:
             if sub_class := list(ancestor.hasMeasurementUnit[0].subclasses()):
                 si_unit = si_unit_from_list(sub_class)
-            elif label := ancestor.hasMeasurementUnit[0].ucumCode:
-                si_unit = label[0]
+            elif ontology_label := ancestor.hasMeasurementUnit[0].ucumCode:
+                si_unit = ontology_label[0]
             break
     return si_unit if si_unit != "Cel.K-1" else None
 
@@ -83,7 +83,7 @@ class Entity(u.Quantity):
 
     Parameters
     ----------
-    label : str
+    ontology_label : str
         The label of an ontology concept (e.g., 'SpontaneousMagnetization').
     value : float | int | typing.ArrayLike
         The numeric value of the physical quantity.
@@ -103,28 +103,34 @@ class Entity(u.Quantity):
 
     def __new__(
         cls,
-        label: str,
+        ontology_label: str,
         value: float | int | typing.ArrayLike = 0,
         unit: str | None = None,
         **kwargs,
     ) -> u.Quantity:
-        si_unit = extract_SI_units(label)
+        si_unit = extract_SI_units(ontology_label)
         if (si_unit is not None) and (unit is not None):
             if not u.Unit(si_unit).is_equivalent(unit):
-                raise TypeError(f"The unit {unit} does not match the units of {label}")
+                raise TypeError(
+                    f"The unit {unit} does not match the units of {ontology_label}"
+                )
         elif (si_unit is not None) and (unit is None):
             with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
                 comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
             unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
         elif (si_unit is None) and (unit is not None):
             raise TypeError(
-                f"{label} is a unitless entity. Hence, {unit} is inapropriate."
+                f"{ontology_label} is a unitless entity. Hence, {unit} is inapropriate."
             )
         comp_unit = u.Unit(unit if unit else "")
         return super().__new__(cls, value=value, unit=comp_unit, **kwargs)
 
-    def __init__(self, label: str, *args, **kwargs):
-        self.label = label
+    def __init__(self, ontology_label: str, *args, **kwargs):
+        self._ontology_label = ontology_label
+
+    @property
+    def ontology_label(self) -> str:
+        return self._ontology_label
 
     @property
     def ontology(self) -> ThingClass:
@@ -136,20 +142,7 @@ class Entity(u.Quantity):
         ThingClass
             The ontology class from `mammos_ontology` that matches the entity's label.
         """
-        return mammos_ontology.get_by_label(self.label)
-
-    def __repr__(self) -> str:
-        if self.unit.is_equivalent(u.dimensionless_unscaled):
-            repr_str = f"{self.label}(value={self.value})"
-        else:
-            repr_str = f"{self.label}(value={self.value}, unit={self.unit})"
-        return repr_str
-
-    def __str__(self) -> str:
-        return self.__repr__()
-
-    def _repr_latex_(self) -> str:
-        return self.__repr__()
+        return mammos_ontology.get_by_label(self.ontology_label)
 
     @property
     def quantity(self) -> u.Quantity:
@@ -163,6 +156,28 @@ class Entity(u.Quantity):
             A copy of this entity as a pure physical quantity.
         """
         return u.Quantity(self.value, self.unit)
+
+    def to(self, unit, equivalencies=None, copy=True):
+        if equivalencies:
+            return self.quantity.to(unit=unit, equivalencies=equivalencies, copy=copy)
+        else:
+            quant = self.quantity.to(unit=unit, copy=copy)
+            return self.__class__(
+                ontology_label=self.ontology_label, value=quant.value, unit=quant.unit
+            )
+
+    def __repr__(self) -> str:
+        if self.unit.is_equivalent(u.dimensionless_unscaled):
+            repr_str = f"{self.ontology_label}(value={self.value})"
+        else:
+            repr_str = f"{self.ontology_label}(value={self.value}, unit={self.unit})"
+        return repr_str
+
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def _repr_latex_(self) -> str:
+        return self.__repr__()
 
     def __array_ufunc__(self, func, method, *inputs, **kwargs):
         """
