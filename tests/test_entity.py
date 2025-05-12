@@ -17,8 +17,9 @@ def test_to_method():
     np.allclose(e, e_same)
     assert e.ontology_label == e_same.ontology_label
     e_eq = e.to("T", equivalencies=u.magnetic_flux_field())
-    assert not hasattr(e_eq, "label")
+    assert not hasattr(e_eq, "ontology_label")
     assert not isinstance(e_eq, me.Entity)
+    assert isinstance(e_eq, u.Quantity)
 
 
 def test_numpy_array_as_value():

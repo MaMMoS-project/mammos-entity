@@ -123,10 +123,9 @@ class Entity(u.Quantity):
                 f"{ontology_label} is a unitless entity. Hence, {unit} is inapropriate."
             )
         comp_unit = u.Unit(unit if unit else "")
-        return super().__new__(cls, value=value, unit=comp_unit, **kwargs)
-
-    def __init__(self, ontology_label: str, *args, **kwargs):
-        self._ontology_label = ontology_label
+        out = super().__new__(cls, value=value, unit=comp_unit, **kwargs)
+        out._ontology_label = ontology_label
+        return out
 
     @property
     def ontology_label(self) -> str:
@@ -157,7 +156,29 @@ class Entity(u.Quantity):
         """
         return u.Quantity(self.value, self.unit)
 
-    def to(self, unit, equivalencies=None, copy=True):
+    def to(self, unit: str, equivalencies: list = None, copy: bool = True):
+        """
+        Override method to convert from one unit to the other. If the coversion requires
+        equivalencies, the method returns a `astropy.unit.Quantity` otherwise it returns
+        an `Entity` with modified units.
+
+        Parameters
+        ----------
+        unit : str
+            The string defining the target unit to convert to (e.g., 'mJ/m').
+        equivalencies : list | optional
+            List of equivalencies to be used for unit conversion.
+        copy : bool | optional
+            If `True` (default), then the value is copied.  Otherwise, a copy
+            will only be made if necessary.
+
+        Returns
+        -------
+        mammos_units.Quantity
+            If equivalencies are used to convert the units.
+        mammos_entity.Entity
+            If equivalencies are not used to convert the units.
+        """
         if equivalencies:
             return self.quantity.to(unit=unit, equivalencies=equivalencies, copy=copy)
         else:
