@@ -2768,11 +2768,11 @@ packages:
 - pypi: .
   name: mammos-entity
   version: 0.1.6
-  sha256: 7c7d9a9561bd52d621d62ee877e0dc7b196ecdbff8dcb3568ffc807e671f31da
+  sha256: d964240b4c114d413c3de93c10d954091a3e537af7dcd64316289bbb1396ae89
   requires_dist:
   - emmontopy>=0.8,<0.9
   - mammos-units>=0.2.1
-  - numpy>=2.2.5,<3
+  - numpy<3
   requires_python: '>=3.8'
   editable: true
 - pypi: https://files.pythonhosted.org/packages/f8/75/18cde5dcda8bf75ca84cac9101933139fb1d684807a819b3cd4659a63bbc/mammos_units-0.2.1-py3-none-any.whl
