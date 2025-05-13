@@ -8,7 +8,7 @@ loaded MaMMoS ontology object.
 """
 
 from mammos_entity.base import Entity
-from mammos_entity.entities import A, H, Ku, Ms
+from mammos_entity.entities import A, BHmax, H, Hc, Ku, Mr, Ms, Tc
 from mammos_entity.onto import mammos_ontology
 
-__all__ = ["Entity", "A", "H", "Ku", "Ms", "mammos_ontology"]
+__all__ = ["Entity", "A", "H", "Ku", "Ms", "Tc", "Hc", "Mr", "BHmax", "mammos_ontology"]

@@ -92,3 +92,87 @@ def H(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
         An `Entity` object labeled "ExternalMagneticField".
     """
     return Entity("ExternalMagneticField", value, unit)
+
+
+def Tc(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
+    """
+    Create an Entity representing the Curie temperature.
+
+    Parameters
+    ----------
+    value : float | int | typing.ArrayLike
+        Numeric value corresponding to the Curie temperature. It can also be a
+        Numpy array.
+    unit : optional
+        Unit of measure for the value (e.g., 'K' for Kelvin). If omitted, the SI unit
+        from the ontology, i.e. K, will be inferred.
+
+    Returns
+    -------
+    Entity
+        An `Entity` object labelled "CurieTemperature".
+    """
+    return Entity("CurieTemperature", value, unit)
+
+
+def Hc(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
+    """
+    Create an Entity representing the external coercive field.
+
+    Parameters
+    ----------
+    value : float | int | typing.ArrayLike
+        Numeric value corresponding to the external coercive field. It can also be a
+        Numpy array.
+    unit : optional
+        Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
+        from the ontology, i.e. A/m, will be inferred.
+
+    Returns
+    -------
+    Entity
+        An `Entity` object labelled "CoercivityHcExternal".
+    """
+    return Entity("CoercivityHcExternal", value, unit)
+
+
+def Mr(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
+    """
+    Create an Entity representing the remanent magnetisation.
+
+    Parameters
+    ----------
+    value : float | int | typing.ArrayLike
+        Numeric value corresponding to the remanent magnetisation. It can also be a
+        Numpy array.
+    unit : optional
+        Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
+        from the ontology, i.e. A/m, will be inferred.
+
+    Returns
+    -------
+    Entity
+        An `Entity` object labelled "Remanence".
+    """
+    return Entity("Remanence", value, unit)
+
+
+def BHmax(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
+    """
+    Create an Entity representing the maximum energy product of the hysteresis loop.
+
+    Parameters
+    ----------
+    value : float | int | typing.ArrayLike
+        Numeric value corresponding to the maximum energy product. It can also be a
+        Numpy array.
+    unit : optional
+        Unit of measure for the value (e.g., 'J/m3'). If omitted, the SI unit
+        from the ontology, i.e. J/m3, will be inferred.
+
+    Returns
+    -------
+    Entity
+        An `Entity` object labelled "MaximumEnergyProduct".
+    """
+    return Entity("MaximumEnergyProduct", value, unit)
