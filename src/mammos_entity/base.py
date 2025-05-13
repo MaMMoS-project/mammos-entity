@@ -72,7 +72,12 @@ def extract_SI_units(ontology_label: str) -> str | None:
             elif ontology_label := ancestor.hasMeasurementUnit[0].ucumCode:
                 si_unit = ontology_label[0]
             break
-    return si_unit if si_unit != "Cel.K-1" else None
+    # HACK: filter Celsius values as Kelvin and `Cel.K-1` as no units
+    if si_unit in {"Cel", "mCel"}:
+        si_unit = "K"
+    elif si_unit == "Cel.K-1":
+        si_unit = None
+    return si_unit
 
 
 class Entity(u.Quantity):
