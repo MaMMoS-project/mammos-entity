@@ -74,7 +74,7 @@ Unit('A/m')
 Each entity object knows about its role in the Ontology:
 
 ```python
->>> Ms.label
+>>> Ms.ontology_label
 'SpontaneousMagnetization'
 >>> Ms.ontology
 magnetic_material_mammos.SpontaneousMagnetization
