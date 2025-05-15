@@ -11,6 +11,14 @@ def test_unit_conversion():
     assert np.allclose(e, e_same)
 
 
+def test_SI_conversion():
+    e = me.BHmax(42, unit="kJ/m3")
+    e_si = e.si
+    assert e.ontology_label == e_si.ontology_label
+    assert np.allclose(e, e_si)
+    assert e_si.unit == "J/m3"
+
+
 def test_to_method():
     e = me.H(8e5)
     e_same = e.to("mA/m")
