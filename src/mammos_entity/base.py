@@ -134,6 +134,15 @@ class Entity(u.Quantity):
 
     @property
     def ontology_label(self) -> str:
+        """
+        Retrieve the ontology label corresponding to the `ThingClass` that defines the
+        given entity in ontology.
+
+        Returns
+        -------
+        str
+            The ontology label corresponding to the right ThingClass.
+        """
         return self._ontology_label
 
     @property
@@ -160,6 +169,23 @@ class Entity(u.Quantity):
             A copy of this entity as a pure physical quantity.
         """
         return u.Quantity(self.value, self.unit)
+
+    @property
+    def si(self):
+        """
+        Return the entity in SI units.
+
+        Returns
+        -------
+        mammos_entity.Entity
+            Entity in SI units.
+        """
+        si_quantity = self.quantity.si
+        return self.__class__(
+            ontology_label=self.ontology_label,
+            value=si_quantity.value,
+            unit=si_quantity.unit,
+        )
 
     def to(self, unit: str, equivalencies: list = None, copy: bool = True):
         """
