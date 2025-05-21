@@ -10,7 +10,7 @@ import warnings
 
 from ontopy import ontology, utils
 
-HAVE_INTERNET = False
+HAVE_INTERNET = True
 
 try:
     mammos_ontology = ontology.get_ontology(
