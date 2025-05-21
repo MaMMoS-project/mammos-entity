@@ -6,11 +6,13 @@ link physical quantities to ontology concepts. Also includes helper functions
 for inferring the correct SI units from the ontology.
 """
 
+import warnings
+
 import mammos_units as u
 from numpy import typing
 from owlready2.entity import ThingClass
 
-from mammos_entity.onto import mammos_ontology
+from mammos_entity.onto import HAVE_INTERNET, mammos_ontology
 
 base_units = [u.J, u.m, u.A, u.T, u.radian, u.kg, u.s, u.K]
 
@@ -113,19 +115,28 @@ class Entity(u.Quantity):
         unit: str | None = None,
         **kwargs,
     ) -> u.Quantity:
-        si_unit = extract_SI_units(ontology_label)
-        if (si_unit is not None) and (unit is not None):
-            if not u.Unit(si_unit).is_equivalent(unit):
+        if HAVE_INTERNET:
+            si_unit = extract_SI_units(ontology_label)
+            if (si_unit is not None) and (unit is not None):
+                if not u.Unit(si_unit).is_equivalent(unit):
+                    raise TypeError(
+                        f"The unit {unit} does not match the units of {ontology_label}"
+                    )
+            elif (si_unit is not None) and (unit is None):
+                with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
+                    comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
+                unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
+            elif (si_unit is None) and (unit is not None):
                 raise TypeError(
-                    f"The unit {unit} does not match the units of {ontology_label}"
+                    f"{ontology_label} is a unitless entity."
+                    f" Hence, {unit} is inapropriate."
                 )
-        elif (si_unit is not None) and (unit is None):
-            with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
-                comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
-            unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
-        elif (si_unit is None) and (unit is not None):
-            raise TypeError(
-                f"{ontology_label} is a unitless entity. Hence, {unit} is inapropriate."
+        else:
+            warnings.warn(
+                message="Failed to load ontology from the interent"
+                ". Hence, no check for unit or ontology_label will be performed!",
+                category=RuntimeWarning,
+                stacklevel=1,
             )
         comp_unit = u.Unit(unit if unit else "")
         out = super().__new__(cls, value=value, unit=comp_unit, **kwargs)
