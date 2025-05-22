@@ -1,5 +1,4 @@
-"""
-Module: onto.py
+"""Loads and provides access to MaMMoS ontology which is part of EMMO.
 
 Loads and provides access to the MaMMoS magnetic materials ontology via the
 `EMMOntoPy` library. The ontology is loaded from a remote TTL (Turtle) file

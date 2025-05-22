@@ -5,7 +5,7 @@ requires = [ "hatchling" ]
 
 [project]
 name = "mammos-entity"
-version = "0.3.0"
+version = "0.3.1"
 description = "Python package to specify material parameters for MaMMoS simulation suite."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -14,10 +14,11 @@ authors = [
   { name = "Swapneel Amit Pathak" },
   { name = "Andrea Petrocchi" },
   { name = "Sam Holt" },
+  { name = "Martin Lang" },
   { name = "Hans Fangohr" },
 ]
 
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
   "Intended Audience :: Developers",
   "Intended Audience :: Education",

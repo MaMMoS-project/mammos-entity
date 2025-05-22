@@ -1,38 +1,43 @@
-"""
-Module: base.py
+"""Define the core `Entity` class
 
 Defines the core `Entity` class, which extends `mammos_units.Quantity` to
 link physical quantities to ontology concepts. Also includes helper functions
 for inferring the correct SI units from the ontology.
 """
 
+from __future__ import annotations
+
 import warnings
+from typing import TYPE_CHECKING
 
 import mammos_units as u
 from numpy import typing
-from owlready2.entity import ThingClass
 
 from mammos_entity.onto import HAVE_INTERNET, mammos_ontology
+
+if TYPE_CHECKING:
+    import mammos_units
+    import owlready2
+
+    import mammos_entity
 
 base_units = [u.J, u.m, u.A, u.T, u.radian, u.kg, u.s, u.K]
 
 
-def si_unit_from_list(list_cls: list[ThingClass]) -> str:
-    """
+def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
+    """Return an SI unit from a list of entities from the EMMO ontology.
+
     Given a list of ontology classes, determine which class corresponds to
     a coherent SI derived unit (or if none found, an SI dimensional unit),
     then return that class's UCUM code.
 
-    Parameters
-    ----------
-    list_cls : list[ThingClass]
-        A list of ontology classes.
+    Args:
+        list_cls: A list of ontology classes.
 
-    Returns
-    -------
-    str
+    Returns:
         The UCUM code (e.g., "J/m^3", "A/m") for the first identified SI unit
         in the given list of classes.
+
     """
     si_unit_cls = [
         cls
@@ -49,21 +54,20 @@ def si_unit_from_list(list_cls: list[ThingClass]) -> str:
 
 
 def extract_SI_units(ontology_label: str) -> str | None:
-    """
+    """Find SI unit for the given label from the EMMO ontology.
+
     Given a label for an ontology concept, retrieve the corresponding SI unit
     by traversing the class hierarchy. If a valid unit is found, its UCUM code
     is returned; otherwise, None is returned.
 
-    Parameters
-    ----------
-    ontology_label : str
-        The label of an ontology concept (e.g., 'SpontaneousMagnetization').
+    Args:
+        ontology_label: The label of an ontology concept
+            (e.g., 'SpontaneousMagnetization').
 
-    Returns
-    -------
-    str or None
+    Returns:
         The UCUM code of the concept's SI unit, or None if no suitable SI unit
         is found or if the unit is a special case like 'Cel.K-1'.
+
     """
     thing = mammos_ontology.get_by_label(ontology_label)
     si_unit = None
@@ -83,29 +87,24 @@ def extract_SI_units(ontology_label: str) -> str | None:
 
 
 class Entity(u.Quantity):
-    """
+    """Create a quantity (a value and a unit) linked to the EMMO ontology.
+
     Represents a physical property or quantity that is linked to an ontology
     concept. Inherits from `mammos_units.Quantity` and enforces unit
     compatibility with the ontology.
 
-    Parameters
-    ----------
-    ontology_label : str
-        The label of an ontology concept (e.g., 'SpontaneousMagnetization').
-    value : float | int | typing.ArrayLike
-        The numeric value of the physical quantity.
-    unit : optional
-        The unit of measure for the value (e.g., 'A/m', 'J/m^3'). If omitted,
-        the SI unit from the ontology is used (if defined). If the ontology
-        indicates no unit (dimensionless), an exception is raised if a unit
-        is provided.
+    Args:
+        ontology_label: Ontology label
+        value: Value
+        unit: Unit
 
-    Examples
-    --------
-    >>> import mammos_entity as me
-    >>> m = me.Ms(800000, 'A/m')
-    >>> m
-    SpontaneousMagnetization(value=800000, unit=A/m)
+    Examples:
+
+        >>> import mammos_entity as me
+        >>> m = me.Ms(800000, 'A/m')
+        >>> m
+        SpontaneousMagnetization(value=800000, unit=A/m)
+
     """
 
     def __new__(
@@ -114,7 +113,7 @@ class Entity(u.Quantity):
         value: float | int | typing.ArrayLike = 0,
         unit: str | None = None,
         **kwargs,
-    ) -> u.Quantity:
+    ) -> mammos_units.Quantity:
         if HAVE_INTERNET:
             si_unit = extract_SI_units(ontology_label)
             if (si_unit is not None) and (unit is not None):
@@ -145,51 +144,48 @@ class Entity(u.Quantity):
 
     @property
     def ontology_label(self) -> str:
-        """
+        """The ontology label that links the entity to the EMMO ontology.
+
         Retrieve the ontology label corresponding to the `ThingClass` that defines the
         given entity in ontology.
 
-        Returns
-        -------
-        str
-            The ontology label corresponding to the right ThingClass.
+        Returns:
+            str: The ontology label corresponding to the right ThingClass.
+
         """
         return self._ontology_label
 
+    # FIX: right not this will fail if no internet!
     @property
-    def ontology(self) -> ThingClass:
-        """
-        Retrieve the ontology class (ThingClass) corresponding to this Entity's label.
+    def ontology(self) -> owlready2.entity.ThingClass:
+        """Retrieve the ontology class corresponding to the entity's label.
 
-        Returns
-        -------
-        ThingClass
+        Returns:
             The ontology class from `mammos_ontology` that matches the entity's label.
+
         """
         return mammos_ontology.get_by_label(self.ontology_label)
 
     @property
-    def quantity(self) -> u.Quantity:
-        """
-        Return a standalone `mammos_units.Quantity` object with the same value
+    def quantity(self) -> mammos_units.Quantity:
+        """Return the entity as a `mammos_units.Quantity`.
+
+        Return a stand-alone `mammos_units.Quantity` object with the same value
         and unit, detached from the ontology link.
 
-        Returns
-        -------
-        mammos_units.Quantity
+        Returns:
             A copy of this entity as a pure physical quantity.
+
         """
         return u.Quantity(self.value, self.unit)
 
     @property
-    def si(self):
-        """
-        Return the entity in SI units.
+    def si(self) -> mammos_entity.Entity:
+        """Return the entity in SI units.
 
-        Returns
-        -------
-        mammos_entity.Entity
+        Returns:
             Entity in SI units.
+
         """
         si_quantity = self.quantity.si
         return self.__class__(
@@ -198,28 +194,25 @@ class Entity(u.Quantity):
             unit=si_quantity.unit,
         )
 
-    def to(self, unit: str, equivalencies: list = None, copy: bool = True):
-        """
+    def to(
+        self, unit: str, equivalencies: list | None = None, copy: bool = True
+    ) -> mammos_units.Quantity | mammos_entity.Entity:
+        """Modify the unit of the entity in accordance to the EMMO ontology.
+
         Override method to convert from one unit to the other. If the coversion requires
         equivalencies, the method returns a `astropy.unit.Quantity` otherwise it returns
         an `Entity` with modified units.
 
-        Parameters
-        ----------
-        unit : str
-            The string defining the target unit to convert to (e.g., 'mJ/m').
-        equivalencies : list | optional
-            List of equivalencies to be used for unit conversion.
-        copy : bool | optional
-            If `True` (default), then the value is copied.  Otherwise, a copy
-            will only be made if necessary.
+        Args:
+            unit: The string defining the target unit to convert to (e.g., 'mJ/m').
+            equivalencies: List of equivalencies to be used for unit conversion.
+            copy: If `True`, then the value is copied.  Otherwise, a copy will only be
+                made if necessary.
 
-        Returns
-        -------
-        mammos_units.Quantity
-            If equivalencies are used to convert the units.
-        mammos_entity.Entity
-            If equivalencies are not used to convert the units.
+        Returns:
+            mammos_units.Quantity if equivalencies are used to convert the units,
+            mammos_entity.Entity if equivalencies are not used to convert the units.
+
         """
         if equivalencies:
             return self.quantity.to(unit=unit, equivalencies=equivalencies, copy=copy)
@@ -243,7 +236,8 @@ class Entity(u.Quantity):
         return self.__repr__()
 
     def __array_ufunc__(self, func, method, *inputs, **kwargs):
-        """
+        """Override NumPy universal functions in case of mathematical operations.
+
         Override NumPy's universal functions to return a regular quantity rather
         than another `Entity` when performing array operations (e.g., add, multiply)
         since these oprations change the units.
