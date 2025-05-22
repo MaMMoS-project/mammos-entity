@@ -86,7 +86,7 @@ def extract_SI_units(ontology_label: str) -> str | None:
     return si_unit
 
 
-class Entity(mammos_units.Quantity):
+class Entity(u.Quantity):
     """Create a quantity (a value and a unit) linked to the EMMO ontology.
 
     Represents a physical property or quantity that is linked to an ontology
