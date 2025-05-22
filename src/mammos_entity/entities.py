@@ -1,17 +1,25 @@
-"""
-Module: entities.py
+"""Convenience factory functions for often used entities.
 
 Provides convenience factory functions for creating common physical property
 entities (such as spontaneous magnetization or external magnetic field)
 using the `Entity` class from `mammos_entity.base`.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from numpy import typing
 
 from mammos_entity.base import Entity
 
+if TYPE_CHECKING:
+    import mammos_entity
 
-def Ms(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> Entity:
+
+def Ms(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
     """Create an Entity representing the spontaneous magnetization (Ms).
 
     Args:
@@ -21,13 +29,15 @@ def Ms(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> En
             from the ontology, i.e. A/m, will be inferred.
 
     Returns:
-        An `Entity` object labeled "SpontaneousMagnetization".
+        An `Entity` object labelled "SpontaneousMagnetization".
 
     """
     return Entity("SpontaneousMagnetization", value, unit)
 
 
-def A(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> Entity:
+def A(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
     """Create an Entity representing the exchange stiffness constant (A).
 
     Args:
@@ -43,7 +53,9 @@ def A(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> Ent
     return Entity("ExchangeStiffnessConstant", value, unit)
 
 
-def Ku(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> Entity:
+def Ku(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
     """Create an Entity representing the uniaxial anisotropy constant (Ku).
 
     Args:
@@ -59,7 +71,9 @@ def Ku(value: int | float | typing.ArrayLike = 0, unit: None | str = None) -> En
     return Entity("UniaxialAnisotropyConstant", value, unit)
 
 
-def H(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
+def H(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
     """Create an Entity representing the external magnetic field (H).
 
     Args:
@@ -76,8 +90,10 @@ def H(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
     return Entity("ExternalMagneticField", value, unit)
 
 
-def Tc(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
-    """Create an Entity representing the Curie temperature.
+def Tc(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
+    """Create an Entity representing the Curie temperature (Tc).
 
     Args:
         value: Numeric value corresponding to the Curie temperature. It can also be a
@@ -92,8 +108,10 @@ def Tc(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
     return Entity("CurieTemperature", value, unit)
 
 
-def Hc(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
-    """Create an Entity representing the external coercive field.
+def Hc(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
+    """Create an Entity representing the external coercive field (Hc).
 
     Args:
         value : Numeric value corresponding to the external coercive field. It can also
@@ -108,8 +126,10 @@ def Hc(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
     return Entity("CoercivityHcExternal", value, unit)
 
 
-def Mr(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
-    """Create an Entity representing the remanent magnetisation.
+def Mr(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
+    """Create an Entity representing the remanent magnetisation (Mr).
 
     Args:
         value : Numeric value corresponding to the remanent magnetisation. It can also
@@ -124,7 +144,9 @@ def Mr(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
     return Entity("Remanence", value, unit)
 
 
-def BHmax(value: int | float | typing.ArrayLike = 0, unit: None | str = None):
+def BHmax(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
     """Create an Entity representing the maximum energy product of the hysteresis loop.
 
     Args:
