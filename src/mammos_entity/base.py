@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
     import mammos_entity
 
+
 base_units = [u.J, u.m, u.A, u.T, u.radian, u.kg, u.s, u.K]
 
 
@@ -138,7 +139,10 @@ class Entity(u.Quantity):
                 stacklevel=1,
             )
         comp_unit = u.Unit(unit if unit else "")
-        out = super().__new__(cls, value=value, unit=comp_unit, **kwargs)
+
+        # Remove any set equivalency to enforce unit strictness
+        with u.set_enabled_equivalencies([]):
+            out = super().__new__(cls, value=value, unit=comp_unit, **kwargs)
         out._ontology_label = ontology_label
         return out
 
