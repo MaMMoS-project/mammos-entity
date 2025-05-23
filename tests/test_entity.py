@@ -73,3 +73,49 @@ def test_entity_drop_ontology_multiply(onto_class_list):
 def test_all_labels_ontology(onto_class_list):
     for label in onto_class_list:
         _ = me.Entity(label, 42)
+
+
+def test_quantity_as_value():
+    val = 1 * u.A / u.m
+    e = me.Ms(val)
+    assert u.allclose(e.quantity, val)
+
+
+def test_wrong_quantity_as_value():
+    val = 1 * u.T
+    with pytest.raises(u.UnitConversionError):
+        me.Ms(val)
+
+
+def test_quantity_as_value_and_unit():
+    val = 1 * u.A / u.m
+    e = me.Ms(val, "A/m")
+    assert u.allclose(e.quantity, val)
+
+
+def test_wrong_quantity_as_value_and_unit():
+    val = 1 * u.T
+    with pytest.raises(u.UnitConversionError):
+        me.Ms(val, "A/m")
+
+
+def test_wrong_quantity_as_value_and_wrong_unit():
+    val = 1 * u.T
+    with pytest.raises(TypeError):
+        me.Ms(val, "T")
+
+
+def test_wrong_quantity_with_equivalency():
+    val = 1 * u.T
+    with (
+        u.set_enabled_equivalencies(u.magnetic_flux_field()),
+        pytest.raises(u.UnitConversionError),
+    ):
+        me.Ms(val)
+
+
+def test_wrong_quantity_with_equivalency_early_conversion():
+    val = 1 * u.T
+    with u.set_enabled_equivalencies(u.magnetic_flux_field()):
+        e = me.Ms(val.to(u.A / u.m))
+        assert u.allclose(e.quantity, val)
