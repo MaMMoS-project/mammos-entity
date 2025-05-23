@@ -112,3 +112,10 @@ def test_wrong_quantity_with_equivalency():
         pytest.raises(u.UnitConversionError),
     ):
         me.Ms(val)
+
+
+def test_wrong_quantity_with_equivalency_early_conversion():
+    val = 1 * u.T
+    with u.set_enabled_equivalencies(u.magnetic_flux_field()):
+        e = me.Ms(val.to(u.A / u.m))
+        assert u.allclose(e.quantity, val)
