@@ -3249,7 +3249,7 @@ packages:
 - pypi: ./
   name: mammos-entity
   version: 0.3.1
-  sha256: c7282e6aa7fd44715d2549c9273cb70116780442b505e343f24bba7514c8fcb8
+  sha256: ee2abc9f2894b0d4b56fe6f0cd9aae7c0de1bf27f60d7baaa83aacdc8f785e2c
   requires_dist:
   - emmontopy>=0.8,<0.9
   - mammos-units>=0.2.1

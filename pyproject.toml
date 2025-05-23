@@ -35,7 +35,11 @@ dependencies = [
 ]
 
 [project.urls]
-repository = "https://github.com/MaMMoS-project/mammos-entity"
+Homepage = "https://MaMMoS-project.github.io"
+Documentation = "https://mammos-project.github.io/mammos"
+Repository = "https://github.com/MaMMoS-project/mammos-entity"
+Issues = "https://github.com/MaMMoS-project/mammos-entity/issues"
+Changelog = "https://mammos-project.github.io/mammos/changelog"
 
 [tool.ruff]
 lint.select = [
