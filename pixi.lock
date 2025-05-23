@@ -3249,12 +3249,12 @@ packages:
 - pypi: ./
   name: mammos-entity
   version: 0.3.1
-  sha256: 347172daccdb60484fc73281c3016a5b254e2239e60f761f39433f289fc9c74e
+  sha256: c7282e6aa7fd44715d2549c9273cb70116780442b505e343f24bba7514c8fcb8
   requires_dist:
   - emmontopy>=0.8,<0.9
   - mammos-units>=0.2.1
   - numpy<3
-  requires_python: '>=3.10'
+  requires_python: '>=3.11'
   editable: true
 - pypi: https://files.pythonhosted.org/packages/f8/75/18cde5dcda8bf75ca84cac9101933139fb1d684807a819b3cd4659a63bbc/mammos_units-0.2.1-py3-none-any.whl
   name: mammos-units
