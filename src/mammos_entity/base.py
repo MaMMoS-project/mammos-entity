@@ -228,15 +228,14 @@ class Entity(u.Quantity):
 
     def __repr__(self) -> str:
         if self.unit.is_equivalent(u.dimensionless_unscaled):
-            repr_str = f"{self.ontology_label}(value={self.value})"
+            repr_str = f"{self.ontology_label}(value=\n{self.value})"
         else:
-            repr_str = f"{self.ontology_label}(value={self.value}, unit={self.unit})"
+            repr_str = (
+                f"{self.ontology_label}(value=\n{self.value},\n unit={self.unit})"
+            )
         return repr_str
 
     def __str__(self) -> str:
-        return self.__repr__()
-
-    def _repr_latex_(self) -> str:
         return self.__repr__()
 
     def __array_ufunc__(self, func, method, *inputs, **kwargs):
