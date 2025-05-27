@@ -108,6 +108,8 @@ class Entity(u.Quantity):
 
     """
 
+    _repr_latex_ = None
+
     def __new__(
         cls,
         ontology_label: str,
@@ -143,7 +145,6 @@ class Entity(u.Quantity):
         # Remove any set equivalency to enforce unit strictness
         with u.set_enabled_equivalencies([]):
             out = super().__new__(cls, value=value, unit=comp_unit, **kwargs)
-        delattr(out, "_repr_latex_")
         out._ontology_label = ontology_label
         return out
 
@@ -228,11 +229,13 @@ class Entity(u.Quantity):
             )
 
     def __repr__(self) -> str:
+        new_line = "\n" if self.value.size > 4 else ""
         if self.unit.is_equivalent(u.dimensionless_unscaled):
-            repr_str = f"{self.ontology_label}(value=\n{self.value})"
+            repr_str = f"{self.ontology_label}(value={new_line}{self.value})"
         else:
             repr_str = (
-                f"{self.ontology_label}(value=\n{self.value},\n unit={self.unit})"
+                f"{self.ontology_label}(value={new_line}{self.value}"
+                f",{new_line} unit={self.unit})"
             )
         return repr_str
 
