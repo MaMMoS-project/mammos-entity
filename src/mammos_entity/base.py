@@ -143,6 +143,7 @@ class Entity(u.Quantity):
         # Remove any set equivalency to enforce unit strictness
         with u.set_enabled_equivalencies([]):
             out = super().__new__(cls, value=value, unit=comp_unit, **kwargs)
+        delattr(out, "_repr_latex_")
         out._ontology_label = ontology_label
         return out
 
