@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     import mammos_entity
 
 
-base_units = [u.J, u.m, u.A, u.T, u.radian, u.kg, u.s, u.K]
+base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K]
 
 
 def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:

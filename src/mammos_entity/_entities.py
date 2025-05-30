@@ -160,3 +160,39 @@ def BHmax(
 
     """
     return Entity("MaximumEnergyProduct", value, unit)
+
+
+def T(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
+    """Create an Entity representing the temperature (T).
+
+    Args:
+        value : Numeric value corresponding to the temperature. It can also
+            be a Numpy array.
+        unit : Unit of measure for the value (e.g., 'K'). If omitted, the SI unit
+            from the ontology, i.e. K, will be inferred.
+
+    Returns:
+        An `Entity` object labelled "ThermodynamicTemperature".
+
+    """
+    return Entity("ThermodynamicTemperature", value, unit)
+
+
+def B(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
+    """Create an Entity representing the magnetic flux density (B).
+
+    Args:
+        value : Numeric value corresponding to the magnetic flux density. It can also
+            be a Numpy array.
+        unit : Unit of measure for the value (e.g., 'T'). If omitted, the SI unit
+            from the ontology, i.e. T, will be inferred.
+
+    Returns:
+        An `Entity` object labelled "MagneticFluxDensity".
+
+    """
+    return Entity("MagneticFluxDensity", value, unit)
