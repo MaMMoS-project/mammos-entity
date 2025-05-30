@@ -4,6 +4,6 @@ mammos-entity
 .. toctree::
    :maxdepth: 1
 
-   example
+   quickstart
    important-entities
    explore-ontology
