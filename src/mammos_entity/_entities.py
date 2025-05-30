@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from numpy import typing
 
-from mammos_entity.base import Entity
+from mammos_entity._base import Entity
 
 if TYPE_CHECKING:
     import mammos_entity

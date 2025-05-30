@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 import mammos_units as u
 from numpy import typing
 
-from mammos_entity.onto import HAVE_INTERNET, mammos_ontology
+from mammos_entity._onto import HAVE_INTERNET, mammos_ontology
 
 if TYPE_CHECKING:
     import mammos_units
