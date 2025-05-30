@@ -1,5 +1,5 @@
-MaMMoS entity examples
-======================
+mammos-entity
+=============
 
 .. toctree::
    :maxdepth: 1
