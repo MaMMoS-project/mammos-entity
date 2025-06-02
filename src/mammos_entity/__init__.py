@@ -1,4 +1,4 @@
-"""Create quantity (a value and a unit) linked to MaMMoS ontology.
+"""Entity (Quantity and EMMO ontology label).
 
 Exposes the primary components of the MaMMoS entity package, including
 the `Entity` class for ontology-linked physical quantities, pre-defined
