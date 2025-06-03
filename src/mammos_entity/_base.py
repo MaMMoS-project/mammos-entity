@@ -200,9 +200,7 @@ class Entity(u.Quantity):
             unit=si_quantity.unit,
         )
 
-    def to(
-        self, unit: str, equivalencies: list | None = None, copy: bool = True
-    ) -> mammos_units.Quantity | mammos_entity.Entity:
+    def to(self, *args, **kwargs) -> mammos_units.Quantity | mammos_entity.Entity:
         """Modify the unit of the entity in accordance to the EMMO ontology.
 
         Override method to convert from one unit to the other. If the coversion requires
@@ -220,13 +218,14 @@ class Entity(u.Quantity):
             mammos_entity.Entity if equivalencies are not used to convert the units.
 
         """
-        if equivalencies:
-            return self.quantity.to(unit=unit, equivalencies=equivalencies, copy=copy)
-        else:
-            quant = self.quantity.to(unit=unit, copy=copy)
-            return self.__class__(
-                ontology_label=self.ontology_label, value=quant.value, unit=quant.unit
-            )
+        quantity = self.quantity.to(*args, **kwargs)
+        with u.set_enabled_equivalencies([]):
+            if self.quantity.unit.is_equivalent(quantity.unit):
+                return self.__class__(
+                    ontology_label=self.ontology_label, value=quantity
+                )
+            else:
+                return quantity
 
     def __repr__(self) -> str:
         new_line = "\n" if self.value.size > 4 else ""
