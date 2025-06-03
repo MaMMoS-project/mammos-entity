@@ -1,15 +1,12 @@
 [build-system]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-requires = [ "hatchling" ]
 
 [project]
 name = "mammos-entity"
 version = "0.4.0"
 description = "Python package to specify material parameters for MaMMoS simulation suite."
 readme = "README.md"
-license = { file = "LICENSE" }
-
 authors = [
   { name = "Swapneel Amit Pathak" },
   { name = "Andrea Petrocchi" },
@@ -17,17 +14,16 @@ authors = [
   { name = "Martin Lang" },
   { name = "Hans Fangohr" },
 ]
-
-requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
 classifiers = [
   "Intended Audience :: Developers",
   "Intended Audience :: Education",
   "Intended Audience :: Science/Research",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
+  'Topic :: Scientific/Engineering :: Physics',
 ]
+requires-python = ">=3.11"
 dependencies = [
   "emmontopy>=0.8,<0.9",
   "mammos-units>=0.2.1",
@@ -42,58 +38,50 @@ Issues = "https://github.com/MaMMoS-project/mammos-entity/issues"
 Changelog = "https://mammos-project.github.io/mammos/changelog"
 
 [tool.ruff]
-lint.select = [
+target-version = "py311"
+exclude = [
+  "dev",
+]
+[tool.ruff.lint]
+select = [
   "B",   # flake8-bugbear
+  "D",   # pydocstyle
   "E",   # pycodestyle
   "F",   # Pyflakes
   "I",   # isort
   "SIM", # flake8-simplify
   "UP",  # pyupgrade
 ]
-lint.ignore = [
-  # conflict with other rules
-  "D203", # one-blank-line-before-class (conflicts with D204)
-  # conflict with formatter
-  "D206", # indent-with-spaces
-  "D212", # multi-line-summary-first-line (conflicts with D213)
-  "D300", # triple-single-quotes
-  "E111", # indentation-with-invalid-multiple
-  "E114", # indentation-with-invalid-multiple-comment
-  "E117", # over-indented
-  # conflict with Python 3.6 compatibility
-  "UP022", # replace-stdout-stderr
-]
-lint.per-file-ignores."*.ipynb" = [
-  "B018", # "Found useless expression. Either assign it to a variable or remove it."; false positives when using implicit __repr__ in the notebook
-  "E501", # line too long
-  "F811", # 'redefined-while-unused'; many false positives in notebooks because ipywidgets decorated functions are not recognised
-]
-lint.isort.known-local-folder = [ "src/mammos_entity" ]
-lint.ignore-init-module-imports = true # do not remove unused imports in __init__ and warn instead
+isort.known-local-folder = [ "src/mammos_units" ]
+pydocstyle.convention = "pep257"
 
-[tool.pixi.project]
+[tool.ruff.lint.per-file-ignores]
+"src/mammos_units/__init__.py" = ["F403", "F405"]  # * import of astropy.units
+"*.ipynb" = ["B018"]  # "Found useless expression. Either assign it to a variable or remove it."; false positives when using implicit __repr__ in the notebook
+"tests/*" = ["D100", "D103"]  # do not enforce docstrings in tests
+
+[tool.pixi.workspace]
 channels = [ "conda-forge" ]
 platforms = [ "osx-arm64", "linux-64", "osx-64", "win-64" ]
+
+[tool.pixi.dependencies]
+python = "==3.11"
+hatch = "*"
+ipython = "*"
+jupyterlab = ">3"
+nbval = "*"
+packaging = "<25"
+pre-commit = "*"
+pytest = "*"
+ruff = "*"
 
 [tool.pixi.pypi-dependencies]
 mammos-entity = { path = ".", editable = true }
 
-[tool.pixi.feature.dev.dependencies]
-packaging = "<25" # HACK: required by emmontopy and not resolved by pixi
-jupyter = ">=1.1.1,<2"
-hatch = ">=1.14.1,<2"
-pytest = "*"
-pre-commit = "*"
-ipython = ">=9.2.0,<10"
-git = "*"
-
-[tool.pixi.feature.dev.tasks]
-example = "jupyter-lab examples/"
-build = "hatch build"
-tests = "pytest -vv"
-install-precommits = "pre-commit install"
-run-precommits = { cmd = [ "pre-commit", "run", "--all-files" ], depends-on = [ "install-precommits" ] }
-tag-version = "git tag -s -a $(hatch version)"
-
-[tool.pixi.environments]
-dev = { features = [ "dev" ], solve-group = "default" }
+[tool.pixi.tasks]
+examples = "jupyter-lab examples"
+test-unittest = "pytest -v tests"
+test-docstrings = "pytest -v --doctest-modules src/mammos_entity"
+test-notebooks = "pytest -v --nbval-lax examples"
+test-all = { depends-on = ["test-unittest", "test-docstrings", "test-notebooks"] }
+style = "pre-commit run --all-files"

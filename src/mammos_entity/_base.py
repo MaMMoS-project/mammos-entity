@@ -1,4 +1,4 @@
-"""Define the core `Entity` class
+"""Define the core `Entity` class.
 
 Defines the core `Entity` class, which extends `mammos_units.Quantity` to
 link physical quantities to ontology concepts. Also includes helper functions
@@ -101,11 +101,10 @@ class Entity(u.Quantity):
         unit: Unit
 
     Examples:
-
         >>> import mammos_entity as me
         >>> m = me.Ms(800000, 'A/m')
         >>> m
-        SpontaneousMagnetization(value=800000, unit=A/m)
+        SpontaneousMagnetization(value=800000.0, unit=A / m)
 
     """
 

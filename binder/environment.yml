@@ -1,9 +1,0 @@
-name: mybinder-env
-channels:
-  - conda-forge
-dependencies:
-  - python=3.12
-  - jupyterlab
-  - pip
-  - pip:
-      - git+https://github.com/MaMMoS-project/mammos-entity.git
