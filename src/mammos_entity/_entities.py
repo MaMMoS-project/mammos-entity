@@ -196,3 +196,21 @@ def B(
 
     """
     return Entity("MagneticFluxDensity", value, unit)
+
+
+def M(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
+    """Create an Entity representing the magnetization.
+
+    Args:
+        value : Numeric value corresponding to the magnetization of the material. It can
+            also be a Numpy array.
+        unit : Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
+            from the ontology, i.e. A/m, will be inferred.
+
+    Returns:
+        An `Entity` object labelled "Magnetization".
+
+    """
+    return Entity("Magnetization", value, unit)

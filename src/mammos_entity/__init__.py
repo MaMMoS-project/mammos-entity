@@ -13,6 +13,7 @@ from mammos_entity._entities import BHmax as BHmax
 from mammos_entity._entities import H as H
 from mammos_entity._entities import Hc as Hc
 from mammos_entity._entities import Ku as Ku
+from mammos_entity._entities import M as M
 from mammos_entity._entities import Mr as Mr
 from mammos_entity._entities import Ms as Ms
 from mammos_entity._entities import T as T
