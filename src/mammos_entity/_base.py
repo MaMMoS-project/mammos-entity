@@ -7,6 +7,7 @@ for inferring the correct SI units from the ontology.
 
 from __future__ import annotations
 
+import re
 import warnings
 from typing import TYPE_CHECKING
 
@@ -198,6 +199,19 @@ class Entity(u.Quantity):
             ontology_label=self.ontology_label,
             value=si_quantity.value,
             unit=si_quantity.unit,
+        )
+
+    @property
+    def axis_label(self) -> str:
+        """Return an ontology based axis label for the plots.
+
+        Returns:
+            A string for labelling the axis corresponding to the entity on a plot.
+
+        """
+        return (
+            re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}")
+            + f" [{self.unit}]"
         )
 
     def to(self, *args, **kwargs) -> mammos_units.Quantity | mammos_entity.Entity:
