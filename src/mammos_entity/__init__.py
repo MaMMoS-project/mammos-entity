@@ -6,6 +6,8 @@ factory methods for common magnetic entities (Ms, A, Ku, H), and the
 loaded MaMMoS ontology object.
 """
 
+import importlib.metadata
+
 from mammos_entity._base import Entity as Entity
 from mammos_entity._entities import A as A
 from mammos_entity._entities import B as B
@@ -19,3 +21,5 @@ from mammos_entity._entities import Ms as Ms
 from mammos_entity._entities import T as T
 from mammos_entity._entities import Tc as Tc
 from mammos_entity._onto import mammos_ontology as mammos_ontology
+
+__version__ = importlib.metadata.version(__package__)
