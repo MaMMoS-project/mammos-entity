@@ -5,5 +5,3 @@ mammos-entity
    :maxdepth: 1
 
    quickstart
-   important-entities
-   explore-ontology
