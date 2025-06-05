@@ -163,10 +163,11 @@ class Entity(u.Quantity):
 
     @property
     def ontology_label_with_iri(self) -> str:
-        """The ontology label with its Iri. Unique link to EMMO ontology.
+        """The ontology label with its IRI. Unique link to EMMO ontology.
 
         Returns the `self.ontology_label` together with the IRI (a URL that
-        points to the definition of this entity.)
+        points to the definition of this entity.) IRI stands for
+        Internationalized Resource Identifier.
 
         If only the IRI is desired, one can use `self.ontology.iri`.
 
