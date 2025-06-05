@@ -161,6 +161,24 @@ class Entity(u.Quantity):
         """
         return self._ontology_label
 
+    @property
+    def ontology_label_with_iri(self) -> str:
+        """The ontology label with its Iri. Unique link to EMMO ontology.
+
+        Returns the `self.ontology_label` together with the IRI (a URL that
+        points to the definition of this entity.)
+
+        If only the IRI is desired, one can use `self.ontology.iri`.
+
+        Returns:
+            str: The ontology label corresponding to the right ThingClass,
+                 together with the IRI.
+
+        """
+        label_with_iri = self.ontology_label + " " + self.ontology.iri
+
+        return label_with_iri
+
     # FIX: right not this will fail if no internet!
     @property
     def ontology(self) -> owlready2.entity.ThingClass:

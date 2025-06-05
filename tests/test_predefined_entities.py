@@ -204,3 +204,16 @@ def test_unique_labels():
         )
         == 8
     )
+
+
+def test_ontology_label():
+    Ms = me.Ms(8e5, "A/m")
+    assert Ms.ontology_label == "SpontaneousMagnetization"
+
+
+def test_ontology_label_with_iri():
+    Ms = me.Ms(8e5, "A/m")
+    assert (
+        Ms.ontology_label_with_iri
+        == "SpontaneousMagnetization https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25"
+    )
