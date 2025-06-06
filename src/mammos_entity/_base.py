@@ -252,10 +252,12 @@ class Entity(u.Quantity):
 
         """
         quantity = self.quantity.to(*args, **kwargs)
-        with u.set_enabled_equivalencies([]):
+        with u.set_enabled_equivalencies(None):
             if self.quantity.unit.is_equivalent(quantity.unit):
                 return self.__class__(
-                    ontology_label=self.ontology_label, value=quantity
+                    ontology_label=self.ontology_label,
+                    value=quantity,
+                    unit=quantity.unit,
                 )
             else:
                 return quantity
