@@ -230,7 +230,7 @@ class Entity(u.Quantity):
         """
         return (
             re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}")
-            + f" [{self.unit}]"
+            + f" ({self.unit})"
         )
 
     def to(self, *args, **kwargs) -> mammos_units.Quantity | mammos_entity.Entity:
