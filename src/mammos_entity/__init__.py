@@ -9,7 +9,7 @@ loaded MaMMoS ontology object.
 import importlib.metadata
 
 from mammos_entity._base import Entity
-from mammos_entity._entities import A, B, BHmax, H, Hc, Ku, M, Mr, Ms, T, Tc
+from mammos_entity._entities import A, B, BHmax, H, Hc, J, Js, Ku, M, Mr, Ms, T, Tc
 from mammos_entity._onto import mammos_ontology
 
 __version__ = importlib.metadata.version(__package__)
@@ -22,6 +22,8 @@ __all__ = [
     "BHmax",
     "H",
     "Hc",
+    "J",
+    "Js",
     "Ku",
     "M",
     "Mr",

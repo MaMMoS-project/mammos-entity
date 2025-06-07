@@ -96,6 +96,16 @@ def test_H_ontology():
     assert str(e.ontology.prefLabel[0]) == "ExternalMagneticField"
 
 
+def test_J_ontology():
+    J = me.J(1)
+    assert str(J.ontology.prefLabel[0]) == "MagneticPolarisation"
+
+
+def test_Js_ontology():
+    Js = me.Js(1)
+    assert str(Js.ontology.prefLabel[0]) == "SpontaneousMagneticPolarisation"
+
+
 def test_Tc_unit_val():
     e = me.Tc(42)
     assert e.unit == u.K
@@ -189,21 +199,29 @@ def test_BHmax_ontology():
 
 
 def test_unique_labels():
+    # hard coded version for clarity
     assert (
         len(
             {
                 me.A().ontology_label,
-                me.Ms().ontology_label,
-                me.Ku().ontology_label,
+                me.BHmax().ontology_label,
                 me.H().ontology_label,
                 me.Hc().ontology_label,
+                me.M().ontology_label,
+                me.Ms().ontology_label,
+                me.Ku().ontology_label,
                 me.Tc().ontology_label,
                 me.Mr().ontology_label,
-                me.BHmax().ontology_label,
             }
         )
-        == 8
+        == 9
     )
+    # check entities automatically
+    names = [name for name in dir(me) if not name.startswith("_")]
+    # names.remove('mammos_ontology')
+
+    # do we have ontology_label, and are they unique?
+    assert len(names) == len(set(names))
 
 
 def test_ontology_label():

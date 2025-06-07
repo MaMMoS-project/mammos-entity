@@ -102,10 +102,46 @@ def Hc(
             from the ontology, i.e. A/m, will be inferred.
 
     Returns:
-        Entity: An `Entity` object labelled "CoercivityHcExternal".
+        Entity: An `Entity` object labeled "CoercivityHcExternal".
 
     """
     return Entity("CoercivityHcExternal", value, unit)
+
+
+def J(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
+    """Create an Entity representing the magnetic polarisation (Js).
+
+    Args:
+        value: Numeric value corresponding to  magnetic polarisation. It can also be
+            a Numpy array.
+        unit: Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
+            from the ontology, i.e. A/m, will be inferred.
+
+    Returns:
+        An `Entity` object labeled "MagneticPolarisation".
+
+    """
+    return Entity("MagneticPolarisation", value, unit)
+
+
+def Js(
+    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+) -> mammos_entity.Entity:
+    """Create an Entity representing the spontaneous magnetic polarisation (Js).
+
+    Args:
+        value: Numeric value corresponding to spontaneous magnetic polarisation.
+            It can also be a Numpy array.
+        unit: Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
+            from the ontology, i.e. A/m, will be inferred.
+
+    Returns:
+        An `Entity` object labeled "SpontaneousMagneticPolarisation".
+
+    """
+    return Entity("SpontaneousMagneticPolarisation", value, unit)
 
 
 def Ku(
