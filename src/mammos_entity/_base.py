@@ -12,12 +12,12 @@ import warnings
 from typing import TYPE_CHECKING
 
 import mammos_units as u
-from numpy import typing
 
 from mammos_entity._onto import HAVE_INTERNET, mammos_ontology
 
 if TYPE_CHECKING:
-    import mammos_units
+    import astropy.units
+    import numpy.typing
     import owlready2
 
     import mammos_entity
@@ -113,10 +113,10 @@ class Entity(u.Quantity):
     def __new__(
         cls,
         ontology_label: str,
-        value: float | int | typing.ArrayLike = 0,
+        value: float | int | numpy.typing.ArrayLike = 0,
         unit: str | None = None,
         **kwargs,
-    ) -> mammos_units.Quantity:
+    ) -> astropy.units.Quantity:
         if HAVE_INTERNET:
             si_unit = extract_SI_units(ontology_label)
             if (si_unit is not None) and (unit is not None):
@@ -193,7 +193,7 @@ class Entity(u.Quantity):
         return mammos_ontology.get_by_label(self.ontology_label)
 
     @property
-    def quantity(self) -> mammos_units.Quantity:
+    def quantity(self) -> astropy.units.Quantity:
         """Return the entity as a `mammos_units.Quantity`.
 
         Return a stand-alone `mammos_units.Quantity` object with the same value
@@ -233,7 +233,7 @@ class Entity(u.Quantity):
             + f" ({self.unit})"
         )
 
-    def to(self, *args, **kwargs) -> mammos_units.Quantity | mammos_entity.Entity:
+    def to(self, *args, **kwargs) -> astropy.units.Quantity | mammos_entity.Entity:
         """Modify the unit of the entity in accordance to the EMMO ontology.
 
         Override method to convert from one unit to the other. If the coversion requires

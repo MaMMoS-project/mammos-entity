@@ -9,7 +9,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from numpy import typing
+if TYPE_CHECKING:
+    import numpy.typing
 
 from mammos_entity._base import Entity
 
@@ -18,7 +19,7 @@ if TYPE_CHECKING:
 
 
 def A(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the exchange stiffness constant (A).
 
@@ -36,7 +37,7 @@ def A(
 
 
 def BHmax(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the maximum energy product of the hysteresis loop.
 
@@ -54,7 +55,7 @@ def BHmax(
 
 
 def B(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the magnetic flux density (B).
 
@@ -72,7 +73,7 @@ def B(
 
 
 def H(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the external magnetic field (H).
 
@@ -91,7 +92,7 @@ def H(
 
 
 def Hc(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the external coercive field (Hc).
 
@@ -109,7 +110,7 @@ def Hc(
 
 
 def J(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the magnetic polarisation (Js).
 
@@ -127,7 +128,7 @@ def J(
 
 
 def Js(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the spontaneous magnetic polarisation (Js).
 
@@ -145,7 +146,7 @@ def Js(
 
 
 def Ku(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the uniaxial anisotropy constant (Ku).
 
@@ -163,7 +164,7 @@ def Ku(
 
 
 def M(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the magnetization.
 
@@ -181,7 +182,7 @@ def M(
 
 
 def Mr(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the remanent magnetisation (Mr).
 
@@ -199,7 +200,7 @@ def Mr(
 
 
 def Ms(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the spontaneous magnetization (Ms).
 
@@ -217,7 +218,7 @@ def Ms(
 
 
 def T(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the temperature (T).
 
@@ -235,7 +236,7 @@ def T(
 
 
 def Tc(
-    value: int | float | typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
 ) -> mammos_entity.Entity:
     """Create an Entity representing the Curie temperature (Tc).
 
