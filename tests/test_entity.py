@@ -101,7 +101,7 @@ def test_wrong_quantity_as_value_and_unit():
 
 def test_wrong_quantity_as_value_and_wrong_unit():
     val = 1 * u.T
-    with pytest.raises(TypeError):
+    with pytest.raises(u.UnitConversionError):
         me.Ms(val, "T")
 
 

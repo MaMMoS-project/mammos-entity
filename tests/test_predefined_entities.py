@@ -18,7 +18,7 @@ def test_Ms_unit_allowed():
 def test_Ms_unit_not_allowed():
     unallowed_units = ["T", "A", "J", "m"]
     for unit in unallowed_units:
-        with pytest.raises(TypeError):
+        with pytest.raises(u.UnitConversionError):
             _ = me.Ms(42, unit)
 
 
@@ -41,7 +41,7 @@ def test_A_unit_allowed():
 def test_A_unit_not_allowed():
     unallowed_units = ["T", "A", "J", "m"]
     for unit in unallowed_units:
-        with pytest.raises(TypeError):
+        with pytest.raises(u.UnitConversionError):
             _ = me.A(42, unit)
 
 
@@ -64,7 +64,7 @@ def test_Ku_unit_allowed():
 def test_Ku_unit_not_allowed():
     unallowed_units = ["T", "A", "J/m2", "m"]
     for unit in unallowed_units:
-        with pytest.raises(TypeError):
+        with pytest.raises(u.UnitConversionError):
             _ = me.Ku(42, unit)
 
 
@@ -87,7 +87,7 @@ def test_H_unit_allowed():
 def test_H_unit_not_allowed():
     unallowed_units = ["T", "A", "J", "m"]
     for unit in unallowed_units:
-        with pytest.raises(TypeError):
+        with pytest.raises(u.UnitConversionError):
             _ = me.H(42, unit)
 
 
@@ -120,7 +120,7 @@ def test_Tc_unit_allowed():
 def test_Tc_unit_not_allowed():
     unallowed_units = ["T", "A", "J", "m", "deg_C"]
     for unit in unallowed_units:
-        with pytest.raises(TypeError):
+        with pytest.raises(u.UnitConversionError):
             _ = me.Tc(42, unit)
 
 
@@ -143,7 +143,7 @@ def test_Hc_unit_allowed():
 def test_Hc_unit_not_allowed():
     unallowed_units = ["T", "A", "J", "m"]
     for unit in unallowed_units:
-        with pytest.raises(TypeError):
+        with pytest.raises(u.UnitConversionError):
             _ = me.Hc(42, unit)
 
 
@@ -166,7 +166,7 @@ def test_Mr_unit_allowed():
 def test_Mr_unit_not_allowed():
     unallowed_units = ["T", "A", "J", "m"]
     for unit in unallowed_units:
-        with pytest.raises(TypeError):
+        with pytest.raises(u.UnitConversionError):
             _ = me.Mr(42, unit)
 
 
@@ -189,7 +189,7 @@ def test_BHmax_unit_allowed():
 def test_BHmax_unit_not_allowed():
     unallowed_units = ["T", "A", "J", "m"]
     for unit in unallowed_units:
-        with pytest.raises(TypeError):
+        with pytest.raises(u.UnitConversionError):
             _ = me.BHmax(42, unit)
 
 
