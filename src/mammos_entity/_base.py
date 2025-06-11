@@ -121,7 +121,7 @@ class Entity(u.Quantity):
             si_unit = extract_SI_units(ontology_label)
             if (si_unit is not None) and (unit is not None):
                 if not u.Unit(si_unit).is_equivalent(unit):
-                    raise TypeError(
+                    raise u.UnitConversionError(
                         f"The unit '{unit}' is not equivalent to the unit of"
                         f" {ontology_label} '{u.Unit(si_unit)}'"
                     )
