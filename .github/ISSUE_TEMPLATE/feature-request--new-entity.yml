@@ -1,0 +1,29 @@
+name: 'Feature request: new entity'
+description: Request a new convenience function to create an entity for a specific ontology entry
+labels: [entity-function]
+body:
+  - type: input
+    id: ontology-label
+    attributes:
+      label: Ontology label
+      description: Ontology label, e.g. SaturationMagnetization
+  - type: input
+    id: short-label
+    attributes:
+      label: Function name
+      description: Name of the function to create the entity (could be the short label of the ontology), e.g. Ms
+  - type: input
+    id: iri
+    attributes:
+      label: IRI
+      description: IRI (Internationalized Resource Identifier) of the element in the ontology
+  - type: input
+    id: alt-url
+    attributes:
+      label: Alternative URL
+      description: Alternative URL to access the element in the ontology if the IRI does not point to a publicly accessible webpage
+  - type: textarea
+    id: description
+    attributes:
+      label: "[Optional] additional details"
+      description: Other relevant information, e.g. the full ontology information of the element if no publicly accessible url can be provided
