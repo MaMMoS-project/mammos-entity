@@ -1,8 +1,8 @@
 """Define the core `Entity` class.
 
-Defines the core `Entity` class, which extends `mammos_units.Quantity` to
-link physical quantities to ontology concepts. Also includes helper functions
-for inferring the correct SI units from the ontology.
+Defines the core `Entity` class to link physical quantities to ontology concepts. Also
+includes helper functions for inferring the correct SI units from the ontology.
+
 """
 
 from __future__ import annotations
@@ -88,12 +88,11 @@ def extract_SI_units(ontology_label: str) -> str | None:
     return si_unit
 
 
-class Entity(u.Quantity):
+class Entity:
     """Create a quantity (a value and a unit) linked to the EMMO ontology.
 
     Represents a physical property or quantity that is linked to an ontology
-    concept. Inherits from `mammos_units.Quantity` and enforces unit
-    compatibility with the ontology.
+    concept. It enforces unit compatibility with the ontology.
 
     Args:
         ontology_label: Ontology label
@@ -108,16 +107,13 @@ class Entity(u.Quantity):
 
     """
 
-    _repr_latex_ = None
-
-    def __new__(
-        cls,
+    def __init__(
+        self,
         ontology_label: str,
         value: float | int | numpy.typing.ArrayLike = 0,
         unit: str | None | mammos_units.UnitBase = None,
         **kwargs,
-    ) -> astropy.units.Quantity:
-        print("Entity __new__")
+    ):
         if HAVE_INTERNET:
             si_unit = extract_SI_units(ontology_label)
             if (si_unit is not None) and (unit is not None):
@@ -145,60 +141,9 @@ class Entity(u.Quantity):
         comp_unit = u.Unit(unit if unit else "")
 
         # Remove any set equivalency to enforce unit strictness
-        with u.set_enabled_equivalencies([]):
-            print("Entity __new__: will create out")
-            out = super().__new__(cls, value=value, unit=comp_unit, **kwargs)
-            print("Entity __new__: have created out")
-        out._ontology_label = ontology_label
-        print(
-            "Entity __new__: have set ontology label to:",
-            ontology_label,
-            "returning now",
-        )
-        return out
-
-    def __array_finalize__(self, obj):
-        print("Entity __array_finalize__")
-        print(f"self: {type(self)}, {self}")
-        print(f"obj: {type(obj)}, {obj}")
-        super().__array_finalize__(obj)
-        print(f"self: {type(self)}, {self}")
-        print(f"obj: {type(obj)}, {obj}")
-        if hasattr(obj, "ontology_label"):
-            print(f"ontology_label: {obj.ontology_label}")
-        else:
-            print("not ontology label defined")
-
-        if obj is None or obj.__class__ is np.ndarray:
-            return
-
-        if not hasattr(obj, "ontology_label"):
-            raise RuntimeError(
-                f"Trying to cast '{obj!r}' to '{self.__class__}' without specifying "
-                "ontology_label. This operation is not supported."
-            )
-
         with u.set_enabled_equivalencies(None):
-            if not self.unit.is_equivalent(obj.unit):
-                raise RuntimeError(
-                    "Attempting to create an entity with incompatible units."
-                )
-
-        self._ontology_label = obj.ontology_label
-
-    def __quantity_subclass__(self, unit) -> tuple[astropy.units.Quantity, bool]:
-        print("calling __quantity_subclass__")
-        print(f"__quantity_subclass__ self: {self}")
-        print(f"__quantity_subclass__ unit: {unit}")
-        with u.set_enabled_equivalencies(None):
-            if self.unit.is_equivalent(unit):
-                # old and new units are compatible, keep an entity and allow Entity
-                # subclasses (if any)
-                return u.Quantity, False  # Entity, True
-            else:
-                # units are incompatible, force u.Quantity, do not allow subclasses
-                # to ensure the resulting object is not an Entity
-                return u.Quantity, False
+            self._quantity = u.Quantity(value=value, unit=comp_unit, **kwargs)
+        self._ontology_label = ontology_label
 
     @property
     def ontology_label(self) -> str:
@@ -228,9 +173,7 @@ class Entity(u.Quantity):
                  together with the IRI.
 
         """
-        label_with_iri = self.ontology_label + " " + self.ontology.iri
-
-        return label_with_iri
+        return f"{self.ontology_label} {self.ontology.iri}"
 
     # FIX: right not this will fail if no internet!
     @property
@@ -254,26 +197,29 @@ class Entity(u.Quantity):
             A copy of this entity as a pure physical quantity.
 
         """
-        return u.Quantity(self.value, self.unit)
+        return self._quantity
 
-    # @property
-    # def si(self) -> mammos_entity.Entity:
-    #     """Return the entity in SI units.
+    @property
+    def value(self) -> np.scalar | np.ndarray:
+        """Numerical data of the entity."""
+        return self._quantity.value
 
-    #     Returns:
-    #         Entity in SI units.
-
-    #     """
-    #     si_quantity = self.quantity.si
-    #     return self.__class__(
-    #         ontology_label=self.ontology_label,
-    #         value=si_quantity.value,
-    #         unit=si_quantity.unit,
-    #     )
+    @property
+    def unit(self) -> astropy.units.UnitBase:
+        """Unit of the entity data."""
+        return self._quantity.unit
 
     @property
     def axis_label(self) -> str:
-        """Return an ontology based axis label for the plots.
+        """Return an ontology-based axis label for the plots.
+
+        The axis label consist of ontology label and unit:
+        - The ontology label is split with spaces at all capital letters
+        - The units are added in parentheses.
+
+        E.g. for SpontaneousMagnetization the label may look like::
+
+            Spontaneous Magnetization (A / m)
 
         Returns:
             A string for labelling the axis corresponding to the entity on a plot.
@@ -284,51 +230,13 @@ class Entity(u.Quantity):
             + f" ({self.unit})"
         )
 
-    # def to(self, *args, **kwargs) -> astropy.units.Quantity | mammos_entity.Entity:
-    #     """Modify the unit of the entity in accordance to the EMMO ontology.
-
-    #     Override method to convert from one unit to the other. If the coversion requires
-    #     equivalencies, the method returns a `astropy.unit.Quantity` otherwise it returns
-    #     an `Entity` with modified units.
-
-    #     Args:
-    #         unit: The string defining the target unit to convert to (e.g., 'mJ/m').
-    #         equivalencies: List of equivalencies to be used for unit conversion.
-    #         copy: If `True`, then the value is copied.  Otherwise, a copy will only be
-    #             made if necessary.
-
-    #     Returns:
-    #         mammos_units.Quantity if equivalencies are used to convert the units,
-    #         mammos_entity.Entity if equivalencies are not used to convert the units.
-
-    #     """
-    #     quantity = self.quantity.to(*args, **kwargs)
-    #     with u.set_enabled_equivalencies(None):
-    #         if self.quantity.unit.is_equivalent(quantity.unit):
-    #             return self.__class__(
-    #                 ontology_label=self.ontology_label,
-    #                 value=quantity,
-    #                 unit=quantity.unit,
-    #             )
-    #         else:
-    #             return quantity
-
-    # def _new_view(self, obj=None, unit=None, propagate_info=True):
-    #     view = super()._new_view(obj, unit, propagate_info)
-    #     with u.set_enabled_equivalencies(None):
-    #         if self.unit.is_equivalent(view.unit):
-    #             view._ontology_label = self.ontology_label
-    #         else:
-    #             return view.quantity
-
-    # def __getitem__(self, key) -> astropy.units.Quantity | mammos_entity.Entity:
-    #     item = super().__getitem__(key)
-    #     if item.unit != self.unit:
-    #         return item.quantity
-    #     item._ontology_label = self.ontology_label
-    #     return item
-
     def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}('{self.ontology_label}',"
+            f" {self.value!r}, '{self.unit!s}')"
+        )
+
+    def __str__(self) -> str:
         new_line = "\n" if self.value.size > 4 else ""
         if self.unit.is_equivalent(u.dimensionless_unscaled):
             repr_str = f"{self.ontology_label}(value={new_line}{self.value})"
@@ -339,19 +247,6 @@ class Entity(u.Quantity):
             )
         return repr_str
 
-    def __str__(self) -> str:
-        return self.__repr__()
-
-    # def __array_ufunc__(self, func, method, *inputs, **kwargs):
-    #     """Override NumPy universal functions in case of mathematical operations.
-
-    #     Override NumPy's universal functions to return a regular quantity rather
-    #     than another `Entity` when performing array operations (e.g., add, multiply)
-    #     since these oprations change the units.
-    #     """
-    #     result = super().__array_ufunc__(func, method, *inputs, **kwargs)
-
-    #     if isinstance(result, self.__class__):
-    #         return result.quantity
-    #     else:
-    #         return result
+    def _repr_html_(self) -> str:
+        html_str = str(self).replace("\n", "<br>").replace(" ", "&nbsp;")
+        return f"<samp>{html_str}</samp>"
