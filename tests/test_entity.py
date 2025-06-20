@@ -5,254 +5,202 @@ import pytest
 import mammos_entity as me
 
 
-def test_unit_conversion():
-    e = me.A(42)  # NOTE: we know that unit by default J/m
-    e_same = me.A(42e3, unit="mJ/m")
-    assert np.allclose(e, e_same)
+#%% initialize with float
 
-
-def test_SI_conversion():
-    e = me.BHmax(42, unit="kJ/m3")
-    e_si = e.si
-    assert e.ontology_label == e_si.ontology_label
-    assert np.allclose(e, e_si)
-    assert e_si.unit == "J/m3"
-
-
-def test_to_method():
+def test_init_float():
     e = me.H(8e5)
-    e_same = e.to("mA/m")
-    np.allclose(e, e_same)
-    assert e.ontology_label == e_same.ontology_label
-    e_eq = e.to("T", equivalencies=u.magnetic_flux_field())
-    assert not hasattr(e_eq, "ontology_label")
-    assert not isinstance(e_eq, me.Entity)
-    assert isinstance(e_eq, u.Quantity)
+    q = 8e5 * u.A / u.m
+    assert np.allclose(e.quantity, q)
+    assert np.allclose(e.value, 8e5)
+    assert e.unit == u.A / u.m
 
 
-def test_numpy_array_as_value():
-    val = np.array([42, 42, 42])
-    e = me.H(val)
-    assert np.allclose(e.value, val)
+#%% initialize Python types
 
-
-def test_multidim_numpy_array_as_value():
-    val = np.ones((42, 42, 42, 3))
-    e = me.H(val)
-    assert np.allclose(e.value, val)
-
-
-def test_list_as_value():
+def test_init_list():
     val = [42, 42, 42]
     e = me.Ku(val)
-    assert np.allclose(e.value, np.array(val))
+    assert np.allclose(e.value, val)
+    val[0] = 1
+    assert np.allclose(e.value, [42, 42, 42])
+    e_1 = me.Ku(val[1])
+    e_2 = me.Ku(val[2])
+    val[1] = 1
+    val[2] = 2
+    assert np.allclose(e_1.value, 42)
+    assert np.allclose(e_2.value, 42)
 
 
-def test_tuple_as_value():
+def test_init_tuple():
     val = (42, 42, 42)
     e = me.Ms(val)
     assert np.allclose(e.value, np.array(val))
 
 
-def test_entity_drop_ontology_numpy(onto_class_list):
-    for label in onto_class_list:
-        e = me.Entity(label, 42)
-        root_e = np.sqrt(e)
-        with pytest.raises(AttributeError):
-            _ = root_e.ontology
+#%% Initialize from numpy array
+
+def test_init_numpy():
+    val = np.array([42, 42, 42])
+    e = me.H(val)
+    assert np.allclose(e.value, val)
+    val[0] = 1
+    assert np.allclose(e.value, [42, 42, 42])
+    e_1 = me.Ku(val[1])
+    e_2 = me.Ku(val[2])
+    val[1] = 1
+    val[2] = 2
+    assert np.allclose(e_1.value, 42)
+    assert np.allclose(e_2.value, 42)
+    val = np.ones((42, 42, 42, 3))
+    e = me.H(val)
+    assert np.allclose(e.value, val)
 
 
-def test_entity_drop_ontology_multiply(onto_class_list):
-    for label in onto_class_list:
-        e = me.Entity(label, 42)
-        mul_e = e * e
-        with pytest.raises(AttributeError):
-            _ = mul_e.ontology
+#%% initialize with quantity
+
+def test_init_quantity():
+    q = 1 * u.A / u.m
+    e = me.H(q)
+    assert np.allclose(e.quantity, q)
+    assert np.allclose(e.value, 1)
+    assert e.unit == u.A / u.m
+    q = 1 * u.kA / u.m
+    e = me.H(q, "kA/m")
+    assert np.allclose(e.quantity, q)
+    assert np.allclose(e.value, 1)
+    assert e.unit == u.kA / u.m
+    e = me.H(q)
+    assert np.allclose(e.quantity, q)
+    assert np.allclose(e.value, 1)
+    assert e.unit == u.kA / u.m
+    e = me.H(q, "MA/m")
+    assert np.allclose(e.quantity, q)
+    assert np.allclose(e.value, 1e-3)
+    assert e.unit == u.MA / u.m
 
 
-def test_all_labels_ontology(onto_class_list):
-    for label in onto_class_list:
-        _ = me.Entity(label, 42)
+#%% initialize with entity
+
+def test_init_entity():
+    # same thing as quantity
+    pass
 
 
-def test_quantity_as_value():
-    val = 1 * u.A / u.m
-    e = me.Ms(val)
-    assert u.allclose(e.quantity, val)
-
-
-def test_wrong_quantity_as_value():
-    val = 1 * u.T
+def test_check_init_unit():
+    # change unit (conversion/change unit after initialized entity)
+    e = me.Ms(1, unit=u.A / u.m)
+    e.quantity.to("kA/m")
+    assert e.unit == u.A / u.m
+    e.quantity.to("kA/m", copy=False)
+    assert e.unit == u.A / u.m
     with pytest.raises(u.UnitConversionError):
-        me.Ms(val)
-
-
-def test_quantity_as_value_and_unit():
-    val = 1 * u.A / u.m
-    e = me.Ms(val, "A/m")
-    assert u.allclose(e.quantity, val)
-
-
-def test_wrong_quantity_as_value_and_unit():
-    val = 1 * u.T
-    with pytest.raises(u.UnitConversionError):
-        me.Ms(val, "A/m")
-
-
-def test_wrong_quantity_as_value_and_wrong_unit():
-    val = 1 * u.T
-    with pytest.raises(u.UnitConversionError):
-        me.Ms(val, "T")
-
-
-def test_wrong_quantity_with_equivalency():
-    val = 1 * u.T
+        me.Ms(1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
         pytest.raises(u.UnitConversionError),
     ):
-        me.Ms(val)
+        me.Ms(1 * u.T, "A/m")
 
 
-def test_wrong_quantity_with_equivalency_early_conversion():
-    val = 1 * u.T
-    with u.set_enabled_equivalencies(u.magnetic_flux_field()):
-        e = me.Ms(val.to(u.A / u.m))
-        assert u.allclose(e.quantity, val)
+#%% check attributes
+
+def test_attrs_H():
+    e = me.H()
+    assert hasattr(e, "ontology_label")
+    assert hasattr(e, "ontology_label_with_iri")
+    assert hasattr(e, "ontology")
+    assert hasattr(e, "quantity")
+    assert hasattr(e, "value")
+    assert hasattr(e, "unit")
+    assert hasattr(e, "axis_label")
 
 
-# various tests to check different numpy functions:
-# - return an entity if the meaning of the data has not changed and the units match
-# - return a quantity if something has changed (or if there is possible ambiguity)
-# type checks via `type(...) is ...` to ensure we check for exact type (not subclasses)
+#%% Check repr, str
+
+def test_repr_H():
+    e = me.H([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    assert e.__repr__() == "Entity('ExternalMagneticField', np.float64(0.0), 'A / m')"
 
 
-def test_numpy_squeeze():
-    inp = me.Ms([[1, 1]])
-    out = np.squeeze(inp)
-    assert type(out) is me.Entity
-    assert out.ontology_label == inp.ontology_label
-    assert out.shape == (2,)
-    np.testing.assert_allclose(out.value, [1, 1])
+def test_repr_Tc():
+    e = me.Tc()
+    assert e.__repr__() == "Entity('CurieTemperature', np.float64(0.0), 'K')"
 
 
-def test_numpy_power():
-    inp = me.Ms(3)
-    out = np.power(inp, 2)
-    assert type(out) is u.Quantity
-    np.testing.assert_allclose(out.value, 9)
+def test_repr_unitless():
+    e = me.Entity("DemagnetizingFactor")
+    assert e.__repr__() == "Entity('DemagnetizingFactor', np.float64(0.0))"
 
 
-def test_numpy_ones_like():
-    inp = me.Ms(3)
-    out = np.ones_like(inp)
-    assert type(out) is me.Entity
-    assert out.ontology_label == inp.ontology_label
-    assert out.shape == ()
-    np.testing.assert_allclose(out.value, 1)
+def test_axis_label_H():
+    e = me.H()
+    assert e.axis_label == "External Magnetic Field (A / m)"
 
 
-def test_getitem():
-    inp = me.Ms([1, 2, 3])
-    out = inp[:]
-    assert type(out) is me.Entity
-    assert out.ontology_label == inp.onology_label
-    np.testing.assert_allclose(inp, out)
-
-    out = inp[[True, False, True]]
-    assert type(out) is me.Entity
-    assert out.ontology_label == inp.onology_label
-    np.testing.assert_allclose(inp, [1, 3])
-
-    out = inp[1]
-    assert type(out) is me.Entity
-    assert out.ontology_label == inp.onology_label
-    np.testing.assert_allclose(inp, 2)
+def test_axis_label_Ms():
+    e = me.Ms()
+    assert e.axis_label == "Spontaneous Magnetization (A / m)"
 
 
-def test_np_positive():
-    inp = me.Ms(-100)
-    out = np.positive(inp)
-    assert type(out) is u.Quantity
+def test_axis_label_Tc():
+    e = me.Tc()
+    assert e.axis_label == "Curie Temperature (K)"
 
 
-def test_isnan():
-    inp = me.Ms()
-    assert not np.isnan(inp)
+def test_axis_label_unitless():
+    e = me.Entity("DemagnetizingFactor")
+    assert e.axis_label == "DemagnetizingFactor"
 
 
-def test_to_string():
-    with pytest.raises(AttributeError):
-        me.Ms().to_string()
+def test_axis_label_angle():
+    e = me.Entity("Angle")
+    assert e.axis_label == "Angle (rad)"
 
 
-def test_multiplication_with_number():
-    inp = me.Ms(1)
-    out = inp * 3
-    assert type(out) is u.Quantity
-    np.testing.assert_allclose(out.value, 3)
+#%% Check labels
+
+@pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
+def test_all_labels_ontology(ontology_element):
+    print(ontology_element)
+    me.Entity(ontology_element.prefLabel[0], 42)
 
 
-def test_multiplication_with_unit():
-    inp = me.Ms(1)
-    out = inp * u.K
-    assert type(out) is u.Quantity
-    assert out.unit == "K A / m"
+def test_ontology_label_H():
+    e = me.H()
+    assert e.ontology_label == "ExternalMagneticField"
+    assert e.ontology_label == me.mammos_ontology
+    assert e.ontology_label_with_iri == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+    assert e.ontology_label in me.mammos_ontology
+    H = me.mammos_ontology.get_by_label(e.ontology_label)
+    assert e.ontology_label_with_iri == f"{H.prefLabel[0]} {H.iri}"
+
+def test_ontology_label_AngularVelocity():
+    e = me.Entity("AngularVelocity")
+    assert False
+
+#%% equivalencies
+
+def test_eq():
+    e_1 = Ms(1)
+    e_2 = Ms(1)
+    assert e_1 == e_2
+    e_3 = Ms(2)
+    assert e_1 != e_3
+    e_4 = H(1)
+    assert e_1 != e_4
+    e_5 = Ms(1000, u.mA / u.m)
+    assert e_1 == e_5
 
 
-def test_np_insert():
-    inp = me.Ms([1, 2])
-    out = inp.insert(0, 3 * u.A / u.m)
-    assert type(out) is me.Entity
-    assert out.ontology_label == inp.onology_label
-    np.testing.assert_allclose(inp.value, [3, 1, 2])
+#%% Check predefined entities
 
-
-def test_np_mean():
-    inp = me.Ms([1, 3])
-    out = np.mean(inp)
-    assert type(out) is u.Quantity
-    np.testing.assert_allclose(out.value, 2)
-
-
-def test_np_linalg_norm():
-    inp = me.Ms([3, 4])
-    out = np.linalg.norm(inp)
-    assert type(out) is u.Quantity
-    np.testing.assert_allclose(out.value, 5)
-
-
-def test_decompose():
-    inp = me.B()
-    out = inp.decompose()
-    assert type(out) is me.Entity
-    assert out.ontology_label == inp.ontology_label
-    assert out.unit == "kg / (A s2)"
-
-
-def test_lshift():
-    # unit conversion in astropy, implementation not well suited for subclassing
-    inp = me.B()
-    out = inp << u.mT
-    assert type(out) is me.Entity
-    assert out.ontology_label == inp.ontology_label
-
-    with (
-        u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(u.UnitConversionError),
-    ):
-        inp << u.A / u.m  # not compatible with ontology
-
-
-def test_ilshift():
-    val = me.B()
-    ontology_label = val.ontology_label
-    val <<= u.mT
-    assert type(val) is me.Entity
-    assert val.ontology_label == ontology_label
-
-    with (
-        u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(u.UnitConversionError),
-    ):
-        val <<= u.A / u.m  # not compatible with ontology
+@pytest.mark.parametrize(
+    "function, expected_label",
+    (
+        (me.A, "ExchangeStiffnessConstant"),
+        (me.B, "MagneticFluxDensity"),
+        # ...
+    )
+)
+def test_known_labels(function, expected_label):
+    assert function().ontology_label == expected_label

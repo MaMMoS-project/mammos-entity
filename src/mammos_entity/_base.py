@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     import owlready2
 
 
-base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K]
+base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd]
 
 
 def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
@@ -129,7 +129,7 @@ class Entity:
             elif (si_unit is None) and (unit is not None):
                 raise TypeError(
                     f"{ontology_label} is a unitless entity."
-                    f" Hence, {unit} is inapropriate."
+                    f" Hence, {unit} is inappropriate."
                 )
         else:
             warnings.warn(
@@ -198,6 +198,10 @@ class Entity:
 
         """
         return self._quantity
+
+    @property
+    def q(self):
+        return self.quantity
 
     @property
     def value(self) -> np.scalar | np.ndarray:
