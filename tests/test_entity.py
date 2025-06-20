@@ -4,8 +4,8 @@ import pytest
 
 import mammos_entity as me
 
+# %% initialize with float
 
-#%% initialize with float
 
 def test_init_float():
     e = me.H(8e5)
@@ -15,7 +15,8 @@ def test_init_float():
     assert e.unit == u.A / u.m
 
 
-#%% initialize Python types
+# %% initialize Python types
+
 
 def test_init_list():
     val = [42, 42, 42]
@@ -37,7 +38,8 @@ def test_init_tuple():
     assert np.allclose(e.value, np.array(val))
 
 
-#%% Initialize from numpy array
+# %% Initialize from numpy array
+
 
 def test_init_numpy():
     val = np.array([42, 42, 42])
@@ -56,7 +58,8 @@ def test_init_numpy():
     assert np.allclose(e.value, val)
 
 
-#%% initialize with quantity
+# %% initialize with quantity
+
 
 def test_init_quantity():
     q = 1 * u.A / u.m
@@ -79,7 +82,8 @@ def test_init_quantity():
     assert e.unit == u.MA / u.m
 
 
-#%% initialize with entity
+# %% initialize with entity
+
 
 def test_init_entity():
     # same thing as quantity
@@ -102,7 +106,8 @@ def test_check_init_unit():
         me.Ms(1 * u.T, "A/m")
 
 
-#%% check attributes
+# %% check attributes
+
 
 def test_attrs_H():
     e = me.H()
@@ -115,7 +120,8 @@ def test_attrs_H():
     assert hasattr(e, "axis_label")
 
 
-#%% Check repr, str
+# %% Check repr, str
+
 
 def test_repr_H():
     e = me.H([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
@@ -157,7 +163,8 @@ def test_axis_label_angle():
     assert e.axis_label == "Angle (rad)"
 
 
-#%% Check labels
+# %% Check labels
+
 
 @pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
 def test_all_labels_ontology(ontology_element):
@@ -169,16 +176,22 @@ def test_ontology_label_H():
     e = me.H()
     assert e.ontology_label == "ExternalMagneticField"
     assert e.ontology_label == me.mammos_ontology
-    assert e.ontology_label_with_iri == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+    assert (
+        e.ontology_label_with_iri
+        == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+    )
     assert e.ontology_label in me.mammos_ontology
     H = me.mammos_ontology.get_by_label(e.ontology_label)
     assert e.ontology_label_with_iri == f"{H.prefLabel[0]} {H.iri}"
+
 
 def test_ontology_label_AngularVelocity():
     e = me.Entity("AngularVelocity")
     assert False
 
-#%% equivalencies
+
+# %% equivalencies
+
 
 def test_eq():
     e_1 = Ms(1)
@@ -192,7 +205,8 @@ def test_eq():
     assert e_1 == e_5
 
 
-#%% Check predefined entities
+# %% Check predefined entities
+
 
 @pytest.mark.parametrize(
     "function, expected_label",
@@ -200,7 +214,7 @@ def test_eq():
         (me.A, "ExchangeStiffnessConstant"),
         (me.B, "MagneticFluxDensity"),
         # ...
-    )
+    ),
 )
 def test_known_labels(function, expected_label):
     assert function().ontology_label == expected_label
