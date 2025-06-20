@@ -19,9 +19,10 @@ from mammos_entity._onto import HAVE_INTERNET, mammos_ontology
 if TYPE_CHECKING:
     import astropy.units
     import mammos_units
-    import mammos_entity
     import numpy.typing
     import owlready2
+
+    import mammos_entity
 
 
 base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd]
@@ -255,10 +256,7 @@ class Entity:
         return self.ontology_label == other.ontology_label and self.q == other.q
 
     def __repr__(self) -> str:
-        args = [
-            f"ontology_label='{self._ontology_label}'",
-            f"value={self.value!r}"
-        ]
+        args = [f"ontology_label='{self._ontology_label}'", f"value={self.value!r}"]
         if str(self.unit):
             args.append(f"unit='{self.unit!s}'")
 

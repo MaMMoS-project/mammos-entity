@@ -126,21 +126,18 @@ def test_attrs_H():
 def test_repr_H():
     e = me.H([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
     assert e.__repr__() == "Entity('ExternalMagneticField', np.float64(0.0), 'A / m')"
-    from mammos_entity import Entity
     assert eval(repr(e)) == e
 
 
 def test_repr_Tc():
     e = me.Tc()
     assert e.__repr__() == "Entity('CurieTemperature', np.float64(0.0), 'K')"
-    from mammos_entity import Entity
     assert eval(repr(e)) == e
 
 
 def test_repr_unitless():
     e = me.Entity("DemagnetizingFactor")
     assert e.__repr__() == "Entity('DemagnetizingFactor', np.float64(0.0))"
-    from mammos_entity import Entity
     assert eval(repr(e)) == e
 
 
