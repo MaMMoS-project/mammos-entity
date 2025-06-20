@@ -253,7 +253,7 @@ class Entity:
             >>> ms_1 == t
             False
         """
-        return self.ontology_label == other.ontology_label and self.q == other.q
+        return self.ontology_label == other.ontology_label and all(self.q == other.q)
 
     def __repr__(self) -> str:
         args = [f"ontology_label='{self._ontology_label}'", f"value={self.value!r}"]
