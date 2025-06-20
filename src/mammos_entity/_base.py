@@ -19,6 +19,7 @@ from mammos_entity._onto import HAVE_INTERNET, mammos_ontology
 if TYPE_CHECKING:
     import astropy.units
     import mammos_units
+    import mammos_entity
     import numpy.typing
     import owlready2
 
@@ -200,7 +201,8 @@ class Entity:
         return self._quantity
 
     @property
-    def q(self):
+    def q(self) -> mammos_units.Quantity:
+        """Quantity attribute, shorthand for `.quantity`."""
         return self.quantity
 
     @property
@@ -235,10 +237,14 @@ class Entity:
         )
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}('{self.ontology_label}',"
-            f" {self.value!r}, '{self.unit!s}')"
-        )
+        args = [
+            f"ontology_label='{self._ontology_label}'",
+            f"value={self.value!r}"
+        ]
+        if str(self.unit):
+            args.append(f"unit='{self.unit!s}'")
+
+        return f"{self.__class__.__name__}({', '.join(args)})"
 
     def __str__(self) -> str:
         new_line = "\n" if self.value.size > 4 else ""
