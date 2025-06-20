@@ -105,7 +105,7 @@ class EntityCollection:
 
     def __repr__(self):
         """Show content of container."""
-        args = '\n'.join(f"    {key}={val!r}," for key, val in self.__dict__.items())
+        args = "\n".join(f"    {key}={val!r}," for key, val in self.__dict__.items())
         return f"{self.__class__.__name__}(\n{args}\n)"
 
     def to_dataframe(self):
