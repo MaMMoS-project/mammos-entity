@@ -236,6 +236,24 @@ class Entity:
             + f" ({self.unit})"
         )
 
+    def __eq__(self, other: mammos_entity.Entity) -> bool:
+        """Check if to Entities are identical.
+
+        Entities are considered identical if they have the same ontology label and
+        numerical data, i.e. unit prefixes have no effect.
+
+        Examples:
+            >>> import mammos_entity as me
+            >>> ms_1 = me.Ms(1, "kA/m")
+            >>> ms_2 = me.Ms(1e3, "A/m")
+            >>> ms_1 == ms_2
+            True
+            >>> t = me.T(1e3, "K")
+            >>> ms_1 == t
+            False
+        """
+        return self.ontology_label == other.ontology_label and self.q == other.q
+
     def __repr__(self) -> str:
         args = [
             f"ontology_label='{self._ontology_label}'",
