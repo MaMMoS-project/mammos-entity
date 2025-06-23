@@ -170,7 +170,7 @@ def test_axis_label_Tc():
 
 def test_axis_label_unitless():
     e = me.Entity("DemagnetizingFactor")
-    assert e.axis_label == "DemagnetizingFactor"
+    assert e.axis_label == "Demagnetizing Factor"
 
 
 def test_axis_label_angle():
@@ -190,7 +190,6 @@ def test_all_labels_ontology(ontology_element):
 def test_ontology_label_H():
     e = me.Entity("ExternalMagneticField")
     assert e.ontology_label == "ExternalMagneticField"
-    assert e.ontology_label == me.mammos_ontology
     assert (
         e.ontology_label_with_iri
         == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
@@ -202,7 +201,14 @@ def test_ontology_label_H():
 
 def test_ontology_label_AngularVelocity():
     e = me.Entity("AngularVelocity")
-    assert False
+    assert e.ontology_label == "AngularVelocity"
+    assert (
+        e.ontology_label_with_iri
+        == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
+    )
+    assert e.ontology_label in me.mammos_ontology
+    omega = me.mammos_ontology.get_by_label(e.ontology_label)
+    assert e.ontology_label_with_iri == f"{omega.prefLabel[0]} {omega.iri}"
 
 
 # %% equivalencies
