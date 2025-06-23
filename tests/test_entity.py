@@ -240,8 +240,18 @@ def test_eq():
     "function, expected_label",
     (
         (me.A, "ExchangeStiffnessConstant"),
+        (me.BHmax, "MaximumEnergyProduct"),
         (me.B, "MagneticFluxDensity"),
-        # ...
+        (me.H, "ExternalMagneticField"),
+        (me.Hc, "CoercivityHcExternal"),
+        (me.J, "MagneticPolarisation"),
+        (me.Js, "SpontaneousMagneticPolarisation"),
+        (me.Ku, "UniaxialAnisotropyConstant"),
+        (me.M, "Magnetization"),
+        (me.Mr, "Remanence"),
+        (me.Ms, "SpontaneousMagnetization"),
+        (me.T, "ThermodynamicTemperature"),
+        (me.Tc, "CurieTemperature"),
     ),
 )
 def test_known_labels(function, expected_label):
