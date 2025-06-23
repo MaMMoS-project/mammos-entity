@@ -10,7 +10,7 @@ import mammos_entity as me
 def test_init_float():
     e = me.H(8e5)
     q = 8e5 * u.A / u.m
-    assert np.allclose(e.quantity, q)
+    assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 8e5)
     assert e.unit == u.A / u.m
 
@@ -64,20 +64,20 @@ def test_init_numpy():
 def test_init_quantity():
     q = 1 * u.A / u.m
     e = me.H(q)
-    assert np.allclose(e.quantity, q)
+    assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
     assert e.unit == u.A / u.m
     q = 1 * u.kA / u.m
     e = me.H(q, "kA/m")
-    assert np.allclose(e.quantity, q)
+    assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
     assert e.unit == u.kA / u.m
     e = me.H(q)
-    assert np.allclose(e.quantity, q)
+    assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
     assert e.unit == u.kA / u.m
     e = me.H(q, "MA/m")
-    assert np.allclose(e.quantity, q)
+    assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1e-3)
     assert e.unit == u.MA / u.m
 
