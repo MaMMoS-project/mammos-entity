@@ -120,9 +120,9 @@ class Entity:
         >>> import mammos_entity as me
         >>> m = me.Ms(800000, 'A/m')
         >>> m
-        SpontaneousMagnetization(value=800000.0, unit=A / m)
+        Entity(ontology_label='SpontaneousMagnetization', value=np.float64(800000.0), unit='A / m')
 
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
