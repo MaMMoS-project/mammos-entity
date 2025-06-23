@@ -54,7 +54,22 @@ def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
             for cls in list_cls
             if (mammos_ontology.SIDimensionalUnit in cls.ancestors())
         ]
-    return si_unit_cls[0].ucumCode[0]
+
+    # Explanation of the following line:
+    # 1. We find all ucum (Unified Code for Units of Measure) Code for all units
+    #    in si_unit_cls.
+    # 2. Astropy complains if it sees unit strings with parentheses, so we exclude
+    #    them.
+    # 3. We take the first item. It is not important what unit we are selecting
+    #    because the ontology does not define a single preferred unit. We are
+    #    taking one of the SI coherent derived units or a SI dimensional unit.
+    #    astropy will make the conversion to base units later on.
+    return [
+        unit
+        for si_unit_cls_i in si_unit_cls
+        for unit in si_unit_cls_i.ucumCode
+        if "(" not in unit
+    ][0]
 
 
 def extract_SI_units(ontology_label: str) -> str | None:
