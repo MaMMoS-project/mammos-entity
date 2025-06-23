@@ -112,10 +112,12 @@ class Entity:
     def __init__(
         self,
         ontology_label: str,
-        value: float | int | numpy.typing.ArrayLike | mammos_units.Quantity = 0,
+        value: float | int | numpy.typing.ArrayLike | mammos_units.Quantity | mammos_entity.Entity = 0,
         unit: str | None | mammos_units.UnitBase = None,
         **kwargs,
     ):
+        if isinstance(value, Entity):
+            value = value.quantity
         if unit is None and isinstance(value, u.Quantity):
             unit = value.unit
         if HAVE_INTERNET:
