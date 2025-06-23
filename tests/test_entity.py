@@ -131,25 +131,30 @@ def test_attrs_H():
 
 
 def test_repr_H():
-    from mammos_entity import Entity
-    from numpy import array
     a = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     e = me.Entity("ExternalMagneticField", value=a)
-    assert e.__repr__() == f"Entity(ontology_label='ExternalMagneticField', value={np.array(a, dtype=float)!r}, unit='A / m')"
+    assert (
+        e.__repr__()
+        == f"Entity(ontology_label='ExternalMagneticField', value={np.array(a, dtype=float)!r}, unit='A / m')"
+    )
     assert eval(repr(e)) == e
 
 
 def test_repr_Tc():
-    from mammos_entity import Entity
     e = me.Entity("CurieTemperature")
-    assert e.__repr__() == "Entity(ontology_label='CurieTemperature', value=np.float64(0.0), unit='K')"
+    assert (
+        e.__repr__()
+        == "Entity(ontology_label='CurieTemperature', value=np.float64(0.0), unit='K')"
+    )
     assert eval(repr(e)) == e
 
 
 def test_repr_unitless():
-    from mammos_entity import Entity
     e = me.Entity("DemagnetizingFactor")
-    assert e.__repr__() == "Entity(ontology_label='DemagnetizingFactor', value=np.float64(0.0))"
+    assert (
+        e.__repr__()
+        == "Entity(ontology_label='DemagnetizingFactor', value=np.float64(0.0))"
+    )
     assert eval(repr(e)) == e
 
 

@@ -112,7 +112,11 @@ class Entity:
     def __init__(
         self,
         ontology_label: str,
-        value: float | int | numpy.typing.ArrayLike | mammos_units.Quantity | mammos_entity.Entity = 0,
+        value: float
+        | int
+        | numpy.typing.ArrayLike
+        | mammos_units.Quantity
+        | mammos_entity.Entity = 0,
         unit: str | None | mammos_units.UnitBase = None,
         **kwargs,
     ):
@@ -236,9 +240,8 @@ class Entity:
             A string for labelling the axis corresponding to the entity on a plot.
 
         """
-        return (
-            re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}")
-            + (f" ({self.unit})" if str(self.unit) else "")
+        return re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}") + (
+            f" ({self.unit})" if str(self.unit) else ""
         )
 
     def __eq__(self, other: mammos_entity.Entity) -> bool:
@@ -257,7 +260,9 @@ class Entity:
             >>> ms_1 == t
             False
         """
-        return self.ontology_label == other.ontology_label and u.allclose(self.q, other.q)
+        return self.ontology_label == other.ontology_label and u.allclose(
+            self.q, other.q
+        )
 
     def __repr__(self) -> str:
         args = [f"ontology_label='{self._ontology_label}'", f"value={self.value!r}"]
