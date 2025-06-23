@@ -8,7 +8,7 @@ import mammos_entity as me
 
 
 def test_init_float():
-    e = me.H(8e5)
+    e = me.Entity("ExternalMagneticField", value=8e5)
     q = 8e5 * u.A / u.m
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 8e5)
@@ -20,12 +20,12 @@ def test_init_float():
 
 def test_init_list():
     val = [42, 42, 42]
-    e = me.Ku(val)
+    e = me.Entity("ExternalMagneticField", value=val)
     assert np.allclose(e.value, val)
     val[0] = 1
     assert np.allclose(e.value, [42, 42, 42])
-    e_1 = me.Ku(val[1])
-    e_2 = me.Ku(val[2])
+    e_1 = me.Entity("ExternalMagneticField", value=val[1])
+    e_2 = me.Entity("ExternalMagneticField", value=val[2])
     val[1] = 1
     val[2] = 2
     assert np.allclose(e_1.value, 42)
@@ -34,7 +34,7 @@ def test_init_list():
 
 def test_init_tuple():
     val = (42, 42, 42)
-    e = me.Ms(val)
+    e = me.Entity("ExternalMagneticField", value=val)
     assert np.allclose(e.value, np.array(val))
 
 
@@ -43,18 +43,18 @@ def test_init_tuple():
 
 def test_init_numpy():
     val = np.array([42, 42, 42])
-    e = me.H(val)
+    e = me.Entity("ExternalMagneticField", value=val)
     assert np.allclose(e.value, val)
     val[0] = 1
     assert np.allclose(e.value, [42, 42, 42])
-    e_1 = me.Ku(val[1])
-    e_2 = me.Ku(val[2])
+    e_1 = me.Entity("ExternalMagneticField", value=val[1])
+    e_2 = me.Entity("ExternalMagneticField", value=val[2])
     val[1] = 1
     val[2] = 2
     assert np.allclose(e_1.value, 42)
     assert np.allclose(e_2.value, 42)
     val = np.ones((42, 42, 42, 3))
-    e = me.H(val)
+    e = me.Entity("ExternalMagneticField", value=val)
     assert np.allclose(e.value, val)
 
 
@@ -63,20 +63,20 @@ def test_init_numpy():
 
 def test_init_quantity():
     q = 1 * u.A / u.m
-    e = me.H(q)
+    e = me.Entity("ExternalMagneticField", value=q)
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
     assert e.unit == u.A / u.m
     q = 1 * u.kA / u.m
-    e = me.H(q, "kA/m")
+    e = me.Entity("ExternalMagneticField", value=q, unit="kA/m")
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
     assert e.unit == u.kA / u.m
-    e = me.H(q)
+    e = me.Entity("ExternalMagneticField", value=q)
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
     assert e.unit == u.kA / u.m
-    e = me.H(q, "MA/m")
+    e = me.Entity("ExternalMagneticField", value=q, unit=" MA/m")
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1e-3)
     assert e.unit == u.MA / u.m
@@ -99,25 +99,25 @@ def test_init_entity():
 
 def test_check_init_unit():
     # change unit (conversion/change unit after initialized entity)
-    e = me.Ms(1, unit=u.A / u.m)
+    e = me.Entity("SpontaneousMagnetization", value=1, unit=u.A / u.m)
     e.quantity.to("kA/m")
     assert e.unit == u.A / u.m
     e.quantity.to("kA/m", copy=False)
     assert e.unit == u.A / u.m
     with pytest.raises(u.UnitConversionError):
-        me.Ms(1, unit="T")
+        me.Entity("SpontaneousMagnetization", value=1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
         pytest.raises(u.UnitConversionError),
     ):
-        me.Ms(1 * u.T, "A/m")
+        me.Entity("SpontaneousMagnetization", value=1 * u.T, unit="A/m")
 
 
 # %% check attributes
 
 
 def test_attrs_H():
-    e = me.H()
+    e = me.Entity("ExternalMagneticField")
     assert hasattr(e, "ontology_label")
     assert hasattr(e, "ontology_label_with_iri")
     assert hasattr(e, "ontology")
@@ -134,14 +134,14 @@ def test_repr_H():
     from mammos_entity import Entity
     from numpy import array
     a = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
-    e = me.H(a)
+    e = me.Entity("ExternalMagneticField", value=a)
     assert e.__repr__() == f"Entity(ontology_label='ExternalMagneticField', value={np.array(a, dtype=float)!r}, unit='A / m')"
     assert eval(repr(e)) == e
 
 
 def test_repr_Tc():
     from mammos_entity import Entity
-    e = me.Tc()
+    e = me.Entity("CurieTemperature")
     assert e.__repr__() == "Entity(ontology_label='CurieTemperature', value=np.float64(0.0), unit='K')"
     assert eval(repr(e)) == e
 
@@ -154,17 +154,17 @@ def test_repr_unitless():
 
 
 def test_axis_label_H():
-    e = me.H()
+    e = me.Entity("ExternalMagneticField")
     assert e.axis_label == "External Magnetic Field (A / m)"
 
 
 def test_axis_label_Ms():
-    e = me.Ms()
+    e = me.Entity("SpontaneousMagnetization")
     assert e.axis_label == "Spontaneous Magnetization (A / m)"
 
 
 def test_axis_label_Tc():
-    e = me.Tc()
+    e = me.Entity("CurieTemperature")
     assert e.axis_label == "Curie Temperature (K)"
 
 
@@ -188,7 +188,7 @@ def test_all_labels_ontology(ontology_element):
 
 
 def test_ontology_label_H():
-    e = me.H()
+    e = me.Entity("ExternalMagneticField")
     assert e.ontology_label == "ExternalMagneticField"
     assert e.ontology_label == me.mammos_ontology
     assert (
@@ -209,14 +209,14 @@ def test_ontology_label_AngularVelocity():
 
 
 def test_eq():
-    e_1 = Ms(1)
-    e_2 = Ms(1)
+    e_1 = me.Entity("SpontaneousMagnetization", value=1)
+    e_2 = me.Entity("SpontaneousMagnetization", value=1)
     assert e_1 == e_2
-    e_3 = Ms(2)
+    e_3 = me.Entity("SpontaneousMagnetization", value=2)
     assert e_1 != e_3
-    e_4 = H(1)
+    e_4 = me.Entity("ExternalMagneticField", value=1)
     assert e_1 != e_4
-    e_5 = Ms(1000, u.mA / u.m)
+    e_5 = me.Entity("SpontaneousMagnetization", value=1000, unit=u.mA / u.m)
     assert e_1 == e_5
 
 
