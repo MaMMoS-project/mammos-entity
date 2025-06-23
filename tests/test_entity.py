@@ -133,9 +133,9 @@ def test_attrs_H():
 def test_repr_H():
     a = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     e = me.Entity("ExternalMagneticField", value=a)
-    assert (
-        e.__repr__()
-        == f"Entity(ontology_label='ExternalMagneticField', value={np.array(a, dtype=float)!r}, unit='A / m')"
+    assert e.__repr__() == (
+        "Entity(ontology_label='ExternalMagneticField', "
+        + f"value={np.array(a, dtype=float)!r}, unit='A / m')"
     )
     assert eval(repr(e)) == e
 
