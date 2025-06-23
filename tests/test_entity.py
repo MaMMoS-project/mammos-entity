@@ -86,8 +86,15 @@ def test_init_quantity():
 
 
 def test_init_entity():
-    # same thing as quantity
-    pass
+    e_1 = me.Entity("ExternalMagneticField", value=1)
+    e_2 = me.Entity("ExternalMagneticField", value=e_1)
+    assert u.allclose(e_1.quantity, e_2.quantity)
+    assert np.allclose(e_1.value, e_2.value)
+    assert e_1.unit == e_2.unit
+    e_3 = me.Entity("ExternalMagneticField", value=e_1, unit="mA/m")
+    assert u.allclose(e_3.quantity, e_1.quantity)
+    assert np.allclose(e_3.value, 1e3)
+    assert e_3.unit == u.mA / u.m
 
 
 def test_check_init_unit():
