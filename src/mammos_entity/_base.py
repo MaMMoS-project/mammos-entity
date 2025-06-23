@@ -238,7 +238,7 @@ class Entity:
         """
         return (
             re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}")
-            + f" ({self.unit})"
+            + (f" ({self.unit})" if str(self.unit) else "")
         )
 
     def __eq__(self, other: mammos_entity.Entity) -> bool:
