@@ -272,7 +272,7 @@ class Entity:
             >>> ms_2 = me.Ms(1e3, "A/m")
             >>> ms_1 == ms_2
             True
-            >>> t = me.T(1e3, "K")
+            >>> t = me.T(1, "K")
             >>> ms_1 == t
             False
         """
