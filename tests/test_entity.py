@@ -15,6 +15,7 @@ def test_init_float():
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 8e5)
     assert e.unit == u.A / u.m
+    assert e.ontology_label == "ExternalMagneticField"
 
 
 # %% initialize Python types
