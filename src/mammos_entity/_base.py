@@ -148,12 +148,11 @@ class Entity:
             if (si_unit is not None) and (unit is not None):
                 # Remove any set equivalency to enforce unit strictness
                 with u.set_enabled_equivalencies(None):
-                    are_equivalent = u.Unit(si_unit).is_equivalent(unit)
-                if not are_equivalent:
-                    raise u.UnitConversionError(
-                        f"The unit '{unit}' is not equivalent to the unit of"
-                        f" {ontology_label} '{u.Unit(si_unit)}'"
-                    )
+                    if not u.Unit(si_unit).is_equivalent(unit):
+                        raise u.UnitConversionError(
+                            f"The unit '{unit}' is not equivalent to the unit of"
+                            f" {ontology_label} '{u.Unit(si_unit)}'"
+                        )
             elif (si_unit is not None) and (unit is None):
                 with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
                     comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
@@ -239,12 +238,12 @@ class Entity:
     @property
     def value(self) -> numpy.scalar | numpy.ndarray:
         """Numerical data of the entity."""
-        return self._quantity.value
+        return self.quantity.value
 
     @property
     def unit(self) -> astropy.units.UnitBase:
         """Unit of the entity data."""
-        return self._quantity.unit
+        return self.quantity.unit
 
     @property
     def axis_label(self) -> str:
@@ -269,7 +268,7 @@ class Entity:
         )
 
     def __eq__(self, other: mammos_entity.Entity) -> bool:
-        """Check if to Entities are identical.
+        """Check if two Entities are identical.
 
         Entities are considered identical if they have the same ontology label and
         numerical data, i.e. unit prefixes have no effect.
