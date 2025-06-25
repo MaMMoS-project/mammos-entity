@@ -2,7 +2,7 @@
 
 Loads and provides access to the MaMMoS magnetic materials ontology via the
 `EMMOntoPy` library. The ontology is loaded from a TTL (Turtle) file distributed
-with the mammos_entity.
+with mammos_entity.
 """
 
 from pathlib import Path
