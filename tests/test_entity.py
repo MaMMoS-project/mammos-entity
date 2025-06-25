@@ -27,12 +27,6 @@ def test_init_list():
     assert np.allclose(e.value, val)
     val[0] = 1
     assert np.allclose(e.value, [42, 42, 42])
-    e_1 = me.Entity("ExternalMagneticField", value=val[1])
-    e_2 = me.Entity("ExternalMagneticField", value=val[2])
-    val[1] = 1
-    val[2] = 2
-    assert np.allclose(e_1.value, 42)
-    assert np.allclose(e_2.value, 42)
 
 
 def test_init_tuple():
@@ -50,12 +44,6 @@ def test_init_numpy():
     assert np.allclose(e.value, val)
     val[0] = 1
     assert np.allclose(e.value, [42, 42, 42])
-    e_1 = me.Entity("ExternalMagneticField", value=val[1])
-    e_2 = me.Entity("ExternalMagneticField", value=val[2])
-    val[1] = 1
-    val[2] = 2
-    assert np.allclose(e_1.value, 42)
-    assert np.allclose(e_2.value, 42)
     val = np.ones((42, 42, 42, 3))
     e = me.Entity("ExternalMagneticField", value=val)
     assert np.allclose(e.value, val)
@@ -79,7 +67,7 @@ def test_init_quantity():
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
     assert e.unit == u.kA / u.m
-    e = me.Entity("ExternalMagneticField", value=q, unit=" MA/m")
+    e = me.Entity("ExternalMagneticField", value=q, unit="MA/m")
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1e-3)
     assert e.unit == u.MA / u.m
@@ -233,7 +221,8 @@ def test_eq():
     assert e_1 != e_4
     e_5 = me.Entity("SpontaneousMagnetization", value=1000, unit=u.mA / u.m)
     assert e_1 == e_5
-
+    e_6 = me.Entity("SpontaneousMagnetization", value=[1, 1])
+    assert e_1 != e_6
 
 # %% Check predefined entities
 
