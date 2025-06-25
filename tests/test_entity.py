@@ -61,7 +61,6 @@ def test_init_quantity():
     """
     q = 1 * u.A / u.m
     e = me.Entity("ExternalMagneticField", value=q)
-    assert hasattr(e, "ontology_label")
     assert e.ontology_label == "ExternalMagneticField"
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
@@ -92,7 +91,6 @@ def test_init_entity():
     """
     e_1 = me.Entity("ExternalMagneticField", value=1, unit="mA/m")
     e_2 = me.Entity("ExternalMagneticField", value=e_1)
-    assert hasattr(e_2, "ontology_label")
     assert e_2.ontology_label == "ExternalMagneticField"
     assert u.allclose(e_1.quantity, e_2.quantity)
     assert np.allclose(e_1.value, e_2.value)
@@ -166,7 +164,6 @@ def test_repr():
 def test_axis_labels():
     """Test different axis_label examples."""
     e_1 = me.Entity("ExternalMagneticField")
-    assert hasattr(e_1, "axis_label")
     assert e_1.axis_label == "External Magnetic Field (A / m)"
     e_2 = me.Entity("AffinityOfAChemicalReaction")
     assert e_2.axis_label == "Affinity Of A Chemical Reaction (J / mol)"
@@ -190,14 +187,12 @@ def test_all_labels_ontology(ontology_element):
 def test_ontology_label_mammos():
     """Test ontology label for an Entity in the MaMMoS ontology."""
     e = me.Entity("ExternalMagneticField")
-    assert hasattr(e, "ontology_label")
     assert e.ontology_label == "ExternalMagneticField"
-    assert hasattr(e, "ontology_label_with_iri")
     assert (
         e.ontology_label_with_iri
         == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
     )
-    assert hasattr(e, "ontology")
+    assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
     assert e.ontology_label in me.mammos_ontology
     H = me.mammos_ontology.get_by_label(e.ontology_label)
     assert e.ontology_label_with_iri == f"{H.prefLabel[0]} {H.iri}"
@@ -211,6 +206,7 @@ def test_ontology_label_EMMO():
         e.ontology_label_with_iri
         == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
     )
+    assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
     assert e.ontology_label in me.mammos_ontology
     omega = me.mammos_ontology.get_by_label(e.ontology_label)
     assert e.ontology_label_with_iri == f"{omega.prefLabel[0]} {omega.iri}"
