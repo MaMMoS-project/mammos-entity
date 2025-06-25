@@ -12,7 +12,6 @@ import warnings
 from typing import TYPE_CHECKING
 
 import mammos_units as u
-import numpy as np
 
 from mammos_entity._onto import HAVE_INTERNET, mammos_ontology
 
