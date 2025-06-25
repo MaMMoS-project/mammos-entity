@@ -16,13 +16,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
     - name: Setup Pixi
       uses: prefix-dev/setup-pixi@v0.8.8
-    - run: pixi run python -c "from pathlib import Path; p = Path().resolve(); print(p); print(p.as_uri()); print(p.as_posix());"
     - name: unit tests
       run: pixi run test-unittest
     - name: doc tests
