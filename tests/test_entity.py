@@ -107,6 +107,11 @@ def test_check_init_unit():
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
         pytest.raises(u.UnitConversionError),
     ):
+        me.Entity("SpontaneousMagnetization", value=1, unit="T")
+    with (
+        u.set_enabled_equivalencies(u.magnetic_flux_field()),
+        pytest.raises(u.UnitConversionError),
+    ):
         me.Entity("SpontaneousMagnetization", value=1 * u.T, unit="A/m")
 
 
