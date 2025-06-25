@@ -6,10 +6,9 @@ from numpy import array  # noqa: F401  # required for repr eval
 import mammos_entity as me
 from mammos_entity import Entity  # noqa: F401  # required for repr eval
 
-# %% initialize with float
-
 
 def test_init_float():
+    """Initialize Entity instance with a float."""
     e = me.Entity("ExternalMagneticField", value=8e5)
     q = 8e5 * u.A / u.m
     assert u.allclose(e.quantity, q)
@@ -18,10 +17,8 @@ def test_init_float():
     assert e.ontology_label == "ExternalMagneticField"
 
 
-# %% initialize Python types
-
-
 def test_init_list():
+    """Initialize with Python lists."""
     val = [42, 42, 42]
     e = me.Entity("ExternalMagneticField", value=val)
     assert np.allclose(e.value, val)
@@ -30,15 +27,14 @@ def test_init_list():
 
 
 def test_init_tuple():
+    """Initialize with Python tuples."""
     val = (42, 42, 42)
     e = me.Entity("ExternalMagneticField", value=val)
     assert np.allclose(e.value, np.array(val))
 
 
-# %% Initialize from numpy array
-
-
 def test_init_numpy():
+    """Initialize with NumPy array."""
     val = np.array([42, 42, 42])
     e = me.Entity("ExternalMagneticField", value=val)
     assert np.allclose(e.value, val)
@@ -49,10 +45,20 @@ def test_init_numpy():
     assert np.allclose(e.value, val)
 
 
-# %% initialize with quantity
-
-
 def test_init_quantity():
+    """Initialize using mammos_units.Quantity.
+
+    Test 1: an entity created from a quantity without specifying unit
+    will take value and unit from the quantity. In this case the unit
+    of the quantity is the default ontology quantity.
+    Test 2: an entity created from a quantity specifying the unit
+    will convert the quantity to the selected unit. In this case
+    the unit is the same of the quantity, so there is actually no
+    conversion involved.
+    Test 3: Same as Test 1, but this time the unit of the quantity
+    is not the default ontology quantity.
+    Test 4: Same as Test 2, but there is an actually conversion involved.
+    """
     q = 1 * u.A / u.m
     e = me.Entity("ExternalMagneticField", value=q)
     assert hasattr(e, "ontology_label")
@@ -75,10 +81,15 @@ def test_init_quantity():
     assert e.unit == u.MA / u.m
 
 
-# %% initialize with entity
-
-
 def test_init_entity():
+    """Initialize from another Entity.
+
+    Test 1: an Entity initialized from another Entity will define
+    its Quantity (including unit) from it.
+    Test 2: if we select a different unit, it gets converted.
+    Test 3: if we initialize using an Entity with a different ontology label
+    we get an error.
+    """
     e_1 = me.Entity("ExternalMagneticField", value=1, unit="mA/m")
     e_2 = me.Entity("ExternalMagneticField", value=e_1)
     assert hasattr(e_2, "ontology_label")
@@ -94,7 +105,14 @@ def test_init_entity():
         me.Entity("CurieTemperature", value=e_1)
 
 
-def test_check_init_unit():
+def test_check_units():
+    """Test units of Entity.
+
+    Test 1: Check that unit is immutable.
+    Test 2: Check that Entity cannot be initialized with wrong unit.
+    Even if we activate the necessary conversion equivalency, the initialization
+    should reset all equivalencies.
+    """
     # change unit (conversion/change unit after initialized entity)
     e = me.Entity("SpontaneousMagnetization", value=1, unit=u.A / u.m)
     e.quantity.to("kA/m")
@@ -162,11 +180,15 @@ def test_axis_labels():
 
 @pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
 def test_all_labels_ontology(ontology_element):
-    print(ontology_element)
+    """Test all labels in the ontology.
+
+    This test creates one Entity instance for each label in the ontology.
+    """
     me.Entity(ontology_element.prefLabel[0], 42)
 
 
-def test_ontology_label_H():
+def test_ontology_label_mammos():
+    """Test ontology label for an Entity in the MaMMoS ontology."""
     e = me.Entity("ExternalMagneticField")
     assert hasattr(e, "ontology_label")
     assert e.ontology_label == "ExternalMagneticField"
@@ -181,7 +203,8 @@ def test_ontology_label_H():
     assert e.ontology_label_with_iri == f"{H.prefLabel[0]} {H.iri}"
 
 
-def test_ontology_label_AngularVelocity():
+def test_ontology_label_EMMO():
+    """Test ontology label for an Entity in the EMMO."""
     e = me.Entity("AngularVelocity")
     assert e.ontology_label == "AngularVelocity"
     assert (
@@ -193,10 +216,13 @@ def test_ontology_label_AngularVelocity():
     assert e.ontology_label_with_iri == f"{omega.prefLabel[0]} {omega.iri}"
 
 
-# %% equivalencies
+def test_equality():
+    """Test equality.
 
-
-def test_eq():
+    We expect two entities to be equal if the ontology_label is the same
+    and the values are close enough.
+    Equality fails when the right hand term is not an Entity.
+    """
     e_1 = me.Entity("SpontaneousMagnetization", value=1)
     e_2 = me.Entity("SpontaneousMagnetization", value=1)
     assert e_1 == e_2
@@ -214,9 +240,6 @@ def test_eq():
         assert e_1 == 1
     with pytest.raises(NotImplementedError):
         assert e_1 == e_2.quantity
-
-
-# %% Check predefined entities
 
 
 @pytest.mark.parametrize(
@@ -238,4 +261,5 @@ def test_eq():
     ),
 )
 def test_known_labels(function, expected_label):
+    """Check predefined entities."""
     assert function().ontology_label == expected_label
