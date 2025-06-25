@@ -246,10 +246,6 @@ class Entity:
         - The ontology label is split with spaces at all capital letters
         - The units are added in parentheses.
 
-        E.g. for SpontaneousMagnetization the label may look like::
-
-            Spontaneous Magnetization (A / m)
-
         Returns:
             A string for labelling the axis corresponding to the entity on a plot.
 
