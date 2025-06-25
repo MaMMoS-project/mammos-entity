@@ -146,7 +146,10 @@ class Entity:
         if HAVE_INTERNET:
             si_unit = extract_SI_units(ontology_label)
             if (si_unit is not None) and (unit is not None):
-                if not u.Unit(si_unit).is_equivalent(unit):
+                # Remove any set equivalency to enforce unit strictness
+                with u.set_enabled_equivalencies(None):
+                    are_equivalent = u.Unit(si_unit).is_equivalent(unit)
+                if not are_equivalent:
                     raise u.UnitConversionError(
                         f"The unit '{unit}' is not equivalent to the unit of"
                         f" {ontology_label} '{u.Unit(si_unit)}'"
