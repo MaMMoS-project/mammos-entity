@@ -281,8 +281,10 @@ class Entity:
             >>> ms_1 == t
             False
         """
-        return self.ontology_label == other.ontology_label and u.allclose(
-            self.q, other.q
+        return (
+            self.ontology_label == other.ontology_label
+            and self.q.ndim == other.q.ndim
+            and u.allclose(self.q, other.q)
         )
 
     def __repr__(self) -> str:
