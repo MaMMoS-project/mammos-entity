@@ -8,12 +8,11 @@ includes helper functions for inferring the correct SI units from the ontology.
 from __future__ import annotations
 
 import re
-import warnings
 from typing import TYPE_CHECKING
 
 import mammos_units as u
 
-from mammos_entity._onto import HAVE_INTERNET, mammos_ontology
+from mammos_entity._onto import mammos_ontology
 
 if TYPE_CHECKING:
     import astropy.units
@@ -141,34 +140,30 @@ class Entity:
                     f" with a {value.ontology_label}."
                 )
             value = value.quantity
+
         if unit is None and isinstance(value, u.Quantity):
             unit = value.unit
-        if HAVE_INTERNET:
-            si_unit = extract_SI_units(ontology_label)
-            if (si_unit is not None) and (unit is not None):
-                # Remove any set equivalency to enforce unit strictness
-                with u.set_enabled_equivalencies(None):
-                    if not u.Unit(si_unit).is_equivalent(unit):
-                        raise u.UnitConversionError(
-                            f"The unit '{unit}' is not equivalent to the unit of"
-                            f" {ontology_label} '{u.Unit(si_unit)}'"
-                        )
-            elif (si_unit is not None) and (unit is None):
-                with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
-                    comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
-                unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
-            elif (si_unit is None) and (unit is not None):
-                raise TypeError(
-                    f"{ontology_label} is a unitless entity."
-                    f" Hence, {unit} is inappropriate."
-                )
-        else:
-            warnings.warn(
-                message="Failed to load ontology from the interent"
-                ". Hence, no check for unit or ontology_label will be performed!",
-                category=RuntimeWarning,
-                stacklevel=1,
+
+        si_unit = extract_SI_units(ontology_label)
+
+        if (si_unit is not None) and (unit is not None):
+            # Remove any set equivalency to enforce unit strictness
+            with u.set_enabled_equivalencies(None):
+                if not u.Unit(si_unit).is_equivalent(unit):
+                    raise u.UnitConversionError(
+                        f"The unit '{unit}' is not equivalent to the unit of"
+                        f" {ontology_label} '{u.Unit(si_unit)}'"
+                    )
+        elif (si_unit is not None) and (unit is None):
+            with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
+                comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
+            unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
+        elif (si_unit is None) and (unit is not None):
+            raise TypeError(
+                f"{ontology_label} is a unitless entity."
+                f" Hence, {unit} is inappropriate."
             )
+
         comp_unit = u.Unit(unit if unit else "")
 
         # Remove any set equivalency to enforce unit strictness

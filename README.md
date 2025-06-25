@@ -33,6 +33,17 @@ APIs and tutorials are available in the documentation. To access the documentati
 To install `mammos-entity`, you can use `pip install mammos-entity` inside a Python environment.
 For more details refer to the documentation.
 
+## License
+
+The code is licensed under MIT.
+
+The ontology files in src/mammos_entity/ontology are licensed under CC-BY-4.0
+(LICENSE_ONTOLOGY). `emmo.ttl` is taken from
+[EMMO](https://github.com/emmo-repo/EMMO), `magnetic_material_mammos.ttl` is
+taken from [MaMMoS
+MagneticMaterialsOntology](https://github.com/MaMMoS-project/MagneticMaterialsOntology/tree/main).
+No modifications have been made to the ontology files.
+
 ## How to cite
 
 TODO

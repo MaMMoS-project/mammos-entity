@@ -14,8 +14,8 @@ authors = [
   { name = "Martin Lang" },
   { name = "Hans Fangohr" },
 ]
-license = "MIT"
-license-files = ["LICENSE"]
+license = "MIT AND CC-BY-4.0"
+license-files = ["LICENSE", "LICENSE_ONTOLOGY"]
 classifiers = [
   "Intended Audience :: Developers",
   "Intended Audience :: Education",
