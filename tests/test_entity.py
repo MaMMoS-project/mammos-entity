@@ -55,6 +55,8 @@ def test_init_numpy():
 def test_init_quantity():
     q = 1 * u.A / u.m
     e = me.Entity("ExternalMagneticField", value=q)
+    assert hasattr(e, "ontology_label")
+    assert e.ontology_label == "ExternalMagneticField"
     assert u.allclose(e.quantity, q)
     assert np.allclose(e.value, 1)
     assert e.unit == u.A / u.m
@@ -79,6 +81,8 @@ def test_init_quantity():
 def test_init_entity():
     e_1 = me.Entity("ExternalMagneticField", value=1, unit="mA/m")
     e_2 = me.Entity("ExternalMagneticField", value=e_1)
+    assert hasattr(e_2, "ontology_label")
+    assert e_2.ontology_label == "ExternalMagneticField"
     assert u.allclose(e_1.quantity, e_2.quantity)
     assert np.allclose(e_1.value, e_2.value)
     assert e_1.unit == e_2.unit
@@ -109,15 +113,6 @@ def test_check_init_unit():
 # %% check attributes
 
 
-def test_attrs_H():
-    e = me.Entity("ExternalMagneticField")
-    assert hasattr(e, "ontology_label")
-    assert hasattr(e, "ontology_label_with_iri")
-    assert hasattr(e, "ontology")
-    assert hasattr(e, "quantity")
-    assert hasattr(e, "value")
-    assert hasattr(e, "unit")
-    assert hasattr(e, "axis_label")
 
 
 # %% Check repr, str
@@ -188,11 +183,14 @@ def test_all_labels_ontology(ontology_element):
 
 def test_ontology_label_H():
     e = me.Entity("ExternalMagneticField")
+    assert hasattr(e, "ontology_label")
     assert e.ontology_label == "ExternalMagneticField"
+    assert hasattr(e, "ontology_label_with_iri")
     assert (
         e.ontology_label_with_iri
         == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
     )
+    assert hasattr(e, "ontology")
     assert e.ontology_label in me.mammos_ontology
     H = me.mammos_ontology.get_by_label(e.ontology_label)
     assert e.ontology_label_with_iri == f"{H.prefLabel[0]} {H.iri}"
