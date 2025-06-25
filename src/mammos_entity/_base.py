@@ -283,14 +283,11 @@ class Entity:
             >>> ms_1 == t
             False
         """
-        if not isinstance(other, Entity):
-            raise NotImplementedError(
-                "Equivalence between mammos_entity.Entity and "
-                f"{type(other)} is not defined."
-            )
+        if not isinstance(other, self.__class__):
+            return NotImplemented
         return (
             self.ontology_label == other.ontology_label
-            and self.q.ndim == other.q.ndim
+            and self.q.shape == other.q.shape
             and u.allclose(self.q, other.q)
         )
 

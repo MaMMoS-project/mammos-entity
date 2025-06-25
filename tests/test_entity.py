@@ -228,14 +228,23 @@ def test_equality():
     assert e_1 != e_4
     e_5 = me.Entity("SpontaneousMagnetization", value=1000, unit=u.mA / u.m)
     assert e_1 == e_5
-    e_6 = me.Entity("SpontaneousMagnetization", value=[1, 1])
+    e_6 = me.Entity("SpontaneousMagnetization", value=[[1, 1]])
     assert e_1 != e_6
-    with pytest.raises(NotImplementedError):
-        assert e_1 == 1 * u.A / u.m
-    with pytest.raises(NotImplementedError):
-        assert e_1 == 1
-    with pytest.raises(NotImplementedError):
-        assert e_1 == e_2.quantity
+    e_7 = me.Entity("SpontaneousMagnetization", value=[[1], [1]])
+    assert e_6 != e_7
+
+    # Other objects
+    assert e_1 != 1 * u.A / u.m
+    assert e_1 != 1
+    assert e_1 != e_2.quantity
+
+    # Other objects can implement __eq__ in a way that is compatible with Entity
+
+    class A:
+        def __eq__(self, o):
+            return True
+
+    assert e_1 == A()
 
 
 @pytest.mark.parametrize(
