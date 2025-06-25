@@ -132,7 +132,6 @@ class Entity:
         | mammos_units.Quantity
         | mammos_entity.Entity = 0,
         unit: str | None | mammos_units.UnitBase = None,
-        **kwargs,
     ):
         if isinstance(value, Entity):
             value = value.quantity
@@ -166,7 +165,7 @@ class Entity:
 
         # Remove any set equivalency to enforce unit strictness
         with u.set_enabled_equivalencies(None):
-            self._quantity = u.Quantity(value=value, unit=comp_unit, **kwargs)
+            self._quantity = u.Quantity(value=value, unit=comp_unit)
         self._ontology_label = ontology_label
 
     @property
