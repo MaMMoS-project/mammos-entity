@@ -117,18 +117,18 @@ class Entity:
 
     Examples:
         >>> import mammos_entity as me
-        >>> m = me.Ms(800000, 'A/m')
-        >>> m
-        Entity(ontology_label='SpontaneousMagnetization', value=np.float64(800000.0), unit='A / m')
+        >>> import mammos_units as u
+        >>> Ms = me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
+        >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
+        >>> Tc_kK = me.Entity("CurieTemperature", 0.1, unit=u.kK)
+        >>> Tc_K = me.Entity("CurieTemperature", Tc_kK, unit=u.K)
 
     """  # noqa: E501
 
     def __init__(
         self,
         ontology_label: str,
-        value: float
-        | int
-        | numpy.typing.ArrayLike
+        value: numpy.typing.ArrayLike
         | mammos_units.Quantity
         | mammos_entity.Entity = 0,
         unit: str | None | mammos_units.UnitBase = None,
