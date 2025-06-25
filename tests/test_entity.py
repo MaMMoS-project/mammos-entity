@@ -225,6 +225,12 @@ def test_eq():
     assert e_1 == e_5
     e_6 = me.Entity("SpontaneousMagnetization", value=[1, 1])
     assert e_1 != e_6
+    with pytest.raises(NotImplementedError):
+        assert e_1 == 1 * u.A / u.m
+    with pytest.raises(NotImplementedError):
+        assert e_1 == 1
+    with pytest.raises(NotImplementedError):
+        assert e_1 == e_2.quantity
 
 
 # %% Check predefined entities
