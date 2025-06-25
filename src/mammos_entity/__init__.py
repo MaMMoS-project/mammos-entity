@@ -12,6 +12,8 @@ from mammos_entity._base import Entity
 from mammos_entity._entities import A, B, BHmax, H, Hc, J, Js, Ku, M, Mr, Ms, T, Tc
 from mammos_entity._onto import mammos_ontology
 
+from . import io
+
 __version__ = importlib.metadata.version(__package__)
 
 
@@ -31,4 +33,5 @@ __all__ = [
     "T",
     "Tc",
     "mammos_ontology",
+    "io",
 ]
