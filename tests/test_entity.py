@@ -224,6 +224,7 @@ def test_eq():
     e_6 = me.Entity("SpontaneousMagnetization", value=[1, 1])
     assert e_1 != e_6
 
+
 # %% Check predefined entities
 
 
