@@ -134,6 +134,12 @@ class Entity:
         unit: str | None | mammos_units.UnitBase = None,
     ):
         if isinstance(value, Entity):
+            if value.ontology_label != ontology_label:
+                raise ValueError(
+                    "Incompatible label for initialization."
+                    f" Trying to initialize a {ontology_label}"
+                    f" with a {value.ontology_label}."
+                )
             value = value.quantity
         if unit is None and isinstance(value, u.Quantity):
             unit = value.unit
