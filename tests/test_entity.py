@@ -1,7 +1,7 @@
 import mammos_units as u
 import numpy as np
 import pytest
-from numpy import array  # noqa: F401
+from numpy import array  # noqa: F401  # required for repr eval
 
 import mammos_entity as me
 from mammos_entity import Entity  # noqa: F401
