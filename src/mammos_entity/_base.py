@@ -249,6 +249,12 @@ class Entity:
         Returns:
             A string for labelling the axis corresponding to the entity on a plot.
 
+        Examples:
+            >>> import mammos_entity as me
+            >>> me.Entity("SpontaneousMagnetization").axis_label
+            "Spontaneous Magnetization (A / m)"
+            >>> me.Entity("DemagnetizingFactor").axis_label
+            "Demagnetizing Factor"
         """
         return re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}") + (
             f" ({self.unit})" if str(self.unit) else ""
