@@ -77,15 +77,17 @@ def test_init_quantity():
 
 
 def test_init_entity():
-    e_1 = me.Entity("ExternalMagneticField", value=1)
+    e_1 = me.Entity("ExternalMagneticField", value=1, unit="mA/m")
     e_2 = me.Entity("ExternalMagneticField", value=e_1)
     assert u.allclose(e_1.quantity, e_2.quantity)
     assert np.allclose(e_1.value, e_2.value)
     assert e_1.unit == e_2.unit
-    e_3 = me.Entity("ExternalMagneticField", value=e_1, unit="mA/m")
+    e_3 = me.Entity("ExternalMagneticField", value=e_1, unit="A/m")
     assert u.allclose(e_3.quantity, e_1.quantity)
-    assert np.allclose(e_3.value, 1e3)
-    assert e_3.unit == u.mA / u.m
+    assert np.allclose(e_3.value, 1e-3)
+    assert e_3.unit == u.A / u.m
+    with pytest.raises(ValueError):
+        me.Entity("CurieTemperature", value=e_1)
 
 
 def test_check_init_unit():
