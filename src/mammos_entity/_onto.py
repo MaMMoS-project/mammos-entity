@@ -7,7 +7,7 @@ with the mammos_entity.
 
 from pathlib import Path
 
-from ontopy import ontology, utils
+from ontopy import ontology
 
 HAVE_INTERNET = True
 
