@@ -115,15 +115,20 @@ def test_check_init_unit():
         me.Entity("SpontaneousMagnetization", value=1 * u.T, unit="A/m")
 
 
-# %% check attributes
+def test_repr():
+    """Test representation string.
 
+    Test 1: Test repr for scalar value.
+    Test 2: Test repr for vectorial value.
+    Test 3: Test repr for unitless Entity.
+    """
+    e = me.Entity("CurieTemperature")
+    assert (
+        e.__repr__()
+        == "Entity(ontology_label='CurieTemperature', value=np.float64(0.0), unit='K')"
+    )
+    assert eval(repr(e)) == e
 
-
-
-# %% Check repr, str
-
-
-def test_repr_H():
     a = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     e = me.Entity("ExternalMagneticField", value=a)
     assert e.__repr__() == (
@@ -132,17 +137,6 @@ def test_repr_H():
     )
     assert eval(repr(e)) == e
 
-
-def test_repr_Tc():
-    e = me.Entity("CurieTemperature")
-    assert (
-        e.__repr__()
-        == "Entity(ontology_label='CurieTemperature', value=np.float64(0.0), unit='K')"
-    )
-    assert eval(repr(e)) == e
-
-
-def test_repr_unitless():
     e = me.Entity("DemagnetizingFactor")
     assert (
         e.__repr__()
