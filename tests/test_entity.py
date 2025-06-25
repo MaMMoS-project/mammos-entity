@@ -145,33 +145,19 @@ def test_repr():
     assert eval(repr(e)) == e
 
 
-def test_axis_label_H():
-    e = me.Entity("ExternalMagneticField")
-    assert e.axis_label == "External Magnetic Field (A / m)"
-
-
-def test_axis_label_Ms():
-    e = me.Entity("SpontaneousMagnetization")
-    assert e.axis_label == "Spontaneous Magnetization (A / m)"
-
-
-def test_axis_label_Tc():
-    e = me.Entity("CurieTemperature")
-    assert e.axis_label == "Curie Temperature (K)"
-
-
-def test_axis_label_unitless():
-    e = me.Entity("DemagnetizingFactor")
-    assert e.axis_label == "Demagnetizing Factor"
-
-
-@pytest.mark.skip(reason="Angle is unitless at the moment.")
-def test_axis_label_angle():
-    e = me.Entity("Angle")
-    assert e.axis_label == "Angle (rad)"
-
-
-# %% Check labels
+def test_axis_labels():
+    """Test different axis_label examples."""
+    e_1 = me.Entity("ExternalMagneticField")
+    assert hasattr(e_1, "axis_label")
+    assert e_1.axis_label == "External Magnetic Field (A / m)"
+    e_2 = me.Entity("AffinityOfAChemicalReaction")
+    assert e_2.axis_label == "Affinity Of A Chemical Reaction (J / mol)"
+    e_3 = me.Entity("DemagnetizingFactor")
+    assert e_3.axis_label == "Demagnetizing Factor"
+    e_4 = me.Entity("Entropy")
+    assert e_4.axis_label == "Entropy (J / K)"
+    # e_5 = me.Entity("PlanckConstant")
+    # assert e_5.axis_label == "Planck Constant (m2 kg / s)"
 
 
 @pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
