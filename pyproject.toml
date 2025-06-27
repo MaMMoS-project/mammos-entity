@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mammos-entity"
-version = "0.7.0"
+version = "0.8.0"
 description = "Python package to specify material parameters for MaMMoS simulation suite."
 readme = "README.md"
 authors = [
