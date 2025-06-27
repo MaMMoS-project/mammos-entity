@@ -12,10 +12,10 @@ authors = [
   { name = "Andrea Petrocchi" },
   { name = "Sam Holt" },
   { name = "Martin Lang" },
-  { name = "Hans Fangohr" },
   { name = "Wilfried Hortschitz" },
   { name = "Santa Pile" },
   { name = "Martin Dobiasch" },
+  { name = "Hans Fangohr" },
 ]
 license = "MIT"
 license-files = ["LICENSE"]
