@@ -8,11 +8,13 @@ includes helper functions for inferring the correct SI units from the ontology.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated, Generic
 
 import mammos_units as u
 
 from mammos_entity._onto import mammos_ontology
+
+from .typing import _LabelT
 
 if TYPE_CHECKING:
     import astropy.units
@@ -103,7 +105,7 @@ def extract_SI_units(ontology_label: str) -> str | None:
     return si_unit
 
 
-class Entity:
+class Entity(Generic[_LabelT]):
     """Create a quantity (a value and a unit) linked to the EMMO ontology.
 
     Represents a physical property or quantity that is linked to an ontology
@@ -123,6 +125,15 @@ class Entity:
         >>> Tc_K = me.Entity("CurieTemperature", Tc_kK, unit=u.K)
 
     """  # noqa: E501
+
+    def __class_getitem__(cls, label: str):
+        if not isinstance(label, str):
+            return Entity
+        else:
+            return Annotated[
+                Entity,
+                ("EntityLabel", label),  # run-time metadata
+            ]
 
     def __init__(
         self,
