@@ -75,7 +75,7 @@ def extract_SI_units(ontology_label: str) -> str | None:
 
     Given a label for an ontology concept, retrieve the corresponding SI unit
     by traversing the class hierarchy. If a valid unit is found, its UCUM code
-    is returned; otherwise, None is returned.
+    is returned; otherwise, an empty string is returned (equivalent to dimensionless).
 
     Args:
         ontology_label: The label of an ontology concept
@@ -87,7 +87,7 @@ def extract_SI_units(ontology_label: str) -> str | None:
 
     """
     thing = mammos_ontology.get_by_label(ontology_label)
-    si_unit = None
+    si_unit = ""
     for ancestor in thing.ancestors():
         if hasattr(ancestor, "hasMeasurementUnit") and ancestor.hasMeasurementUnit:
             if sub_class := list(ancestor.hasMeasurementUnit[0].subclasses()):
@@ -99,7 +99,7 @@ def extract_SI_units(ontology_label: str) -> str | None:
     if si_unit in {"Cel", "mCel"}:
         si_unit = "K"
     elif si_unit == "Cel.K-1":
-        si_unit = None
+        si_unit = ""
     return si_unit
 
 
