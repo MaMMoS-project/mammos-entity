@@ -103,6 +103,23 @@ def test_init_entity():
         me.Entity("CurieTemperature", value=e_1)
 
 
+def test_unitless():
+    """Test unitless Entity."""
+    e_1 = me.Entity("DemagnetizingFactor", 0.3)
+    assert e_1.ontology_label == "DemagnetizingFactor"
+    assert e_1.value == 0.3
+    assert e_1.unit.is_equivalent("")
+    e_2 = me.Entity("DemagnetizingFactor", [1, 2])
+    assert np.allclose(e_2.value, [1, 2])
+    assert e_2.unit.is_equivalent("")
+    e_3 = me.Entity("DemagnetizingFactor", u.Quantity(0.3))
+    assert e_3.value == 0.3
+    assert e_3.unit.is_equivalent("")
+    e_4 = me.Entity("DemagnetizingFactor", e_3)
+    assert e_4.value == 0.3
+    assert e_4.unit.is_equivalent("")
+
+
 def test_check_units():
     """Test units of Entity.
 
