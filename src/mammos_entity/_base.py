@@ -146,9 +146,9 @@ class Entity(Generic[_LabelT]):
         if isinstance(value, Entity):
             if value.ontology_label != ontology_label:
                 raise ValueError(
-                    "Incompatible label for initialization."
-                    f" Trying to initialize a {ontology_label}"
-                    f" with a {value.ontology_label}."
+                    "Incompatible entity for initialization."
+                    f" Trying to initialize '{ontology_label}'"
+                    f" from '{value.ontology_label}'."
                 )
             value = value.quantity
 
