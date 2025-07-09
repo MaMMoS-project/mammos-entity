@@ -158,7 +158,7 @@ class Entity:
             with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
                 comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
             unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
-        elif (si_unit is None) and (unit is not None):
+        elif (si_unit is None) and unit:
             raise TypeError(
                 f"{ontology_label} is a unitless entity."
                 f" Hence, {unit} is inappropriate."
