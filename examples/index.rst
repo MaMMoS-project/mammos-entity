@@ -7,3 +7,4 @@ mammos-entity
    :maxdepth: 1
 
    quickstart
+   io
