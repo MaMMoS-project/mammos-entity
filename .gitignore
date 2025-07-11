@@ -9,3 +9,4 @@ dist
 
 .ipynb_checkpoints
 examples/example.csv
+examples/example.dat
