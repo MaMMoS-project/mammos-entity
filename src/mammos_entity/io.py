@@ -1,40 +1,51 @@
-"""Support for reading and writing Entity files.
+r"""Support for reading and writing Entity files.
 
 Currently only a single file format is supported: a CSV file with additional
 commented metadata lines. Comments start with #.
 
-- The first line is commented and contains the preferred ontology label.
-- The second line is commented and contains the ontology IRI.
-- The third line is commented and contains units.
-- The fourth line contains the short labels used to refer to individual columns when
+- The first line is commented and contains the file version in the form::
+
+     mammos csv v<VERSION>
+
+  The reading code checks the version number (using regex v\d+) to ensure compatibility.
+- The second line is commented and contains the preferred ontology label.
+- The third line is commented and contains the ontology IRI.
+- The fourth line is commented and contains units.
+- The fifth line contains the short labels used to refer to individual columns when
   working with the data, e.g. in a :py:class:`pandas.DataFrame`. Omitting spaces in this
   string is advisable.
 
   Ideally this string is the short ontology label.
-- All remaining rows contain data
+- All remaining lines contain data
 
-If a column has no ontology entry rows 1 and 2 are empty for this column.
+Elements in a line are separated by a comma without any surrounding whitespace. A
+trailing comma is not permitted.
 
-If a column has no units (with or without ontology entry) row 3 has no entry for this
+If a column has no ontology entry lines 1 and 2 are empty for this column.
+
+If a column has no units (with or without ontology entry) line 3 has no entry for this
 column.
 
-Here is an example with four columns, an index with no units or ontology label,
-spontaneous magnetization from the ontology, a made-up quantity alpha with a unit but no
-ontology, and demagnetizing factor with an ontology entry but no unit. To keep this
-example short the actual IRIs are omitted::
+Here is an example with five columns, an index with no units or ontology label, the
+entity spontaneous magnetization with an entry in the ontology, a made-up quantity alpha
+with a unit but no ontology label, demagnetizing factor with an ontology entry but no
+unit, and a column `description` containing a string description without units or
+ontology label. To keep this example short the actual IRIs are omitted::
 
-   #,SpontaneousMagnetization,,DemagnetizingFactor
-   #,https://w3id.org/emm/...,,https://w3id.org/emmo/...
-   #,kA/m,s^2,
-   index,Ms,alpha,DemagnetizingFactor
-   0,1e5,1.2,1
-   1,1e5,3.4,0.5
-   2,1e5,5.6,0.5
+   #mammos csv v1
+   #,SpontaneousMagnetization,,DemagnetizingFactor,description
+   #,https://w3id.org/emm/...,,https://w3id.org/emmo/...,
+   #,kA/m,s^2,,
+   index,Ms,alpha,DemagnetizingFactor,
+   0,1e2,1.2,1,Description of the first data row
+   1,1e2,3.4,0.5,Description of the second data row
+   2,1e2,5.6,0.5,Description of the third data row
 
 """
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -95,6 +106,7 @@ def entities_to_csv(
         pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
     )
     with open(filename, "w") as f:
+        f.write("#mammos csv v1\n")
         f.write("#" + ",".join(ontology_labels) + "\n")
         f.write("#" + ",".join(ontology_iris) + "\n")
         f.write("#" + ",".join(units) + "\n")
@@ -104,15 +116,36 @@ def entities_to_csv(
 class EntityCollection:
     """Container class storing entity-like objects."""
 
+    def __init__(self, **kwargs):
+        """Initialize EntityCollection, keywords become attributes of the class."""
+        for key, val in kwargs.items():
+            setattr(self, key, val)
+
     def __repr__(self):
-        """Show content of container."""
+        """Show container elements."""
         args = "\n".join(f"    {key}={val!r}," for key, val in self.__dict__.items())
         return f"{self.__class__.__name__}(\n{args}\n)"
 
-    def to_dataframe(self):
+    def to_dataframe(self, include_units: bool = True):
         """Convert values to dataframe."""
+
+        def unit(key: str) -> str:
+            """Get unit for element key.
+
+            Returns:
+                A string " (unit)" if the element has a unit, otherwise an empty string.
+            """
+            unit = getattr(getattr(self, key), "unit", None)
+            if unit and str(unit):
+                return f" ({unit!s})"
+            else:
+                return ""
+
         return pd.DataFrame(
-            {key: getattr(val, "value", val) for key, val in self.__dict__.items()}
+            {
+                f"{key}{unit(key) if include_units else ''}": getattr(val, "value", val)
+                for key, val in self.__dict__.items()
+            }
         )
 
 
@@ -123,6 +156,14 @@ def entities_from_csv(filename: str | Path) -> EntityCollection:
     access to the individual columns.
     """
     with open(filename) as f:
+        file_version_information = f.readline()
+        version = re.search(r"v\d+", file_version_information)
+        if not version:
+            raise RuntimeError("File does not have version information in line 1.")
+        if version.group() != "v1":
+            raise RuntimeError(
+                f"Reading mammos csv {version.group()} is not supported."
+            )
         ontology_labels = f.readline().removeprefix("#").removesuffix("\n").split(",")
         _ontology_iris = f.readline().removeprefix("#").removesuffix("\n").split(",")
         units = f.readline().removeprefix("#").removesuffix("\n").split(",")

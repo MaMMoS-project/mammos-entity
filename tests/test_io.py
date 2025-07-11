@@ -1,5 +1,8 @@
+import textwrap
+
 import mammos_units as u
 import numpy as np
+import pandas as pd
 import pytest
 
 import mammos_entity as me
@@ -71,3 +74,37 @@ def test_read_write_csv(tmp_path):
     assert all(read_csv.angle == theta_angle)
     assert read_csv.n == demag_factor
     assert all(read_csv.comment == comments)
+
+    df_with_units = read_csv.to_dataframe()
+    assert list(df_with_units.columns) == [
+        "Ms (A / m)",
+        "T (K)",
+        "angle (rad)",
+        "n",
+        "comment",
+    ]
+
+    df_without_units = read_csv.to_dataframe(include_units=False)
+    assert list(df_without_units.columns) == ["Ms", "T", "angle", "n", "comment"]
+
+    df = pd.read_csv(tmp_path / "example.csv", comment="#")
+
+    assert all(df == df_without_units)
+
+
+def test_wrong_file_version(tmp_path):
+    file_content = textwrap.dedent(
+        """
+        #mammos csv v0
+        #
+        #
+        #
+        index
+        1
+        2
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+
+    with pytest.raises(RuntimeError):
+        me.io.entities_from_csv(tmp_path / "data.csv")
