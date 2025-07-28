@@ -1,17 +1,20 @@
 r"""Support for reading and writing Entity files.
 
 Currently only a single file format is supported: a CSV file with additional
-commented metadata lines. Comments start with #.
+commented metadata lines. Comment lines start with #, inline comments are not allowed.
 
-- The first line is commented and contains the file version in the form::
+The lines are, in order:
+- (Commented) the file version in the form::
 
      mammos csv v<VERSION>
 
   The reading code checks the version number (using regex v\d+) to ensure compatibility.
-- The second line is commented and contains the preferred ontology label.
-- The third line is commented and contains the ontology IRI.
-- The fourth line is commented and contains units.
-- The fifth line contains the short labels used to refer to individual columns when
+- (Commented, optional) a description of the file if given. It will appear
+  delimited by dashed lines.
+- (Commented) the preferred ontology label.
+- (Commented) the ontology IRI.
+- (Commented) units.
+- The short labels used to refer to individual columns when
   working with the data, e.g. in a :py:class:`pandas.DataFrame`. Omitting spaces in this
   string is advisable.
 
@@ -21,18 +24,21 @@ commented metadata lines. Comments start with #.
 Elements in a line are separated by a comma without any surrounding whitespace. A
 trailing comma is not permitted.
 
-If a column has no ontology entry lines 1 and 2 are empty for this column.
+In columns without ontology the lines containing labels and IRIs are empty.
 
-If a column has no units (with or without ontology entry) line 3 has no entry for this
-column.
+Similarly, columns without units (with or without ontology entry) have empty units line.
 
-Here is an example with five columns, an index with no units or ontology label, the
-entity spontaneous magnetization with an entry in the ontology, a made-up quantity alpha
-with a unit but no ontology label, demagnetizing factor with an ontology entry but no
-unit, and a column `description` containing a string description without units or
-ontology label. To keep this example short the actual IRIs are omitted::
+Here is an example with five columns, a description reading "Test data", an index with
+no units or ontology label, the entity spontaneous magnetization with an entry in the
+ontology, a made-up quantity alpha with a unit but no ontology label, demagnetizing
+factor with an ontology entry but no unit, and a column `description` containing a
+string description without units or ontology label. To keep this example short the
+actual IRIs are omitted::
 
-   #mammos csv v1
+   #mammos csv v2
+   #----------------------------------------------
+   # Test data
+   #----------------------------------------------
    #,SpontaneousMagnetization,,DemagnetizingFactor,description
    #,https://w3id.org/emm/...,,https://w3id.org/emmo/...,
    #,kA/m,s^2,,
@@ -62,7 +68,9 @@ if TYPE_CHECKING:
 
 
 def entities_to_csv(
-    filename: str | Path,
+    _filename: str | Path,
+    _description: str | None = None,
+    /,
     **entities: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     """Write tabular data to csv file.
@@ -73,6 +81,16 @@ def entities_to_csv(
     :py:class:`mammos_entity.Entity` ontology label, IRI and unit are added to the
     header, if an element is of type :py:class:`mammos_units.Quantity` its unit is added
     to the header, otherwise all headers are empty.
+
+    The arguments `_filename` and `_description` are named in such a way that an user
+    could define entities named `filename` and `description`. They are furthermore
+    defined as positional arguments.
+
+    Args:
+        _filename: Name or path of file where to store data.
+        _description: Optional description of data. If given, it wil appear
+            commented in the metadata lines.
+        **entities: Data to be saved on file.
 
     """
     if not entities:
@@ -105,8 +123,13 @@ def entities_to_csv(
     dataframe = (
         pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
     )
-    with open(filename, "w") as f:
-        f.write("#mammos csv v1\n")
+    with open(_filename, "w") as f:
+        f.write("#mammos csv v2\n")
+        if _description:
+            f.write("#" + "-" * 40 + "\n")
+            for d in _description.split("\n"):
+                f.write(f"# {d}\n")
+            f.write("#" + "-" * 40 + "\n")
         f.write("#" + ",".join(ontology_labels) + "\n")
         f.write("#" + ",".join(ontology_iris) + "\n")
         f.write("#" + ",".join(units) + "\n")
@@ -160,11 +183,17 @@ def entities_from_csv(filename: str | Path) -> EntityCollection:
         version = re.search(r"v\d+", file_version_information)
         if not version:
             raise RuntimeError("File does not have version information in line 1.")
-        if version.group() != "v1":
+        if version.group() not in ["v1", "v2"]:
             raise RuntimeError(
                 f"Reading mammos csv {version.group()} is not supported."
             )
-        ontology_labels = f.readline().removeprefix("#").removesuffix("\n").split(",")
+        next_line = f.readline()
+        if "#--" in next_line:
+            while True:
+                if "#--" in f.readline():
+                    break
+            next_line = f.readline()
+        ontology_labels = next_line.removeprefix("#").removesuffix("\n").split(",")
         _ontology_iris = f.readline().removeprefix("#").removesuffix("\n").split(",")
         units = f.readline().removeprefix("#").removesuffix("\n").split(",")
         names = f.readline().removeprefix("#").removesuffix("\n").split(",")
