@@ -67,20 +67,21 @@ if TYPE_CHECKING:
     import mammos_entity
 
 
-def entities_to_csv(
+def entities_to_file(
     _filename: str | Path,
     _description: str | None = None,
     /,
     **entities: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
-    """Write tabular data to csv file.
+    """Write entity data to file.
+
+    Supported file formats:
+
+    - csv
+
+    The file format is inferred from the filename suffix.
 
     The file structure is explained in the module-level documentation.
-
-    Column names are keys of the dictionary. If an element is of type
-    :py:class:`mammos_entity.Entity` ontology label, IRI and unit are added to the
-    header, if an element is of type :py:class:`mammos_units.Quantity` its unit is added
-    to the header, otherwise all headers are empty.
 
     The arguments `_filename` and `_description` are named in such a way that an user
     could define entities named `filename` and `description`. They are furthermore
@@ -90,11 +91,32 @@ def entities_to_csv(
         _filename: Name or path of file where to store data.
         _description: Optional description of data. If given, it wil appear
             commented in the metadata lines.
-        **entities: Data to be saved on file.
+        **entities: Data to be saved to file.
 
     """
     if not entities:
         raise RuntimeError("No data to write.")
+    _entities_to_csv(_filename, _description, **entities)
+
+
+def entities_to_csv(
+    _filename: str | Path,
+    _description: str | None = None,
+    /,
+    **entities: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+) -> None:
+    """Write tabular data to csv file."""
+    if not entities:
+        raise RuntimeError("No data to write.")
+    _entities_to_csv(_filename, _description, **entities)
+
+
+def _entities_to_csv(
+    _filename: str | Path,
+    _description: str | None = None,
+    /,
+    **entities: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+) -> None:
     ontology_labels = []
     ontology_iris = []
     units = []
@@ -172,12 +194,21 @@ class EntityCollection:
         )
 
 
-def entities_from_csv(filename: str | Path) -> EntityCollection:
-    """Read CSV file with ontology metadata.
+def entities_from_file(filename: str | Path) -> EntityCollection:
+    """Read files with ontology metadata.
 
     Reads a file as defined in the module description. The returned container provides
     access to the individual columns.
     """
+    return _entities_from_csv(filename)
+
+
+def entities_from_csv(filename: str | Path) -> EntityCollection:
+    """Read CSV file with ontology metadata."""
+    return _entities_from_csv(filename)
+
+
+def _entities_from_csv(filename: str | Path) -> EntityCollection:
     with open(filename) as f:
         file_version_information = f.readline()
         version = re.search(r"v\d+", file_version_information)
