@@ -1,6 +1,6 @@
 r"""Support for reading and writing Entity files.
 
-:py:mod:`mammos_entity.io` can write and read data in CSV format.
+:py:mod:`mammos_entity.io` can write and read data in CSV and YAML format.
 
 CSV
 ===
@@ -48,23 +48,139 @@ Example:
 
     The file has a description reading "Test data".
 
-    To keep this example short the actual IRIs are omitted.
+    >>> from pathlib import Path
+    >>> import mammos_entity as me
+    >>> import mammos_units as u
+    >>> me.io.entities_to_file(
+    ...     "example.csv",
+    ...     "Test data",
+    ...     index=[0, 1, 2],
+    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m"),
+    ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
+    ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
+    ...     description=[
+    ...         "Description of the first data row",
+    ...         "Description of the second data row",
+    ...         "Description of the third data row",
+    ...     ],
+    ... )
 
-    .. code-block:: text
+    The new file has the following content:
 
-      #mammos csv v2
-      #----------------------------------------------
-      # Test data
-      #----------------------------------------------
-      #,SpontaneousMagnetization,,DemagnetizingFactor,description
-      #,https://w3id.org/emm/...,,https://w3id.org/emmo/...,
-      #,kA/m,s^2,,
-      index,Ms,alpha,DemagnetizingFactor,
-      0,1e2,1.2,1,Description of the first data row
-      1,1e2,3.4,0.5,Description of the second data row
-      2,1e2,5.6,0.5,Description of the third data row
+    >>> print(Path("example.csv").read_text())
+    #mammos csv v2
+    #----------------------------------------
+    # Test data
+    #----------------------------------------
+    #,SpontaneousMagnetization,,DemagnetizingFactor,
+    #,https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+    #,kA / m,s2,,
+    index,Ms,alpha,DemagnetizingFactor,description
+    0,100.0,1.2,1.0,Description of the first data row
+    1,100.0,3.4,0.5,Description of the second data row
+    2,100.0,5.6,0.5,Description of the third data row
+    <BLANKLINE>
 
-"""
+    Finally, remove the file.
+
+    >>> Path("example.csv").unlink()
+
+YAML
+====
+
+YAML files written by :py:mod:`mammos_entity.io` have the following format:
+
+- They have two top-level keys ``metadata`` and ``data``.
+- ``metadata`` contains keys
+
+  - ``version``: a string that matches the regex v\\d+
+  - ``description``: a (multi-line) string with arbitrary content
+
+- ``data`` contains on key per object saved in the file. Each object has the keys:
+
+  - ``ontology_label``: label in the ontology, ``null`` if the element is no Entity.
+  - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity.
+  - ``unit``: unit of the entity or quantity, ``null`` if the element has no unit, empty
+    string for dimensionless quantities and entities.
+  - ``value``: value of the data.
+
+
+Example:
+    Here is an example with six entries:
+
+    - an index with no units or ontology label
+    - the entity spontaneous magnetization with an entry in the ontology
+    - a made-up quantity alpha with a unit but no ontology label
+    - demagnetizing factor with an ontology entry but no unit
+    - a column `description` containing a string description without units or ontology
+      label
+    - an element Tc with only a single value
+
+    The file has a description reading "Test data".
+
+    >>> from pathlib import Path
+    >>> import mammos_entity as me
+    >>> import mammos_units as u
+    >>> me.io.entities_to_file(
+    ...     "example.yaml",
+    ...     "Test data",
+    ...     index=[0, 1, 2],
+    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m"),
+    ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
+    ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
+    ...     description=[
+    ...         "Description of the first data row",
+    ...         "Description of the second data row",
+    ...         "Description of the third data row",
+    ...     ],
+    ...     Tc=me.Tc(300, "K"),
+    ... )
+
+    The new file has the following content:
+
+    >>> print(Path("example.yaml").read_text())
+    metadata:
+      version: v1
+      description: Test data
+    data:
+      index:
+        ontology_label: null
+        ontology_iri: null
+        unit: null
+        value: [0, 1, 2]
+      Ms:
+        ontology_label: SpontaneousMagnetization
+        ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+        unit: kA / m
+        value: [100.0, 100.0, 100.0]
+      alpha:
+        ontology_label: null
+        ontology_iri: null
+        unit: s2
+        value: [1.2, 3.4, 5.6]
+      DemagnetizingFactor:
+        ontology_label: DemagnetizingFactor
+        ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+        unit: ''
+        value: [1.0, 0.5, 0.5]
+      description:
+        ontology_label: null
+        ontology_iri: null
+        unit: null
+        value: [Description of the first data row, Description of the second data row,
+          Description of the third data row]
+      Tc:
+        ontology_label: CurieTemperature
+        ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+        unit: K
+        value: 300.0
+    <BLANKLINE>
+
+    Finally, remove the file.
+
+    >>> Path("example.yaml").unlink()
+
+"""  # noqa: E501
 
 from __future__ import annotations
 
@@ -75,12 +191,16 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import mammos_units as u
+import numpy as np
 import pandas as pd
+import yaml
 
 import mammos_entity as me
 
 if TYPE_CHECKING:
-    import mammos_units
+    from collections.abc import Iterator
+
+    import astropy.units
     import numpy.typing
 
     import mammos_entity
@@ -90,41 +210,53 @@ def entities_to_file(
     _filename: str | Path,
     _description: str | None = None,
     /,
-    **entities: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+    **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     """Write entity data to file.
 
     Supported file formats:
 
-    - csv
+    - CSV
+    - YAML
 
-    The file format is inferred from the filename suffix.
+    The file format is inferred from the filename suffix:
+
+    - ``.csv`` is written as CSV
+    - ``.yaml`` and ``.yml`` are written as YAML
 
     The file structure is explained in the module-level documentation.
 
     The arguments `_filename` and `_description` are named in such a way that an user
     could define entities named `filename` and `description`. They are furthermore
-    defined as positional arguments.
+    defined as positional only arguments.
 
     Args:
         _filename: Name or path of file where to store data.
-        _description: Optional description of data. If given, it wil appear
-            commented in the metadata lines.
-        **entities: Data to be saved to file.
+        _description: Optional description of data. If given, it will appear in the
+            metadata part of the file.
+        **entities: Data to be saved to file. For CSV all entity like objects need to
+            have the same length and shape 0 or 1, YAML supports different lengths and
+            arbitrary shape.
 
     """
     if not entities:
         raise RuntimeError("No data to write.")
-    _entities_to_csv(_filename, _description, **entities)
+    match Path(_filename).suffix:
+        case ".csv":
+            _entities_to_csv(_filename, _description, **entities)
+        case ".yml" | ".yaml":
+            _entities_to_yaml(_filename, _description, **entities)
+        case unknown_suffix:
+            raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
 
 def entities_to_csv(
     _filename: str | Path,
     _description: str | None = None,
     /,
-    **entities: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+    **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
-    """Write tabular data to csv file."""
+    """Deprecated: write tabular data to csv file, use entities_to_file."""
     if not entities:
         raise RuntimeError("No data to write.")
     warnings.warn(
@@ -139,7 +271,7 @@ def _entities_to_csv(
     _filename: str | Path,
     _description: str | None = None,
     /,
-    **entities: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+    **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     ontology_labels = []
     ontology_iris = []
@@ -186,6 +318,102 @@ def _entities_to_csv(
         dataframe.to_csv(f, index=False)
 
 
+def _entities_to_yaml(
+    _filename: str | Path,
+    _description: str | None = None,
+    /,
+    **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
+) -> None:
+    def _preprocess_entity_args(entities: dict[str, str]) -> Iterator[tuple]:
+        """Extract name, label, iri, unit and value for each item."""
+        for name, element in entities.items():
+            if isinstance(element, me.Entity):
+                label = element.ontology_label
+                iri = element.ontology.iri
+                unit = str(element.unit)
+                value = element.value.tolist()
+            elif isinstance(element, u.Quantity):
+                label = None
+                iri = None
+                unit = str(element.unit)
+                value = element.value.tolist()
+            else:
+                label = None
+                iri = None
+                unit = None
+                value = np.asanyarray(element).tolist()
+            yield name, label, iri, unit, value
+
+    entity_dict = {
+        "metadata": {
+            "version": "v1",
+            "description": _description,
+        },
+        "data": {
+            name: {
+                "ontology_label": label,
+                "ontology_iri": iri,
+                "unit": unit,
+                "value": value,
+            }
+            for name, label, iri, unit, value in _preprocess_entity_args(entities)
+        },
+    }
+
+    # custom dumper to change style of lists, tuples and multi-line strings
+    class _Dumper(yaml.SafeDumper):
+        pass
+
+    def _represent_sequence(dumper, value):
+        """Display sequence with flow style.
+
+        A list [1, 2, 3] for key `value` is written to file as::
+
+          value: [1, 2, 3]
+
+        instead of::
+
+          value:
+            - 1
+            - 2
+            - 3
+
+        """
+        return dumper.represent_sequence(
+            "tag:yaml.org,2002:seq", value, flow_style=True
+        )
+
+    def _represent_string(dumper, value):
+        """Control style of single-line and multi-line strings.
+
+        Single-line strings are written as::
+
+          some_key: Hello
+
+        Multi-line strings are written as::
+
+          some_key: |-
+            I am multi-line,
+            without a trailing new line.
+
+        """
+        style = "|" if "\n" in value else ""
+        return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
+
+    _Dumper.add_representer(list, _represent_sequence)
+    _Dumper.add_representer(tuple, _represent_sequence)
+    _Dumper.add_representer(str, _represent_string)
+
+    with open(_filename, "w") as f:
+        yaml.dump(
+            entity_dict,
+            stream=f,
+            Dumper=_Dumper,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+
+
 class EntityCollection:
     """Container class storing entity-like objects."""
 
@@ -226,13 +454,26 @@ def entities_from_file(filename: str | Path) -> EntityCollection:
     """Read files with ontology metadata.
 
     Reads a file as defined in the module description. The returned container provides
-    access to the individual columns.
+    access to the individual entities.
+
+    Args:
+        filename: Name or path of file to read. The file extension is used to determine
+            the file type.
+
+    Returns:
+        A container object providing access all entities from the file.
     """
-    return _entities_from_csv(filename)
+    match Path(filename).suffix:
+        case ".csv":
+            return _entities_from_csv(filename)
+        case ".yml" | ".yaml":
+            return _entities_from_yaml(filename)
+        case unknown_suffix:
+            raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
 
 def entities_from_csv(filename: str | Path) -> EntityCollection:
-    """Read CSV file with ontology metadata."""
+    """Deprecated: read CSV file with ontology metadata, use entities_from_file."""
     warnings.warn(
         "Use `entities_from_file`, the file type is inferred from the file extension.",
         DeprecationWarning,
@@ -278,3 +519,43 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             setattr(result, name, data_values)
 
     return result
+
+
+def _entities_from_yaml(filename: str | Path) -> EntityCollection:
+    with open(filename) as f:
+        file_content = yaml.safe_load(f)
+
+    if list(file_content.keys()) != ["metadata", "data"]:
+        raise RuntimeError(
+            "YAML files must have exactly two top-level keys, 'metadata' and 'data'."
+        )
+
+    if "version" not in file_content["metadata"]:
+        raise RuntimeError("File does not have a key metadata:version.")
+
+    if (version := file_content["metadata"]["version"]) != "v1":
+        raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
+
+    result = EntityCollection()
+
+    for key, item in file_content["data"].items():
+        if item["ontology_label"] is not None:
+            setattr(
+                result,
+                key,
+                me.Entity(
+                    ontology_label=item["ontology_label"],
+                    value=item["value"],
+                    unit=item["unit"],
+                ),
+            )
+        elif item["unit"] is not None:
+            setattr(result, key, u.Quantity(item["value"], item["unit"]))
+        else:
+            setattr(result, key, item["value"])
+
+    return result
+
+
+# hide deprecated functions in documentation
+__all__ = ["entities_to_file", "entities_from_file", "EntityCollection"]
