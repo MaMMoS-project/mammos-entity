@@ -1,25 +1,30 @@
 r"""Support for reading and writing Entity files.
 
-Currently only a single file format is supported: a CSV file with additional
-commented metadata lines. Comment lines start with #, inline comments are not allowed.
+:py:mod:`mammos_entity.io` can write and read data in CSV format.
+
+CSV
+===
+
+CSV files written by :py:mod:`mammos_entity.io` contain data in normal CSV format and
+additional commented metadata lines at the top of the file. Comment lines start with
+``#``, inline comments are not allowed.
 
 The lines are, in order:
-- (Commented) the file version in the form::
 
-     mammos csv v<VERSION>
-
-  The reading code checks the version number (using regex v\d+) to ensure compatibility.
-- (Commented, optional) a description of the file if given. It will appear
-  delimited by dashed lines.
+- (Commented) the file version in the form ``mammos csv v<VERSION>``
+  The reading code checks the version number (using regex v\\d+) to ensure
+  compatibility.
+- (Commented, optional) a description of the file if given. It will appear delimited by
+  dashed lines. It is meant to be human readable and is ignored by reading routines
+  in :py:mod:`mammos_entity.io`.
 - (Commented) the preferred ontology label.
 - (Commented) the ontology IRI.
 - (Commented) units.
 - The short labels used to refer to individual columns when
   working with the data, e.g. in a :py:class:`pandas.DataFrame`. Omitting spaces in this
   string is advisable.
-
   Ideally this string is the short ontology label.
-- All remaining lines contain data
+- All remaining lines contain data.
 
 Elements in a line are separated by a comma without any surrounding whitespace. A
 trailing comma is not permitted.
@@ -28,24 +33,36 @@ In columns without ontology the lines containing labels and IRIs are empty.
 
 Similarly, columns without units (with or without ontology entry) have empty units line.
 
-Here is an example with five columns, a description reading "Test data", an index with
-no units or ontology label, the entity spontaneous magnetization with an entry in the
-ontology, a made-up quantity alpha with a unit but no ontology label, demagnetizing
-factor with an ontology entry but no unit, and a column `description` containing a
-string description without units or ontology label. To keep this example short the
-actual IRIs are omitted::
+.. versionadded:: v2
+   The optional description of the file.
 
-   #mammos csv v2
-   #----------------------------------------------
-   # Test data
-   #----------------------------------------------
-   #,SpontaneousMagnetization,,DemagnetizingFactor,description
-   #,https://w3id.org/emm/...,,https://w3id.org/emmo/...,
-   #,kA/m,s^2,,
-   index,Ms,alpha,DemagnetizingFactor,
-   0,1e2,1.2,1,Description of the first data row
-   1,1e2,3.4,0.5,Description of the second data row
-   2,1e2,5.6,0.5,Description of the third data row
+Example:
+    Here is an example with five columns:
+
+    - an index with no units or ontology label
+    - the entity spontaneous magnetization with an entry in the ontology
+    - a made-up quantity alpha with a unit but no ontology label
+    - demagnetizing factor with an ontology entry but no unit
+    - a column `description` containing a string description without units or ontology
+      label
+
+    The file has a description reading "Test data".
+
+    To keep this example short the actual IRIs are omitted.
+
+    .. code-block:: text
+
+      #mammos csv v2
+      #----------------------------------------------
+      # Test data
+      #----------------------------------------------
+      #,SpontaneousMagnetization,,DemagnetizingFactor,description
+      #,https://w3id.org/emm/...,,https://w3id.org/emmo/...,
+      #,kA/m,s^2,,
+      index,Ms,alpha,DemagnetizingFactor,
+      0,1e2,1.2,1,Description of the first data row
+      1,1e2,3.4,0.5,Description of the second data row
+      2,1e2,5.6,0.5,Description of the third data row
 
 """
 
