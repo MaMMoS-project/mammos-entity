@@ -52,6 +52,7 @@ actual IRIs are omitted::
 from __future__ import annotations
 
 import re
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -108,6 +109,11 @@ def entities_to_csv(
     """Write tabular data to csv file."""
     if not entities:
         raise RuntimeError("No data to write.")
+    warnings.warn(
+        "Use `entities_to_file`, the file type is inferred from the file extension.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     _entities_to_csv(_filename, _description, **entities)
 
 
@@ -205,6 +211,11 @@ def entities_from_file(filename: str | Path) -> EntityCollection:
 
 def entities_from_csv(filename: str | Path) -> EntityCollection:
     """Read CSV file with ontology metadata."""
+    warnings.warn(
+        "Use `entities_from_file`, the file type is inferred from the file extension.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
     return _entities_from_csv(filename)
 
 
