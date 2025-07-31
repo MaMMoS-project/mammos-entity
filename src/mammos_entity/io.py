@@ -74,7 +74,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import mammos_units as u
+import numpy as np
 import pandas as pd
+import yaml
 
 import mammos_entity as me
 
@@ -114,7 +116,13 @@ def entities_to_file(
     """
     if not entities:
         raise RuntimeError("No data to write.")
-    _entities_to_csv(_filename, _description, **entities)
+    match Path(_filename).suffix:
+        case ".csv":
+            _entities_to_csv(_filename, _description, **entities)
+        case ".yml" | ".yaml":
+            _entities_to_yaml(_filename, _description, **entities)
+        case unknown_suffix:
+            raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
 
 def entities_to_csv(
@@ -181,6 +189,83 @@ def _entities_to_csv(
         dataframe.to_csv(f, index=False)
 
 
+def _entities_to_yaml(
+    _filename: str | Path,
+    _description: str | None = None,
+    /,
+    **entities: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+) -> None:
+    """Write tabular data to csv file."""
+
+    def preprocess_entity_dict(entities: dict[str, str]):
+        for name, element in entities.items():
+            if isinstance(element, me.Entity):
+                label = element.ontology_label
+                iri = element.ontology.iri
+                unit = str(element.unit)
+                value = element.value.tolist()
+            elif isinstance(element, u.Quantity):
+                label = None
+                iri = None
+                unit = str(element.unit)
+                value = element.value.tolist()
+            else:
+                label = None
+                iri = None
+                unit = None
+                value = np.asanyarray(element).tolist()
+            yield name, label, iri, unit, value
+
+    entity_dict = {
+        "metadata": {
+            "version": "v1",
+            "description": _description,
+        },
+        "data": {
+            name: {
+                "ontology_label": ontology_label,
+                "ontology_iri": iri,
+                "unit": unit,
+                "value": value,
+            }
+            for name, ontology_label, iri, unit, value in preprocess_entity_dict(
+                entities
+            )
+        },
+    }
+
+    # custom dumper to change style of sequences to square brackets to get
+    # ```
+    # value: [1, 2, 3]
+    # ```
+    # instead of
+    # ```
+    # value:
+    # - 1
+    # - 2
+    # - 3
+    # ```
+    class _Dumper(yaml.SafeDumper):
+        pass
+
+    def _represent_sequence(dumper, value):
+        return dumper.represent_sequence(
+            "tag:yaml.org,2002:seq", value, flow_style=True
+        )
+
+    _Dumper.add_representer(list, _represent_sequence)
+    _Dumper.add_representer(tuple, _represent_sequence)
+
+    with open(_filename, "w") as f:
+        yaml.dump(
+            entity_dict,
+            stream=f,
+            Dumper=_Dumper,
+            default_flow_style=False,
+            sort_keys=False,
+        )
+
+
 class EntityCollection:
     """Container class storing entity-like objects."""
 
@@ -221,9 +306,15 @@ def entities_from_file(filename: str | Path) -> EntityCollection:
     """Read files with ontology metadata.
 
     Reads a file as defined in the module description. The returned container provides
-    access to the individual columns.
+    access to the individual entities.
     """
-    return _entities_from_csv(filename)
+    match Path(filename).suffix:
+        case ".csv":
+            return _entities_from_csv(filename)
+        case ".yml" | ".yaml":
+            return _entities_from_yaml(filename)
+        case unknown_suffix:
+            raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
 
 def entities_from_csv(filename: str | Path) -> EntityCollection:
@@ -271,5 +362,33 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             setattr(result, name, u.Quantity(data_values, unit))
         else:
             setattr(result, name, data_values)
+
+    return result
+
+
+def _entities_from_yaml(filename: str | Path) -> EntityCollection:
+    with open(filename) as f:
+        file_content = yaml.safe_load(f)
+
+    if list(file_content.keys()) != ["metadata", "data"]:
+        raise RuntimeError("Unsuported file.")
+
+    result = EntityCollection()
+
+    for key, item in file_content["data"].items():
+        if item["ontology_label"] is not None:
+            setattr(
+                result,
+                key,
+                me.Entity(
+                    ontology_label=item["ontology_label"],
+                    value=item["value"],
+                    unit=item["unit"],
+                ),
+            )
+        elif item["unit"] is not None:
+            setattr(result, key, u.Quantity(item["value"], item["unit"]))
+        else:
+            setattr(result, key, item["value"])
 
     return result
