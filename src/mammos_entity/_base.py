@@ -142,8 +142,8 @@ class Entity(Generic[_OntologyLabelT]):
 
         Raises:
             TypeError: If the ontology_label is not of type str.
-            NoSuchLabelError: If the ontology_label cannot be found in the ontology.
-                Checks for presence in the ontology are performed with
+            ontopy.utils.NoSuchLabelError: If the ontology_label cannot be found in the
+                ontology. Checks for presence in the ontology are performed with
                 :py:func:`mammos_entity.mammos_ontology.get_by_label`.
 
         Examples:
