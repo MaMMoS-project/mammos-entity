@@ -10,7 +10,6 @@ import numpy as np
 import mammos_entity as me
 
 if TYPE_CHECKING:
-    import mammos_units
     import numpy.typing
 
     import mammos_entity
