@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 def concat(
-    *elements: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+    *elements: mammos_entity.typing.EntityLike,
 ) -> mammos_entity.Entity:
     """Concatenate objects into a unique Entity.
 
@@ -26,11 +26,10 @@ def concat(
     Converts all entries into the ontology-preferred unit.
     """
     ontology_labels = [e.ontology_label for e in elements if isinstance(e, me.Entity)]
-    if len(set(ontology_labels)) != 1:
-        if len(set(ontology_labels)) < 1:
-            raise ValueError("You must give at least one Entity with a label.")
-        else:
-            raise ValueError("Entities with different labels were given.")
+    if not ontology_labels:
+        raise ValueError("You must give at least one Entity with a label.")
+    elif len(set(ontology_labels)) > 1:
+        raise ValueError("Entities with different labels were given.")
     unit = me.Entity(ontology_labels[0]).unit
     values = []
     for e in elements:
@@ -39,5 +38,5 @@ def concat(
         elif isinstance(e, u.Quantity):
             values.append(e.flatten().to(unit))
         else:
-            values.append(np.array(e).flatten() * unit)
-    return me.Entity(ontology_labels[0], np.concatenate(values))
+            values.append(np.asarray(e).flatten() * unit)
+    return me.Entity(ontology_labels[0], np.concatenate(values), unit)
