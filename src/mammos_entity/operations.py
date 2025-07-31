@@ -26,7 +26,7 @@ def concat(
     """
     ontology_labels = [e.ontology_label for e in elements if isinstance(e, me.Entity)]
     if not ontology_labels:
-        raise ValueError("You must give at least one Entity with a label.")
+        raise ValueError("You must give at least one Entity.")
     elif len(set(ontology_labels)) > 1:
         raise ValueError("Entities with different labels were given.")
     unit = me.Entity(ontology_labels[0]).unit

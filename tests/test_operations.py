@@ -22,6 +22,8 @@ def test_concat():
     assert me.concat(*ee, 3) == me.Ms([1, 2, 1, 2, 3])
     e_4 = me.Ms(1, unit=u.kA / u.m)
     assert me.concat(e_1, e_4) == me.Ms([1, 1000])
+    assert me.concat(e_4, e_4) == me.Ms([1, 1], unit=u.kA / u.m)
+    assert me.concat(me.Ms([[1, 2], [3, 4]]), 5) == me.Ms([1, 2, 3, 4, 5])
 
 
 def test_failing_concat():
