@@ -68,6 +68,7 @@ Example:
 
 from __future__ import annotations
 
+import os
 import re
 import warnings
 from pathlib import Path
@@ -168,16 +169,17 @@ def _entities_to_csv(
     dataframe = (
         pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
     )
-    with open(_filename, "w") as f:
-        f.write("#mammos csv v2\n")
+    with open(_filename, "w", newline="") as f:
+        # newline="" required for pandas to_csv
+        f.write(f"#mammos csv v2{os.linesep}")
         if _description:
-            f.write("#" + "-" * 40 + "\n")
+            f.write("#" + "-" * 40 + os.linesep)
             for d in _description.split("\n"):
-                f.write(f"# {d}\n")
-            f.write("#" + "-" * 40 + "\n")
-        f.write("#" + ",".join(ontology_labels) + "\n")
-        f.write("#" + ",".join(ontology_iris) + "\n")
-        f.write("#" + ",".join(units) + "\n")
+                f.write(f"# {d}{os.linesep}")
+            f.write("#" + "-" * 40 + os.linesep)
+        f.write("#" + ",".join(ontology_labels) + os.linesep)
+        f.write("#" + ",".join(ontology_iris) + os.linesep)
+        f.write("#" + ",".join(units) + os.linesep)
         dataframe.to_csv(f, index=False)
 
 
@@ -252,10 +254,10 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
                 if "#--" in f.readline():
                     break
             next_line = f.readline()
-        ontology_labels = next_line.removeprefix("#").removesuffix("\n").split(",")
-        _ontology_iris = f.readline().removeprefix("#").removesuffix("\n").split(",")
-        units = f.readline().removeprefix("#").removesuffix("\n").split(",")
-        names = f.readline().removeprefix("#").removesuffix("\n").split(",")
+        ontology_labels = next_line.strip().removeprefix("#").split(",")
+        _ontology_iris = f.readline().strip().removeprefix("#").split(",")
+        units = f.readline().strip().removeprefix("#").split(",")
+        names = f.readline().strip().removeprefix("#").split(",")
 
         f.seek(0)
         data = pd.read_csv(f, comment="#", sep=",")
