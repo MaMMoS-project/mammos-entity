@@ -534,7 +534,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
             "YAML files must have exactly two top-level keys, 'metadata' and 'data'."
         )
 
-    if "version" not in file_content["metadata"]:
+    if not file_content["metadata"] or "version" not in file_content["metadata"]:
         raise RuntimeError("File does not have a key metadata:version.")
 
     if (version := file_content["metadata"]["version"]) != "v1":
@@ -543,6 +543,12 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     result = EntityCollection()
 
     for key, item in file_content["data"].items():
+        req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
+        if set(item) != req_subkeys:
+            raise RuntimeError(
+                f"Element '{key}' does not have the required keys,"
+                f" expected {req_subkeys}, found {list(item)}."
+            )
         if item["ontology_label"] is not None:
             entity = me.Entity(
                 ontology_label=item["ontology_label"],
