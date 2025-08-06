@@ -108,3 +108,20 @@ def test_wrong_file_version(tmp_path):
 
     with pytest.raises(RuntimeError):
         me.io.entities_from_file(tmp_path / "data.csv")
+
+
+def test_no_mixed_shape_in_csv():
+    with pytest.raises(ValueError):
+        me.io.entities_to_file(
+            "will-not-be-written.csv",
+            T=me.T([1, 2, 3]),
+            Tc=me.Tc(100),
+        )
+
+
+def test_no_multi_dim_in_csv():
+    with pytest.raises(ValueError):
+        me.io.entities_to_file(
+            "will-not-be-written.csv",
+            T=me.T([[1, 2, 3]]),
+        )

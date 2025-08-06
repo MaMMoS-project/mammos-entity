@@ -166,6 +166,9 @@ def _entities_to_csv(
             data[name] = element
             if_scalar_list.append(pd.api.types.is_scalar(element))
 
+    if any(if_scalar_list) and not all(if_scalar_list):
+        raise ValueError("All entities must have the same shape, either 0 or 1.")
+
     dataframe = (
         pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
     )
