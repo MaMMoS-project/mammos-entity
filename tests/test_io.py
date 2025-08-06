@@ -16,10 +16,12 @@ def test_to_csv_no_data():
 
 @pytest.mark.skip(reason="Allow multiple datatypes in one column for now.")
 def test_different_types_column():
+    # not supported for yaml because it cannot represent class Entity in the list
     with pytest.raises(TypeError):
         entities_to_file("test.csv", data=[1, me.A()])
 
 
+@pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
 @pytest.mark.parametrize(
     "data",
     [
@@ -33,31 +35,33 @@ def test_different_types_column():
     ],
     ids=["floats", "quantites", "entities"],
 )
-def test_scalar_column(tmp_path, data):
-    entities_to_file(tmp_path / "test.csv", **data)
+def test_scalar_column(tmp_path, data, extension):
+    entities_to_file(tmp_path / f"test.{extension}", **data)
 
-    read_csv = entities_from_file(tmp_path / "test.csv")
+    read_data = entities_from_file(tmp_path / f"test.{extension}")
 
-    assert data["A"] == read_csv.A
-    assert data["Ms"] == read_csv.Ms
-    assert data["Ku"] == read_csv.Ku
-
-
-def test_read_collection_type(tmp_path):
-    entities_to_file(tmp_path / "simple.csv", data=[1, 2, 3])
-    read_csv = entities_from_file(tmp_path / "simple.csv")
-    assert isinstance(read_csv, EntityCollection)
-    assert np.allclose(read_csv.data, [1, 2, 3])
+    assert data["A"] == read_data.A
+    assert data["Ms"] == read_data.Ms
+    assert data["Ku"] == read_data.Ku
 
 
-def test_read_write_csv(tmp_path):
+@pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
+def test_read_collection_type(tmp_path, extension):
+    entities_to_file(tmp_path / f"simple.{extension}", data=[1, 2, 3])
+    read_data = entities_from_file(tmp_path / f"simple.{extension}")
+    assert isinstance(read_data, EntityCollection)
+    assert np.allclose(read_data.data, [1, 2, 3])
+
+
+@pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
+def test_write_read(tmp_path, extension):
     Ms = me.Ms([1e6, 2e6, 3e6])
     T = me.T([1, 2, 3])
     theta_angle = [0, 0.5, 0.7] * u.rad
     demag_factor = me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     comments = ["Some comment", "Some other comment", "A third comment"]
     entities_to_file(
-        tmp_path / "example.csv",
+        tmp_path / f"example.{extension}",
         Ms=Ms,
         T=T,
         angle=theta_angle,
@@ -65,17 +69,17 @@ def test_read_write_csv(tmp_path):
         comment=comments,
     )
 
-    read_csv = entities_from_file(tmp_path / "example.csv")
+    read_data = entities_from_file(tmp_path / f"example.{extension}")
 
-    assert read_csv.Ms == Ms
-    assert read_csv.T == T
+    assert read_data.Ms == Ms
+    assert read_data.T == T
     # Floating-point comparisons with == should ensure that we do not loose precision
     # when writing the data to file.
-    assert all(read_csv.angle == theta_angle)
-    assert read_csv.n == demag_factor
-    assert all(read_csv.comment == comments)
+    assert all(read_data.angle == theta_angle)
+    assert read_data.n == demag_factor
+    assert list(read_data.comment) == comments
 
-    df_with_units = read_csv.to_dataframe()
+    df_with_units = read_data.to_dataframe()
     assert list(df_with_units.columns) == [
         "Ms (A / m)",
         "T (K)",
@@ -84,15 +88,38 @@ def test_read_write_csv(tmp_path):
         "comment",
     ]
 
-    df_without_units = read_csv.to_dataframe(include_units=False)
+    df_without_units = read_data.to_dataframe(include_units=False)
     assert list(df_without_units.columns) == ["Ms", "T", "angle", "n", "comment"]
 
-    df = pd.read_csv(tmp_path / "example.csv", comment="#")
+    if extension == "csv":
+        df = pd.read_csv(tmp_path / "example.csv", comment="#")
 
-    assert all(df == df_without_units)
+        assert all(df == df_without_units)
 
 
-def test_wrong_file_version(tmp_path):
+def test_write_read_yaml_multi_shape(tmp_path):
+    T = me.T([1, 2, 3])
+    Tc = me.Tc(100)
+    multi_index = [[1, 2], [3, 4]]
+
+    entities_to_file(
+        tmp_path / "example.yaml",
+        T=T,
+        Tc=Tc,
+        multi_index=multi_index,
+    )
+
+    read_data = entities_from_file(tmp_path / "example.yaml")
+
+    assert read_data.T == T
+    assert read_data.Tc == Tc
+    assert read_data.multi_index == multi_index
+
+    with pytest.raises(ValueError):
+        read_data.to_dataframe()
+
+
+def test_wrong_file_version_csv(tmp_path):
     file_content = textwrap.dedent(
         """
         #mammos csv v0
@@ -125,3 +152,21 @@ def test_no_multi_dim_in_csv():
             "will-not-be-written.csv",
             T=me.T([[1, 2, 3]]),
         )
+
+
+def test_wrong_file_version_yaml(tmp_path):
+    file_content = textwrap.dedent(
+        """
+        metadata:
+          version: v0
+        data:
+          index:
+            ontology_label: null
+            ontology_iri: null
+            unit: null
+            value: [1, 2]
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    with pytest.raises(RuntimeError):
+        me.io.entities_from_file(tmp_path / "data.yaml")
