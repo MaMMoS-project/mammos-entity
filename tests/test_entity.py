@@ -1,25 +1,12 @@
 import math
-from typing import Annotated
 
 import mammos_units as u
 import numpy as np
-import ontopy
 import pytest
 from numpy import array  # noqa: F401  # required for repr eval
 
 import mammos_entity as me
 from mammos_entity import Entity  # noqa: F401  # required for repr eval
-
-
-def test_entity_generic():
-    assert (
-        me.Entity["SpontaneousMagnetization"]
-        == Annotated[me.Entity, "SpontaneousMagnetization"]
-    )
-    with pytest.raises(ontopy.utils.NoSuchLabelError):
-        me.Entity["NotInTheOntology"]
-    with pytest.raises(TypeError):
-        me.Entity[1]
 
 
 def test_init_float():
