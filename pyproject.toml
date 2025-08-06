@@ -85,7 +85,7 @@ mammos-entity = { path = ".", editable = true }
 [tool.pixi.tasks]
 examples = "jupyter-lab examples"
 test-unittest = "pytest -v tests"
-test-docstrings = "pytest -v --doctest-modules src/mammos_entity"
+test-docstrings = "pytest -v --doctest-modules --doctest-continue-on-failure src/mammos_entity"
 test-notebooks = "pytest -v --nbval-lax examples"
 test-all = { depends-on = ["test-unittest", "test-docstrings", "test-notebooks"] }
 style = "pre-commit run --all-files"
