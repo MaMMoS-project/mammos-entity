@@ -499,7 +499,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
                     break
             next_line = f.readline()
         ontology_labels = next_line.strip().removeprefix("#").split(",")
-        _ontology_iris = f.readline().strip().removeprefix("#").split(",")
+        ontology_iris = f.readline().strip().removeprefix("#").split(",")
         units = f.readline().strip().removeprefix("#").split(",")
         names = f.readline().strip().removeprefix("#").split(",")
 
@@ -509,10 +509,14 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
 
     result = EntityCollection()
 
-    for name, ontology_label, unit in zip(names, ontology_labels, units, strict=False):
+    for name, ontology_label, iri, unit in zip(
+        names, ontology_labels, ontology_iris, units, strict=True
+    ):
         data_values = data[name].values if not scalar_data else data[name].values[0]
         if ontology_label:
-            setattr(result, name, me.Entity(ontology_label, data_values, unit))
+            entity = me.Entity(ontology_label, data_values, unit)
+            _check_iri(entity, iri)
+            setattr(result, name, entity)
         elif unit:
             setattr(result, name, u.Quantity(data_values, unit))
         else:
@@ -540,21 +544,32 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
 
     for key, item in file_content["data"].items():
         if item["ontology_label"] is not None:
-            setattr(
-                result,
-                key,
-                me.Entity(
-                    ontology_label=item["ontology_label"],
-                    value=item["value"],
-                    unit=item["unit"],
-                ),
+            entity = me.Entity(
+                ontology_label=item["ontology_label"],
+                value=item["value"],
+                unit=item["unit"],
             )
+            _check_iri(entity, item["ontology_iri"])
+            setattr(result, key, entity)
         elif item["unit"] is not None:
             setattr(result, key, u.Quantity(item["value"], item["unit"]))
         else:
             setattr(result, key, item["value"])
 
     return result
+
+
+def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
+    """Check that iri points to entity.
+
+    Raises:
+        RuntimeError: if the given iri and the entity iri are different.
+    """
+    if entity.ontology.iri != iri:
+        raise RuntimeError(
+            f"Incompatible IRI for {entity!r}, expected: '{entity.ontology.iri}',"
+            f" got '{iri}'."
+        )
 
 
 # hide deprecated functions in documentation
