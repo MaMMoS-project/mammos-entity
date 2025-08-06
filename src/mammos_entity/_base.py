@@ -8,7 +8,7 @@ includes helper functions for inferring the correct SI units from the ontology.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Annotated, Generic, TypeVar
+from typing import TYPE_CHECKING
 
 import mammos_units as u
 
@@ -103,10 +103,7 @@ def extract_SI_units(ontology_label: str) -> str | None:
     return si_unit
 
 
-_OntologyLabelT = TypeVar("_OntologyLabelT", bound=str)
-
-
-class Entity(Generic[_OntologyLabelT]):
+class Entity:
     """Create a quantity (a value and a unit) linked to the EMMO ontology.
 
     Represents a physical property or quantity that is linked to an ontology
@@ -126,38 +123,6 @@ class Entity(Generic[_OntologyLabelT]):
         >>> Tc_K = me.Entity("CurieTemperature", Tc_kK, unit=u.K)
 
     """  # noqa: E501
-
-    def __class_getitem__(cls, ontology_label: str) -> Annotated[Entity, str]:
-        """Entity type hints with ontology label.
-
-        Support for ontoly label in Entity type annotations. Type hints can take the
-        form ``Entity["OntologyLabel"]``. The type is returned as ``Annotated`` object,
-        with the ontology_label available as runtime metadata.
-
-        Args:
-            ontology_label: Prefered label defined in the ontology.
-
-        Returns:
-            Annotated object with ontology label as metadata.
-
-        Raises:
-            TypeError: If the ontology_label is not of type str.
-            ontopy.utils.NoSuchLabelError: If the ontology_label cannot be found in the
-                ontology. Checks for presence in the ontology are performed with
-                :py:func:`mammos_entity.mammos_ontology.get_by_label`.
-
-        Examples:
-            >>> import mammos_entity
-            >>> mammos_entity.Entity["SpontaneousMagnetization"]
-            typing.Annotated[mammos_entity._base.Entity, 'SpontaneousMagnetization']
-        """
-        if not isinstance(ontology_label, str):
-            raise TypeError("Entity[...] needs a literal str label.")
-
-        # check that ontology_label exists in the ontology
-        mammos_ontology.get_by_label(ontology_label)
-
-        return Annotated[Entity, ontology_label]
 
     def __init__(
         self,
