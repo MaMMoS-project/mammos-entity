@@ -529,7 +529,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     with open(filename) as f:
         file_content = yaml.safe_load(f)
 
-    if list(file_content.keys()) != ["metadata", "data"]:
+    if not file_content or list(file_content.keys()) != ["metadata", "data"]:
         raise RuntimeError(
             "YAML files must have exactly two top-level keys, 'metadata' and 'data'."
         )
@@ -541,6 +541,9 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
 
     result = EntityCollection()
+
+    if not file_content["data"]:
+        raise RuntimeError("'data' does not contain anything.")
 
     for key, item in file_content["data"].items():
         req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
