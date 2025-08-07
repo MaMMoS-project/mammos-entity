@@ -172,6 +172,13 @@ def test_wrong_file_version_yaml(tmp_path):
         me.io.entities_from_file(tmp_path / "data.yaml")
 
 
+@pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
+def test_empty_file(tmp_path, extension):
+    (tmp_path / f"data.{extension}").touch()
+    with pytest.raises(RuntimeError):
+        me.io.entities_from_file(tmp_path / f"data.{extension}")
+
+
 def test_no_data_yaml(tmp_path):
     file_content = textwrap.dedent(
         """
