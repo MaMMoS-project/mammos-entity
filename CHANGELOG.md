@@ -6,4 +6,29 @@ This project uses [towncrier](https://towncrier.readthedocs.io/) and the changes
 
 <!-- towncrier release notes start -->
 
+## [mammos-entity 0.10.0](https://github.com/MaMMoS-project/mammos-entity/tree/0.10.0) – 2025-08-07
 
+### Added
+
+- Add `description` optional argument to `mammos_entity.io.entities_to_csv`. ([#52](https://github.com/MaMMoS-project/mammos-entity/pull/52))
+- Add `mammos_entity.concat` function to concatenate entities (with same ontology label), quantities (with compatible units) and Python types into a single entity. ([#56](https://github.com/MaMMoS-project/mammos-entity/pull/56))
+- Two new functions `mammos_entity.io.entities_from_file` and `mammos_entity.io.entities_to_file` to read and write entity files. The file type is inferred from the file extension. ([#57](https://github.com/MaMMoS-project/mammos-entity/pull/57))
+- Support for YAML as additional file format in `mammos_entity.io`. ([#59](https://github.com/MaMMoS-project/mammos-entity/pull/59))
+
+### Changed
+
+- Structure of mammos CSV format documentation. ([#55](https://github.com/MaMMoS-project/mammos-entity/pull/55))
+- IRIs are checked when reading a file with `mammos_entity.io`. If IRI and ontology label do not match the reading fails. ([#68](https://github.com/MaMMoS-project/mammos-entity/pull/68))
+
+### Deprecated
+
+- Functions `mammos_entity.io.entities_to_csv` and `mammos_entity.io.entities_from_csv` have been deprecated. Use the generic `mammos_entitiy.io.entities_to_file` and `mammos_entity.io.entities_from_file` instead. ([#58](https://github.com/MaMMoS-project/mammos-entity/pull/58))
+
+### Fixed
+
+- Wrong newline separation of data lines in CSV files written with `mammos_entity.io.entities_to_csv` on Windows. ([#66](https://github.com/MaMMoS-project/mammos-entity/pull/66))
+- Mixed 0 dimensional and 1 dimensional entities written to csv, which were not round-trip safe, are no longer allowed. ([#67](https://github.com/MaMMoS-project/mammos-entity/pull/67))
+
+### Misc
+
+- Use [towncrier](https://towncrier.readthedocs.io) to generate changelog from fragments. Each new PR must include a changelog fragment. ([#50](https://github.com/MaMMoS-project/mammos-entity/pull/50))
