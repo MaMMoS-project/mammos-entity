@@ -11,7 +11,7 @@ This project uses [towncrier](https://towncrier.readthedocs.io/) and the changes
 ### Added
 
 - Add `description` optional argument to `mammos_entity.io.entities_to_csv`. ([#52](https://github.com/MaMMoS-project/mammos-entity/pull/52))
-- Add `mammos_entity.concat` function to concatenate entities (with same ontology label), quantities (with compatible units) and Python types into a single entity. ([#56](https://github.com/MaMMoS-project/mammos-entity/pull/56))
+- Add `mammos_entity.concat_flat` function to concatenate entities (with same ontology label), quantities (with compatible units) and Python types into a single entity. ([#56](https://github.com/MaMMoS-project/mammos-entity/pull/56))
 - Two new functions `mammos_entity.io.entities_from_file` and `mammos_entity.io.entities_to_file` to read and write entity files. The file type is inferred from the file extension. ([#57](https://github.com/MaMMoS-project/mammos-entity/pull/57))
 - Support for YAML as additional file format in `mammos_entity.io`. ([#59](https://github.com/MaMMoS-project/mammos-entity/pull/59))
 
