@@ -173,6 +173,26 @@ def test_wrong_file_version_yaml(tmp_path):
 
 
 @pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
+def test_empty_file(tmp_path, extension):
+    (tmp_path / f"data.{extension}").touch()
+    with pytest.raises(RuntimeError):
+        me.io.entities_from_file(tmp_path / f"data.{extension}")
+
+
+def test_no_data_yaml(tmp_path):
+    file_content = textwrap.dedent(
+        """
+        metadata:
+          version: v1
+        data:
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    with pytest.raises(RuntimeError):
+        me.io.entities_from_file(tmp_path / "data.yaml")
+
+
+@pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
 def test_wrong_iri(tmp_path, extension: str):
     filename = tmp_path / f"example.{extension}"
     me.io.entities_to_file(filename, Ms=me.Ms())
