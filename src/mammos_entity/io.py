@@ -581,5 +581,89 @@ def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
         )
 
 
+def merge(
+    left: EntityCollection,
+    right: EntityCollection,
+    **kwargs,
+) -> EntityCollection:
+    """Merges two `EntityCollection` objects while preserving ontology and units.
+
+    This function merges two `EntityCollection` instances in a dataframe-like manner.
+    Before merging, it identifies overlapping entities (i.e., attributes with the same
+    ontology label) and harmonises their units to match those in the `left` collection.
+    The merged result is returned as a new `EntityCollection` that retains ontology
+    labels and units where available.
+
+    Args:
+        left (EntityCollection):
+            The primary `EntityCollection` whose ontology and units take precedence
+            during the merge.
+        right (EntityCollection):
+            The secondary `EntityCollection` to merge with `left`.
+        **kwargs:
+            Additional keyword arguments passed to `pandas.merge()`
+            (e.g., `on`, `how`, `left_on`, `right_on`, `suffixes`, etc.).
+
+    Returns:
+        EntityCollection:
+            A new `EntityCollection` containing the merged data. Each entity retains
+            ontology labels and units from the original collections when available.
+
+    Notes:
+        - If both collections contain entities with the same ontology label but
+          different units, the `right` entity is automatically converted to the unit of
+          the `left` entity before merging.
+        - The merge behaviour (inner, outer, left, right) depends on the `how` argument
+          and other keyword parameters passed to `pandas.merge()`.
+    """
+    left_onto_info = {
+        key: {
+            "label": getattr(val, "ontology_label", None),
+            "unit": getattr(val, "unit", None),
+        }
+        for key, val in left.__dict__.items()
+    }
+    right_onto_info = {
+        key: {
+            "label": getattr(val, "ontology_label", None),
+            "unit": getattr(val, "unit", None),
+        }
+        for key, val in right.__dict__.items()
+    }
+
+    # NOTE: Harmonise units to left if the entity is same in both the collections.
+
+    for key in set(left_onto_info.keys()) & set(right_onto_info.keys()):
+        if (
+            (left_onto_info[key]["label"] == right_onto_info[key]["label"])
+            and (left_onto_info[key]["label"] is not None)
+            and (left_onto_info[key]["unit"] != right_onto_info[key]["unit"])
+        ):
+            new_entity = me.Entity(
+                ontology_label=right_onto_info[key]["label"],
+                value=getattr(right, key).quantity.to(left_onto_info[key]["unit"]),
+            )
+            setattr(right, key, new_entity)
+    left_df = left.to_dataframe(include_units=False)
+    right_df = right.to_dataframe(include_units=False)
+    merged_df = pd.merge(left_df, right_df, **kwargs)
+
+    result = EntityCollection()
+
+    for key, val in merged_df.items():
+        seleted_info_dict = left_onto_info if key in left_onto_info else right_onto_info
+        ontology_label = seleted_info_dict[key]["label"]
+        unit = seleted_info_dict[key]["unit"]
+
+        if ontology_label:
+            setattr(result, key, me.Entity(ontology_label, val.to_numpy(), unit))
+        elif unit:
+            setattr(result, key, u.Quantity(val.to_numpy(), unit))
+        else:
+            setattr(result, key, val.to_numpy())
+
+    return result
+
+
 # hide deprecated functions in documentation
-__all__ = ["entities_to_file", "entities_from_file", "EntityCollection"]
+__all__ = ["entities_to_file", "entities_from_file", "merge", "EntityCollection"]
