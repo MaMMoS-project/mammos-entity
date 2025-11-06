@@ -158,15 +158,25 @@ def test_merge_inner_different_units():
         x=[2000, 3000, 4000] * u.mm,
         Ms=me.Ms([22, 33, 44]),
     )
-    ec_merged = me.merge(ec_1, ec_2, on="x")
-    ec_check = me.io.EntityCollection(
+    ec_merged_1 = me.merge(ec_1, ec_2, on="x")
+    ec_check_1 = me.io.EntityCollection(
         x=[2, 3] * u.m,
         Ms_x=me.Ms([2, 3]),
         Ms_y=me.Ms([22, 33]),
     )
-    assert np.all(ec_merged.x == ec_check.x)
-    assert ec_merged.Ms_x == ec_check.Ms_x
-    assert ec_merged.Ms_y == ec_check.Ms_y
+    assert np.all(ec_merged_1.x == ec_check_1.x)
+    assert ec_merged_1.Ms_x == ec_check_1.Ms_x
+    assert ec_merged_1.Ms_y == ec_check_1.Ms_y
+
+    ec_merged_2 = me.merge(ec_2, ec_1, on="x")
+    ec_check_2 = me.io.EntityCollection(
+        x=[2000, 3000] * u.mm,
+        Ms_x=me.Ms([2, 3]),
+        Ms_y=me.Ms([22, 33]),
+    )
+    assert np.all(ec_merged_2.x == ec_check_2.x)
+    assert ec_merged_2.Ms_x == ec_check_2.Ms_x
+    assert ec_merged_2.Ms_y == ec_check_2.Ms_y
 
 
 def test_merge_left():
@@ -206,7 +216,9 @@ def test_merge_right():
         A=me.A([2, 3, 4]),
     )
     assert np.all(ec_merged_right.x == ec_check_right.x)
+    assert np.all(ec_merged_right.y == ec_check_right.y)
     assert ec_merged_right.Ms == ec_check_right.Ms
+    assert ec_merged_right.A == ec_check_right.A
 
 
 def test_merge_outer():
