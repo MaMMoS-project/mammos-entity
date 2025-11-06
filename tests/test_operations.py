@@ -198,7 +198,7 @@ def test_merge_right():
         y=[2, 3, 4],
         Ms=me.Ms([2, 3, 4]),
     )
-    ec_merged_right = me.merge(ec_1, ec_2, on=["x", "y"], how="left")
+    ec_merged_right = me.merge(ec_1, ec_2, on=["x", "y"], how="right")
     ec_check_right = me.io.EntityCollection(
         x=np.array([2, 3, 4]),
         y=np.array([2, 3, 4]),
@@ -221,8 +221,8 @@ def test_merge_outer():
     ec_check_outer = me.io.EntityCollection(
         x=np.array([1, 2, 3, 4]),
         y=np.array([1, 2, 3, 4]),
-        Ms=me.Ms([1, 2, 3, np.nan]),
-        A=me.A([np.nan, 2, 3, 4]),
+        Ms_x=me.Ms([1, 2, 3, np.nan]),
+        Ms_y=me.Ms([np.nan, 2, 3, 4]),
     )
     assert np.all(ec_merged_outer.x == ec_check_outer.x)
     assert ec_merged_outer.Ms == ec_check_outer.Ms
@@ -233,7 +233,7 @@ def test_merge_different_names():
     ec_1 = me.io.EntityCollection(x_array=[1, 2], y_array=[1, 2], Ms=me.Ms([100, 200]))
     ec_2 = me.io.EntityCollection(
         x=[1, 2],
-        y=[2, 2],
+        y=[1, 2],
         A=me.A([0.8, 0.8]),
     )
     ec_merged_1 = me.merge(
@@ -241,15 +241,15 @@ def test_merge_different_names():
     )
     ec_check_1 = me.io.EntityCollection(
         x=np.array([1, 2]),
-        x_=np.array([1, 2]),
+        x_array=np.array([1, 2]),
         y=np.array([1, 2]),
-        y_=np.array([1, 2]),
+        y_array=np.array([1, 2]),
         Ms=me.Ms([100, 200]),
         A=me.A([0.8, 0.8]),
     )
     assert np.all(ec_merged_1.x == ec_check_1.x)
-    assert np.all(ec_merged_1.x_ == ec_check_1.x_)
+    assert np.all(ec_merged_1.x_array == ec_check_1.x_array)
     assert np.all(ec_merged_1.y == ec_check_1.y)
-    assert np.all(ec_merged_1.y_ == ec_check_1.y_)
+    assert np.all(ec_merged_1.y_array == ec_check_1.y_array)
     assert ec_merged_1.Ms == ec_check_1.Ms
     assert ec_merged_1.A == ec_check_1.A
