@@ -240,6 +240,33 @@ def test_merge_outer():
     assert ec_merged_outer.Ms == ec_check_outer.Ms
 
 
+def test_merge_cross():
+    """Test cross merge function."""
+    ec_1 = me.io.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.io.EntityCollection(
+        x=[2, 3, 4],
+        y=[2, 3, 4],
+        Ms=me.Ms([2, 3, 4]),
+    )
+    with pytest.raises(ValueError):
+        me.merge(ec_1, ec_2, on=["x", "y"], how="cross")
+    ec_merged_cross = me.merge(ec_1, ec_2, how="cross")
+    ec_check_cross = me.io.EntityCollection(
+        x_x=np.array([1, 1, 1, 2, 2, 2, 3, 3, 3]),
+        y_x=np.array([1, 1, 1, 2, 2, 2, 3, 3, 3]),
+        Ms_x=me.Ms([1, 1, 1, 2, 2, 2, 3, 3, 3]),
+        x_y=np.array([2, 2, 2, 3, 3, 3, 4, 4, 4]),
+        y_y=np.array([2, 2, 2, 3, 3, 3, 4, 4, 4]),
+        Ms_y=me.Ms([2, 2, 2, 3, 3, 3, 4, 4, 4]),
+    )
+    assert np.all(ec_merged_cross.x_x == ec_check_cross.x_x)
+    assert np.all(ec_merged_cross.y_x == ec_check_cross.y_x)
+    assert ec_merged_cross.Ms_x == ec_check_cross.Ms_x
+    assert np.all(ec_merged_cross.x_y == ec_check_cross.x_y)
+    assert np.all(ec_merged_cross.y_y == ec_check_cross.y_y)
+    assert ec_merged_cross.Ms_y == ec_check_cross.Ms_y
+
+
 def test_merge_different_names():
     """Test merge on different column names."""
     ec_1 = me.io.EntityCollection(x_array=[1, 2], y_array=[1, 2], Ms=me.Ms([100, 200]))
