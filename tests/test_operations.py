@@ -292,3 +292,26 @@ def test_merge_different_names():
     assert np.all(ec_merged_1.y_array == ec_check_1.y_array)
     assert ec_merged_1.Ms == ec_check_1.Ms
     assert ec_merged_1.A == ec_check_1.A
+
+
+def test_merge_indicator():
+    """Test merge with indicator=True."""
+    ec_1 = me.io.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.io.EntityCollection(
+        x=[2, 3, 4],
+        y=[2, 3, 4],
+        Ms=me.Ms([2, 3, 4]),
+    )
+    ec_merged = me.merge(ec_1, ec_2, on=["x", "y"], how="outer", indicator=True)
+    ec_check = me.io.EntityCollection(
+        x=np.array([1, 2, 3, 4]),
+        y=np.array([1, 2, 3, 4]),
+        Ms_x=me.Ms([1, 2, 3, np.nan]),
+        Ms_y=me.Ms([np.nan, 2, 3, 4]),
+        _merge=["left_only", "both", "both", "right_only"],
+    )
+    assert np.all(ec_merged.x == ec_check.x)
+    assert np.all(ec_merged.y == ec_check.y)
+    assert ec_merged.Ms_x == ec_check.Ms_x
+    assert ec_merged.Ms_y == ec_check.Ms_y
+    assert np.all(ec_merged._merge == ec_check._merge)
