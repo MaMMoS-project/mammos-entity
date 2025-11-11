@@ -206,7 +206,7 @@ def test_merge_right():
     ec_2 = me.io.EntityCollection(
         x=[2, 3, 4],
         y=[2, 3, 4],
-        Ms=me.Ms([2, 3, 4]),
+        A=me.A([2, 3, 4]),
     )
     ec_merged_right = me.merge(ec_1, ec_2, on=["x", "y"], how="right")
     ec_check_right = me.io.EntityCollection(
