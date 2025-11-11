@@ -187,13 +187,17 @@ def merge(
             found_suffix = False
             if key.endswith(suffix_values[0]):
                 key_new = key.removesuffix(suffix_values[0])
+                selected_info_dict = left_onto_info
                 found_suffix = True
             elif key.endswith(suffix_values[1]):
                 key_new = key.removesuffix(suffix_values[1])
+                selected_info_dict = right_onto_info
                 found_suffix = True
 
-            ontology_label = left_onto_info[key_new]["label"] if found_suffix else None
-            unit = left_onto_info[key_new]["unit"] if found_suffix else None
+            ontology_label = (
+                selected_info_dict[key_new]["label"] if found_suffix else None
+            )
+            unit = selected_info_dict[key_new]["unit"] if found_suffix else None
 
         else:
             seleted_info_dict = (
