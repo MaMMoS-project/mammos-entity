@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 def concat_flat(
     *elements: mammos_entity.typing.EntityLike | list[typing.Any] | tuple[typing.Any],
     unit: astropy.units.Unit | str | None = None,
+    description: str | None = None,
 ) -> mammos_entity.Entity:
     """Concatenate objects into a unique flat Entity.
 
@@ -59,7 +60,9 @@ def concat_flat(
             values.append(e.flatten().to(unit))
         else:
             values.append(np.asarray(e).flatten() * unit)
-    return me.Entity(ontology_labels[0], np.concatenate(values), unit)
+    return me.Entity(
+        ontology_labels[0], np.concatenate(values), unit, description=description
+    )
 
 
 def merge(
