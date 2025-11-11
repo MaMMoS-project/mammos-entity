@@ -123,8 +123,8 @@ def test_merge_inner_overlap():
         Ms_2=me.Ms([22, 33]),
     )
     assert np.all(ec_merged_2.x == ec_check_2.x)
-    assert ec_merged_2.Ms_x == ec_check_2.Ms_x
-    assert ec_merged_2.Ms_y == ec_check_2.Ms_y
+    assert ec_merged_2.Ms_1 == ec_check_2.Ms_1
+    assert ec_merged_2.Ms_2 == ec_check_2.Ms_2
 
     with pytest.raises(ValueError):
         me.merge(ec_1, ec_2, on="x", suffixes=(None, None))
