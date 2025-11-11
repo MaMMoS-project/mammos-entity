@@ -171,8 +171,8 @@ def test_merge_inner_different_units():
     ec_merged_2 = me.merge(ec_2, ec_1, on="x")
     ec_check_2 = me.io.EntityCollection(
         x=[2000, 3000] * u.mm,
-        Ms_x=me.Ms([2, 3]),
-        Ms_y=me.Ms([22, 33]),
+        Ms_x=me.Ms([22, 33]),
+        Ms_y=me.Ms([2, 3]),
     )
     assert np.all(ec_merged_2.x == ec_check_2.x)
     assert ec_merged_2.Ms_x == ec_check_2.Ms_x
