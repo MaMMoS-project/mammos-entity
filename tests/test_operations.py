@@ -237,7 +237,9 @@ def test_merge_outer():
         Ms_y=me.Ms([np.nan, 2, 3, 4]),
     )
     assert np.all(ec_merged_outer.x == ec_check_outer.x)
-    assert ec_merged_outer.Ms == ec_check_outer.Ms
+    assert np.all(ec_merged_outer.y == ec_check_outer.y)
+    assert ec_merged_outer.Ms_x == ec_check_outer.Ms_x
+    assert ec_merged_outer.Ms_y == ec_check_outer.Ms_y
 
 
 def test_merge_cross():
