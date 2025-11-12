@@ -283,7 +283,7 @@ class Entity:
         return (
             self.ontology_label == other.ontology_label
             and self.q.shape == other.q.shape
-            and u.allclose(self.q, other.q)
+            and u.allclose(self.q, other.q, equal_nan=True)
         )
 
     def __repr__(self) -> str:
