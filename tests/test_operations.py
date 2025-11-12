@@ -2,6 +2,7 @@
 
 import mammos_units as u
 import numpy as np
+import pandas as pd
 import pytest
 
 import mammos_entity as me
@@ -53,10 +54,8 @@ def test_merge_no_intersections():
     ec_2 = me.io.EntityCollection(
         A=me.A([2, 2]),
     )
-    ec_merged = me.merge(ec_1, ec_2)
-    ec_check = me.io.EntityCollection(Ms=me.Ms([1, 1]), A=me.A([2, 2]))
-    assert ec_merged.Ms == ec_check.Ms
-    assert ec_merged.A == ec_check.A
+    with pytest.raises(pd.errors.MergeError):
+        me.merge(ec_1, ec_2)
 
 
 def test_merge_inner():
@@ -144,8 +143,9 @@ def test_merge_inner_overlap_empty():
     )
 
     ec_merged_empty = me.merge(ec_1, ec_2)
-    assert not hasattr(ec_merged_empty, "x")
-    assert not hasattr(ec_merged_empty, "Ms")
+    assert len(ec_merged_empty.x) == 0
+    assert len(ec_merged_empty.Ms.value) == 0
+    assert ec_merged_empty.Ms.ontology_label == ec_1.Ms.ontology_label
 
 
 def test_merge_inner_different_units():
@@ -248,7 +248,7 @@ def test_merge_cross():
     ec_2 = me.io.EntityCollection(
         x=[2, 3, 4],
         y=[2, 3, 4],
-        Ms=me.Ms([2, 3, 4]),
+        Ms_other=me.Ms([2, 3, 4]),
     )
     with pytest.raises(ValueError):
         me.merge(ec_1, ec_2, on=["x", "y"], how="cross")
@@ -256,17 +256,17 @@ def test_merge_cross():
     ec_check_cross = me.io.EntityCollection(
         x_x=np.array([1, 1, 1, 2, 2, 2, 3, 3, 3]),
         y_x=np.array([1, 1, 1, 2, 2, 2, 3, 3, 3]),
-        Ms_x=me.Ms([1, 1, 1, 2, 2, 2, 3, 3, 3]),
-        x_y=np.array([2, 2, 2, 3, 3, 3, 4, 4, 4]),
-        y_y=np.array([2, 2, 2, 3, 3, 3, 4, 4, 4]),
-        Ms_y=me.Ms([2, 2, 2, 3, 3, 3, 4, 4, 4]),
+        Ms=me.Ms([1, 1, 1, 2, 2, 2, 3, 3, 3]),
+        x_y=np.array([2, 3, 4, 2, 3, 4, 2, 3, 4]),
+        y_y=np.array([2, 3, 4, 2, 3, 4, 2, 3, 4]),
+        Ms_other=me.Ms([2, 3, 4, 2, 3, 4, 2, 3, 4]),
     )
     assert np.all(ec_merged_cross.x_x == ec_check_cross.x_x)
     assert np.all(ec_merged_cross.y_x == ec_check_cross.y_x)
-    assert ec_merged_cross.Ms_x == ec_check_cross.Ms_x
+    assert ec_merged_cross.Ms == ec_check_cross.Ms
     assert np.all(ec_merged_cross.x_y == ec_check_cross.x_y)
     assert np.all(ec_merged_cross.y_y == ec_check_cross.y_y)
-    assert ec_merged_cross.Ms_y == ec_check_cross.Ms_y
+    assert ec_merged_cross.Ms_other == ec_check_cross.Ms_other
 
 
 def test_merge_different_names():
