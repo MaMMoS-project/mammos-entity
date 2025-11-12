@@ -37,6 +37,9 @@ Similarly, columns without units (with or without ontology entry) have empty uni
 .. versionadded:: v2
    The optional description of the file.
 
+.. versionadded:: v3
+   Additional description metadata row for each column.
+
 Example:
     Here is an example with five columns:
 
@@ -70,7 +73,7 @@ Example:
     The new file has the following content:
 
     >>> print(Path("example.csv").read_text())
-    #mammos csv v2
+    #mammos csv v3
     #----------------------------------------
     # Test data
     #----------------------------------------
@@ -145,7 +148,7 @@ Example:
 
     >>> print(Path("example.yaml").read_text())
     metadata:
-      version: v1
+      version: v3
       description: Test data
     data:
       index:
@@ -168,7 +171,7 @@ Example:
         value: [1.2, 3.4, 5.6]
       DemagnetizingFactor:
         ontology_label: DemagnetizingFactor
-        description: null
+        description: ''
         ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
         unit: ''
         value: [1.0, 0.5, 0.5]
@@ -177,11 +180,11 @@ Example:
         description: null
         ontology_iri: null
         unit: null
-        value: [Comment in the first row, Comment in the second row, Comment in the
-          third row]
+        value: [Comment in the first row, Comment in the second row, Comment in the third
+            row]
       Tc:
         ontology_label: CurieTemperature
-        description: null
+        description: ''
         ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
         unit: K
         value: 300.0
@@ -321,7 +324,7 @@ def _entities_to_csv(
     )
     with open(_filename, "w", newline="") as f:
         # newline="" required for pandas to_csv
-        f.write(f"#mammos csv v2{os.linesep}")
+        f.write(f"#mammos csv v3{os.linesep}")
         if _description:
             f.write("#" + "-" * 40 + os.linesep)
             for d in _description.split("\n"):
@@ -365,7 +368,7 @@ def _entities_to_yaml(
 
     entity_dict = {
         "metadata": {
-            "version": "v1",
+            "version": "v3",
             "description": _description,
         },
         "data": {
@@ -532,7 +535,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
         version = re.search(r"v\d+", file_version_information)
         if not version:
             raise RuntimeError("File does not have version information in line 1.")
-        if version.group() not in ["v1", "v2"]:
+        if version.group() not in ["v1", "v2", "v3"]:
             raise RuntimeError(
                 f"Reading mammos csv {version.group()} is not supported."
             )
@@ -548,7 +551,10 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             next_line = f.readline()
 
         ontology_labels = next_line.strip().removeprefix("#").split(",")
-        descriptions = f.readline().strip().removeprefix("#").split(",")
+        if version.group() == "v3":
+            descriptions = f.readline().strip().removeprefix("#").split(",")
+        else:
+            descriptions = [""] * len(ontology_labels)
         ontology_iris = f.readline().strip().removeprefix("#").split(",")
         units = f.readline().strip().removeprefix("#").split(",")
         names = f.readline().strip().removeprefix("#").split(",")
@@ -589,16 +595,23 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     if not file_content["metadata"] or "version" not in file_content["metadata"]:
         raise RuntimeError("File does not have a key metadata:version.")
 
-    if (version := file_content["metadata"]["version"]) != "v1":
+    if (version := file_content["metadata"]["version"]) not in ["v1", "v2", "v3"]:
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
 
-    result = EntityCollection(description=file_content["metadata"]["description"])
+    description = (
+        file_content["metadata"]["description"] if version in ["v2", "v3"] else ""
+    )
+    result = EntityCollection(description=description)
 
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
 
-    for key, item in file_content["data"].items():
+    if version == "v3":
         req_subkeys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
+    else:
+        req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
+
+    for key, item in file_content["data"].items():
         if set(item) != req_subkeys:
             raise RuntimeError(
                 f"Element '{key}' does not have the required keys,"
@@ -609,7 +622,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
                 ontology_label=item["ontology_label"],
                 value=item["value"],
                 unit=item["unit"],
-                description=item["description"],
+                description=item["description"] if version == "v3" else "",
             )
             _check_iri(entity, item["ontology_iri"])
             setattr(result, key, entity)
