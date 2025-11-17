@@ -317,3 +317,57 @@ def test_merge_indicator():
     assert ec_merged.Ms_x == ec_check.Ms_x
     assert ec_merged.Ms_y == ec_check.Ms_y
     assert np.all(ec_merged._merge == ec_check._merge)
+
+
+def test_merge_different_entity_value_error():
+    ec_1 = me.io.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
+    ec_2 = me.io.EntityCollection(Ms=me.B([1, 2, 3, 4]), x=[10, 20, 30, 40])
+
+    with pytest.raises(ValueError):
+        me.merge(ec_1, ec_2)
+
+
+def test_merge_different_units_value_error():
+    ec_1 = me.io.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
+    ec_2 = me.io.EntityCollection(Ms=[1, 2, 3, 4] * u.T, x=[10, 20, 30, 40])
+
+    with pytest.raises(ValueError):
+        me.merge(ec_1, ec_2)
+    with pytest.raises(ValueError):
+        me.merge(ec_1, ec_2, how="right")
+
+    ec_1.Ms = [1, 2, 3, 4] * u.A / u.m
+
+    with pytest.raises(ValueError):
+        me.merge(ec_1, ec_2)
+    with pytest.raises(ValueError):
+        me.merge(ec_1, ec_2, how="right")
+
+
+def test_merge_how_behaviour():
+    ec_1 = me.io.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
+    ec_2 = me.io.EntityCollection(Ms=[1, 2, 3, 4] * u.A / u.m, y=[50, 60, 70, 80])
+
+    merge_left = me.merge(ec_1, ec_2)
+    merge_right = me.merge(ec_1, ec_2, how="right")
+    assert isinstance(merge_left.Ms, me.Entity)
+    assert merge_left.Ms == ec_1.Ms
+    assert isinstance(merge_right.Ms, u.Quantity)
+    assert np.allclose(merge_right.Ms, ec_2.Ms)
+
+    assert np.allclose(merge_left.x, ec_1.x)
+    assert np.allclose(merge_left.y, ec_2.y)
+    assert np.allclose(merge_right.x, ec_1.x)
+    assert np.allclose(merge_right.y, ec_2.y)
+
+    ec_1.Ms = [1000, 2000, 3000, 4000] * u.mA / u.m
+    merge_left = me.merge(ec_1, ec_2)
+    merge_right = me.merge(ec_1, ec_2, how="right")
+
+    assert isinstance(merge_right.Ms, u.Quantity)
+    assert isinstance(merge_left.Ms, u.Quantity)
+
+    assert merge_left.Ms.unit == u.mA / u.m
+    assert merge_right.Ms.unit == u.A / u.m
+
+    assert np.allclose(merge_left.Ms, merge_right.Ms)
