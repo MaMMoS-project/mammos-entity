@@ -2,6 +2,7 @@ r"""Entities operations."""
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import mammos_units as u
@@ -89,6 +90,8 @@ def merge(
             A new `EntityCollection` containing the merged data. Each entity retains
             ontology labels and units from the original collections when available.
     """
+    left = deepcopy(left)
+    right = deepcopy(right)
     if "how" in kwargs and kwargs["how"].lower() == "right":
         preferred_collection = right
         other_collection = left
