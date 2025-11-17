@@ -178,39 +178,41 @@ def merge(
                     f"unit {ou} in the {other_collection}."
                 )
 
-    left_onto_info = {
+    pref_onto_info = {
         key: {
             "label": getattr(val, "ontology_label", None),
             "unit": getattr(val, "unit", None),
         }
-        for key, val in left.__dict__.items()
+        for key, val in preferred_collection.__dict__.items()
     }
-    right_onto_info = {
+    other_onto_info = {
         key: {
             "label": getattr(val, "ontology_label", None),
             "unit": getattr(val, "unit", None),
         }
-        for key, val in right.__dict__.items()
+        for key, val in other_collection.__dict__.items()
     }
 
-    left_df = left.to_dataframe(include_units=False)
-    right_df = right.to_dataframe(include_units=False)
-    merged_df = pd.merge(left_df, right_df, **kwargs)
+    merged_df = pd.merge(
+        left.to_dataframe(include_units=False),
+        right.to_dataframe(include_units=False),
+        **kwargs,
+    )
 
     result = me.io.EntityCollection()
 
     for key, val in merged_df.items():
         # NOTE: when the key from merged DataFrame is not in info dictionaries
-        if key not in left_onto_info and key not in right_onto_info:
+        if key not in pref_onto_info and key not in other_onto_info:
             suffix_values = kwargs.get("suffixes", ["_x", "_y"])
             found_suffix = False
             if key.endswith(suffix_values[0]):
                 key_new = key.removesuffix(suffix_values[0])
-                selected_info_dict = left_onto_info
+                selected_info_dict = pref_onto_info
                 found_suffix = True
             elif key.endswith(suffix_values[1]):
                 key_new = key.removesuffix(suffix_values[1])
-                selected_info_dict = right_onto_info
+                selected_info_dict = other_onto_info
                 found_suffix = True
 
             ontology_label = (
@@ -220,7 +222,7 @@ def merge(
 
         else:
             seleted_info_dict = (
-                left_onto_info if key in left_onto_info else right_onto_info
+                pref_onto_info if key in pref_onto_info else other_onto_info
             )
             ontology_label = seleted_info_dict[key]["label"]
             unit = seleted_info_dict[key]["unit"]
