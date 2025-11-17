@@ -71,16 +71,14 @@ def merge(
 
     This function merges two `EntityCollection` instances in a dataframe-like manner.
     Before merging, it identifies overlapping entities (i.e., attributes with the same
-    ontology label) and harmonises their units to match those in the `left` collection.
-    The merged result is returned as a new `EntityCollection` that retains ontology
-    labels and units where available.
+    ontology label) and harmonises their units. The merged result is returned as a new
+    `EntityCollection` that retains ontology labels and units where available.
 
     Args:
         left (EntityCollection):
-            The primary `EntityCollection` whose ontology and units take precedence
-            during the merge.
+            The primary `EntityCollection`.
         right (EntityCollection):
-            The secondary `EntityCollection` to merge with `left`.
+            The secondary `EntityCollection` to merge with.
         **kwargs:
             Additional keyword arguments passed to `pandas.merge()`
             (e.g., `on`, `how`, `left_on`, `right_on`, `suffixes`, etc.).
