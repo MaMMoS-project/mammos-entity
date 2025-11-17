@@ -89,74 +89,93 @@ def merge(
             A new `EntityCollection` containing the merged data. Each entity retains
             ontology labels and units from the original collections when available.
     """
+    if "how" in kwargs and kwargs["how"].lower() == "right":
+        preferred_collection = right
+        other_collection = left
+    else:
+        preferred_collection = left
+        other_collection = right
     # NOTE: pre-process entity collections for matching keys
-    for key in set(left.__dict__.keys()) & set(right.__dict__.keys()):
-        # NOTE: if left is entity:
-        if isinstance(left_obj := getattr(left, key), me.Entity):
-            # NOTE: if right is entity, check for label and units
-            if isinstance(right_obj := getattr(right, key), me.Entity):
+    for key in set(preferred_collection.__dict__.keys()) & set(
+        other_collection.__dict__.keys()
+    ):
+        # NOTE: if preferred collection object is entity:
+        if isinstance(pref_obj := getattr(preferred_collection, key), me.Entity):
+            # NOTE: if other collection object is entity, check for label and units
+            if isinstance(other_obj := getattr(other_collection, key), me.Entity):
                 # NOTE: different ontology -> raise error
-                if left_obj.ontology_label != right_obj.ontology_label:
-                    # left.__dict__.pop(key)
-                    # right.__dict__.pop(key)
-                    # setattr(left, f"{key}_{left_obj.ontology_label}", left_obj)
-                    # setattr(right, f"{key}_{right_obj.ontology_label}", right_obj)
+                if pref_obj.ontology_label != other_obj.ontology_label:
+                    # preferred_collection.__dict__.pop(key)
+                    # other_collection.__dict__.pop(key)
+                    # setattr(
+                    #     preferred_collection,
+                    #     f"{key}_{pref_obj.ontology_label}",
+                    #     pref_obj
+                    # )
+                    # setattr(
+                    #     other_collection,
+                    #     f"{key}_{other_obj.ontology_label}",
+                    #     other_obj
+                    # )
                     raise ValueError(
                         f"Cannot have the same entry {key} for entity "
-                        f"with label {left_obj.ontology_label} in the left collection "
-                        f"and label {right_obj.ontology_label} in the right collection."
+                        f"with label {pref_obj.ontology_label} in the "
+                        f"{preferred_collection} and label "
+                        f"{other_obj.ontology_label} in the {other_collection}."
                     )
                 # NOTE: same ontology -> harmonise units
                 elif (
-                    left_obj.ontology_label == right_obj.ontology_label
-                    and (lu := left_obj.unit) != right_obj.unit
+                    pref_obj.ontology_label == other_obj.ontology_label
+                    and (pu := pref_obj.unit) != other_obj.unit
                 ):
                     setattr(
-                        right,
+                        other_collection,
                         key,
-                        me.Entity(right_obj.ontology_label, right_obj.quantity.to(lu)),
+                        me.Entity(other_obj.ontology_label, other_obj.quantity.to(pu)),
                     )
-            # NOTE: if right is quantity, check if the units match
+            # NOTE: if other object is quantity, check if the units match
             # if they do not, harmonise the units or raise error
-            elif isinstance(right_obj := getattr(right, key), u.Quantity) and (
-                lu := left_obj.unit
-            ) != (ru := right_obj.unit):
-                if lu.is_equivalent(ru):
-                    setattr(right, key, right_obj.to(lu))
+            elif isinstance(
+                other_obj := getattr(other_collection, key), u.Quantity
+            ) and (pu := pref_obj.unit) != (ou := other_obj.unit):
+                if pu.is_equivalent(ou):
+                    setattr(other_collection, key, other_obj.to(pu))
                 else:
-                    # left.__dict__.pop(key)
-                    # right.__dict__.pop(key)
-                    # setattr(left, f"{key}_{left_obj.unit}", left_obj)
-                    # setattr(right, f"{key}_{right_obj.unit}", right_obj)
+                    # preferred_collection.__dict__.pop(key)
+                    # other_collection.__dict__.pop(key)
+                    # setattr(preferred_collection, f"{key}_{pref_obj.unit}", pref_obj)
+                    # setattr(other_collection, f"{key}_{other_obj.unit}", other_obj)
                     raise ValueError(
                         f"Cannot have different units for the entry {key} "
-                        f"with unit {lu} in the left collection and "
-                        f"unit {ru} in the right collection."
+                        f"with unit {pu} in the {preferred_collection} and "
+                        f"unit {ou} in the {other_collection}."
                     )
-        # NOTE: if left is quantity
-        # if right is an entity/quantity, check units
+        # NOTE: if preferred collection is quantity
+        # if other collection is an entity/quantity, check units
         # if the units do not match, harmonise/raise error
         elif (
-            isinstance(left_obj := getattr(left, key), u.Quantity)
-            and isinstance(right_obj := getattr(right, key), (me.Entity, u.Quantity))
-            and (lu := left_obj.unit) != (ru := right_obj.unit)
+            isinstance(pref_obj := getattr(preferred_collection, key), u.Quantity)
+            and isinstance(
+                other_obj := getattr(other_collection, key), (me.Entity, u.Quantity)
+            )
+            and (pu := pref_obj.unit) != (ou := other_obj.unit)
         ):
-            if lu.is_equivalent(ru):
-                new_right_quantity = (
-                    right_obj.to(lu)
-                    if isinstance(right_obj, u.Quantity)
-                    else right_obj.quantity.to(lu)
+            if pu.is_equivalent(ou):
+                new_other_quantity = (
+                    other_obj.to(pu)
+                    if isinstance(other_obj, u.Quantity)
+                    else other_obj.quantity.to(pu)
                 )
-                setattr(right, key, new_right_quantity)
+                setattr(other_collection, key, new_other_quantity)
             else:
-                # left.__dict__.pop(key)
-                # right.__dict__.pop(key)
-                # setattr(left, f"{key}_{left_obj.unit}", left_obj)
-                # setattr(right, f"{key}_{right_obj.unit}", right_obj)
+                # preferred_collection.__dict__.pop(key)
+                # other_collection.__dict__.pop(key)
+                # setattr(preferred_collection, f"{key}_{pref_obj.unit}", pref_obj)
+                # setattr(other_collection, f"{key}_{other_obj.unit}", other_obj)
                 raise ValueError(
                     f"Cannot have different units for the entry {key} "
-                    f"with unit {lu} in the left collection and "
-                    f"unit {ru} in the right collection."
+                    f"with unit {pu} in the {preferred_collection} and "
+                    f"unit {ou} in the {other_collection}."
                 )
 
     left_onto_info = {
@@ -181,7 +200,7 @@ def merge(
     result = me.io.EntityCollection()
 
     for key, val in merged_df.items():
-        # NOTE: when the key from merged dataframe is not in info dictionaries
+        # NOTE: when the key from merged DataFrame is not in info dictionaries
         if key not in left_onto_info and key not in right_onto_info:
             suffix_values = kwargs.get("suffixes", ["_x", "_y"])
             found_suffix = False
