@@ -144,9 +144,9 @@ class Entity:
         | mammos_units.Quantity
         | mammos_entity.Entity = 0,
         unit: str | None | mammos_units.UnitBase = None,
-        description: str | None = None,
+        description: str = "",
     ):
-        self.description = description if description is not None else ""
+        self.description = description
         if isinstance(value, Entity):
             if value.ontology_label != ontology_label:
                 raise ValueError(
