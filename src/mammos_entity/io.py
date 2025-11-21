@@ -38,7 +38,7 @@ Similarly, columns without units (with or without ontology entry) have empty uni
    The optional description of the file.
 
 .. versionadded:: v3
-   Additional description metadata row for each column.
+   Additional description metadata row containing a description for each column.
 
 Example:
     Here is an example with five columns:
