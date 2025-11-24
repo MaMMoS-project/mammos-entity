@@ -62,6 +62,7 @@ def test_write_read(tmp_path, extension):
     comments = ["Some comment", "Some other comment", "A third comment"]
     entities_to_file(
         tmp_path / f"example.{extension}",
+        description="Test file description.\nTest second line.",
         Ms=Ms,
         T=T,
         angle=theta_angle,
@@ -71,6 +72,7 @@ def test_write_read(tmp_path, extension):
 
     read_data = entities_from_file(tmp_path / f"example.{extension}")
 
+    assert read_data.description == "Test file description.\nTest second line."
     assert read_data.Ms == Ms
     assert read_data.T == T
     # Floating-point comparisons with == should ensure that we do not loose precision
@@ -97,6 +99,117 @@ def test_write_read(tmp_path, extension):
         assert all(df == df_without_units)
 
 
+def test_read_csv_v1(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        #mammos csv v1
+        #SpontaneousMagnetization,ThermodynamicTemperature,,DemagnetizingFactor,
+        #https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+        #kA / m,K,rad,,
+        Ms,T,angle,demag_factor,comment
+        600.0,1.0,0.0,0.3333333333333333,Some comment
+        650.0,2.0,0.5,0.3333333333333333,Some other comment
+        700.0,3.0,0.7,0.3333333333333333,A third comment
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+    read_data = entities_from_file(tmp_path / "data.csv")
+    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert me.T([1, 2, 3]) == read_data.T
+    assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
+    assert read_data.demag_factor == me.Entity(
+        "DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]
+    )
+    assert list(read_data.comment) == [
+        "Some comment",
+        "Some other comment",
+        "A third comment",
+    ]
+
+
+def test_read_csv_v2(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        #mammos csv v2
+        #----------------------------------------
+        # File description.
+        #----------------------------------------
+        #SpontaneousMagnetization,ThermodynamicTemperature,,DemagnetizingFactor,
+        #https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+        #kA / m,K,rad,,
+        Ms,T,angle,demag_factor,comment
+        600.0,1.0,0.0,0.3333333333333333,Some comment
+        650.0,2.0,0.5,0.3333333333333333,Some other comment
+        700.0,3.0,0.7,0.3333333333333333,A third comment
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+    read_data = entities_from_file(tmp_path / "data.csv")
+
+    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert me.T([1, 2, 3]) == read_data.T
+    assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
+    assert read_data.demag_factor == me.Entity(
+        "DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]
+    )
+    assert list(read_data.comment) == [
+        "Some comment",
+        "Some other comment",
+        "A third comment",
+    ]
+
+
+def test_read_yaml_v1(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v1
+          description: |-
+            File description.
+        data:
+          Ms:
+            ontology_label: SpontaneousMagnetization
+            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+            unit: kA / m
+            value: [600.0, 650.0, 700.0]
+          T:
+            ontology_label: ThermodynamicTemperature
+            ontology_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
+            unit: K
+            value: [1.0, 2.0, 3.0]
+          angle:
+            ontology_label: null
+            ontology_iri: null
+            unit: rad
+            value: [0.0, 0.5, 0.7]
+          demag_factor:
+            ontology_label: DemagnetizingFactor
+            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+            unit: ''
+            value: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
+          comment:
+            ontology_label: null
+            ontology_iri: null
+            unit: null
+            value: [Some comment, Some other comment, A third comment]
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    read_data = entities_from_file(tmp_path / "data.yaml")
+
+    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert me.T([1, 2, 3]) == read_data.T
+    assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
+    assert read_data.demag_factor == me.Entity(
+        "DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]
+    )
+    assert list(read_data.comment) == [
+        "Some comment",
+        "Some other comment",
+        "A third comment",
+    ]
+
+
 def test_write_read_yaml_multi_shape(tmp_path):
     T = me.T([1, 2, 3])
     Tc = me.Tc(100)
@@ -121,7 +234,7 @@ def test_write_read_yaml_multi_shape(tmp_path):
 
 def test_wrong_file_version_csv(tmp_path):
     file_content = textwrap.dedent(
-        """
+        """\
         #mammos csv v0
         #
         #
@@ -156,7 +269,7 @@ def test_no_multi_dim_in_csv():
 
 def test_wrong_file_version_yaml(tmp_path):
     file_content = textwrap.dedent(
-        """
+        """\
         metadata:
           version: v0
         data:

@@ -108,12 +108,15 @@ YAML files written by :py:mod:`mammos_entity.io` have the following format:
 - ``data`` contains on key per object saved in the file. Each object has the keys:
 
   - ``ontology_label``: label in the ontology, ``null`` if the element is no Entity.
-  - ``description`` a description string.
+  - ``description`` a description string, ``""`` if the element is no Entity or has no
+    description.
   - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity.
   - ``unit``: unit of the entity or quantity, ``null`` if the element has no unit, empty
     string for dimensionless quantities and entities.
   - ``value``: value of the data.
 
+.. versionadded:: v2
+   The ``description`` key for each object.
 
 Example:
     Here is an example with six entries:
@@ -151,12 +154,12 @@ Example:
 
     >>> print(Path("example.yaml").read_text())
     metadata:
-      version: v3
+      version: v2
       description: Test data
     data:
       index:
         ontology_label: null
-        description: null
+        description: ''
         ontology_iri: null
         unit: null
         value: [0, 1, 2]
@@ -168,7 +171,7 @@ Example:
         value: [100.0, 100.0, 100.0]
       alpha:
         ontology_label: null
-        description: null
+        description: ''
         ontology_iri: null
         unit: s2
         value: [1.2, 3.4, 5.6]
@@ -180,7 +183,7 @@ Example:
         value: [1.0, 0.5, 0.5]
       comment:
         ontology_label: null
-        description: null
+        description: ''
         ontology_iri: null
         unit: null
         value: [Comment in the first row, Comment in the second row, Comment in the third
@@ -226,8 +229,8 @@ if TYPE_CHECKING:
 
 def entities_to_file(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     """Write entity data to file.
@@ -250,7 +253,7 @@ def entities_to_file(
 
     Args:
         _filename: Name or path of file where to store data.
-        _description: Optional description of data. If given, it will appear in the
+        description: Optional description of data. If given, it will appear in the
             metadata part of the file.
         **entities: Data to be saved to file. For CSV all entity like objects need to
             have the same length and shape 0 or 1, YAML supports different lengths and
@@ -261,17 +264,17 @@ def entities_to_file(
         raise RuntimeError("No data to write.")
     match Path(_filename).suffix:
         case ".csv":
-            _entities_to_csv(_filename, _description, **entities)
+            _entities_to_csv(_filename, description, **entities)
         case ".yml" | ".yaml":
-            _entities_to_yaml(_filename, _description, **entities)
+            _entities_to_yaml(_filename, description, **entities)
         case unknown_suffix:
             raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
 
 def entities_to_csv(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     """Deprecated: write tabular data to csv file, use entities_to_file."""
@@ -282,13 +285,13 @@ def entities_to_csv(
         DeprecationWarning,
         stacklevel=2,
     )
-    _entities_to_csv(_filename, _description, **entities)
+    _entities_to_csv(_filename, description, **entities)
 
 
 def _entities_to_csv(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     ontology_labels = []
@@ -329,9 +332,9 @@ def _entities_to_csv(
     with open(_filename, "w", newline="") as f:
         # newline="" required for pandas to_csv
         f.write(f"#mammos csv v3{os.linesep}")
-        if _description:
+        if description:
             f.write("#" + "-" * 40 + os.linesep)
-            for d in _description.split("\n"):
+            for d in description.split("\n"):
                 f.write(f"# {d}{os.linesep}")
             f.write("#" + "-" * 40 + os.linesep)
         f.write("#" + ",".join(ontology_labels) + os.linesep)
@@ -343,8 +346,8 @@ def _entities_to_csv(
 
 def _entities_to_yaml(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     def _preprocess_entity_args(entities: dict[str, str]) -> Iterator[tuple]:
@@ -358,13 +361,13 @@ def _entities_to_yaml(
                 value = element.value.tolist()
             elif isinstance(element, u.Quantity):
                 label = None
-                description = None
+                description = ""
                 iri = None
                 unit = str(element.unit)
                 value = element.value.tolist()
             else:
                 label = None
-                description = None
+                description = ""
                 iri = None
                 unit = None
                 value = np.asanyarray(element).tolist()
@@ -372,8 +375,8 @@ def _entities_to_yaml(
 
     entity_dict = {
         "metadata": {
-            "version": "v3",
-            "description": _description,
+            "version": "v2",
+            "description": description,
         },
         "data": {
             name: {
@@ -450,20 +453,39 @@ class EntityCollection:
         description: String containing information about the ``EntityCollection``.
     """
 
-    def __init__(self, description: str | None = None, **kwargs):
+    def __init__(self, description: str = "", **kwargs):
         """Initialize EntityCollection, keywords become attributes of the class.
 
         Args:
             description: Information string to assign to ``description`` attribute.
             **kwargs : entities to be stored in the collection.
         """
-        self.description = description if description is not None else ""
+        self.description = description
         for key, val in kwargs.items():
             setattr(self, key, val)
 
     @property
+    def description(self) -> str:
+        """Description of the entity collection containing useful information.
+
+        The description is a string containing any information relevant to the entity
+        collection. This can include, e.g., whether it is a set of experimental
+        quantities, at what time at night the data was stored, or what was is your
+        favourite entity of the collection.
+        """
+        return self._description
+
+    @description.setter
+    def description(self, value) -> None:
+        if isinstance(value, str):
+            self._description = value
+        else:
+            raise ValueError("Description must be a string.")
+
+    @property
     def _elements_dictionary(self):
-        elements = {k: val for k, val in self.__dict__.items() if k != "description"}
+        """Return a dictionary of all elements stored in the collection."""
+        elements = {k: val for k, val in self.__dict__.items() if k != "_description"}
         return elements
 
     def __repr__(self):
@@ -576,16 +598,14 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
         data = pd.read_csv(f, comment="#", sep=",")
         scalar_data = len(data) == 1
 
-    result = EntityCollection(description="".join(collection_description))
+    result = EntityCollection(description="".join(collection_description).rstrip("\n"))
 
     for name, ontology_label, description, iri, unit in zip(
         names, ontology_labels, descriptions, ontology_iris, units, strict=True
     ):
         data_values = data[name].values if not scalar_data else data[name].values[0]
         if ontology_label:
-            entity = me.Entity(
-                ontology_label, data_values, unit, description=description
-            )
+            entity = me.Entity(ontology_label, data_values, unit, description)
             _check_iri(entity, iri)
             setattr(result, name, entity)
         elif unit:
@@ -608,18 +628,16 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     if not file_content["metadata"] or "version" not in file_content["metadata"]:
         raise RuntimeError("File does not have a key metadata:version.")
 
-    if (version := file_content["metadata"]["version"]) not in ["v1", "v2", "v3"]:
+    if (version := file_content["metadata"]["version"]) not in ["v1", "v2"]:
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
 
-    description = (
-        file_content["metadata"]["description"] if version in ["v2", "v3"] else ""
-    )
+    description = file_content["metadata"]["description"] if version == "v2" else ""
     result = EntityCollection(description=description)
 
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
 
-    if version == "v3":
+    if version == "v2":
         req_subkeys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
     else:
         req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
@@ -635,7 +653,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
                 ontology_label=item["ontology_label"],
                 value=item["value"],
                 unit=item["unit"],
-                description=item["description"] if version == "v3" else "",
+                description=item["description"] if version == "v2" else "",
             )
             _check_iri(entity, item["ontology_iri"])
             setattr(result, key, entity)
