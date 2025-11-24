@@ -133,7 +133,7 @@ class Entity:
         >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
         >>> Tc_kK = me.Entity("CurieTemperature", 0.1, unit=u.kK)
         >>> Tc_K = me.Entity("CurieTemperature", Tc_kK, unit=u.K)
-        >>> Tc_kK = me.Entity("CurieTemperature", 0.1, description="Low temperature")
+        >>> Tc_kuzmin = me.Entity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
 
     """  # noqa: E501
 
@@ -185,6 +185,24 @@ class Entity:
         with u.set_enabled_equivalencies(None):
             self._quantity = u.Quantity(value=value, unit=comp_unit)
         self._ontology_label = ontology_label
+
+    @property
+    def description(self) -> str:
+        """Description of the entity containing useful information.
+
+        The description is a string containing any information relevant to the entity.
+        This can include, i.e., whether it is an experimentally measured or a simulated
+        quantity, what techniques were used in its calculation, or the experimental
+        precision.
+        """
+        return self._description
+
+    @description.setter
+    def description(self, value) -> None:
+        if isinstance(value, str):
+            self._description = value
+        else:
+            raise ValueError("Description must be a string.")
 
     @property
     def ontology_label(self) -> str:
