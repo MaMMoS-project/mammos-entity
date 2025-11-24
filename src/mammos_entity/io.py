@@ -34,6 +34,9 @@ In columns without ontology the lines containing labels and IRIs are empty.
 
 Similarly, columns without units (with or without ontology entry) have empty units line.
 
+For any column, the description line can be empty. Only entities can store descriptions,
+i.e., if the ontology-related lines are empty, the description string will not be read.
+
 .. versionadded:: v2
    The optional description of the file.
 
