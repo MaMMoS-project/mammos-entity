@@ -191,7 +191,7 @@ class Entity:
         """Description of the entity containing useful information.
 
         The description is a string containing any information relevant to the entity.
-        This can include, i.e., whether it is an experimentally measured or a simulated
+        This can include, e.g., whether it is an experimentally measured or a simulated
         quantity, what techniques were used in its calculation, or the experimental
         precision.
         """
