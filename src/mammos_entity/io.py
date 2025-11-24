@@ -200,6 +200,7 @@ from __future__ import annotations
 
 import os
 import re
+import textwrap
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -464,9 +465,18 @@ class EntityCollection:
 
     def __repr__(self):
         """Show container elements."""
-        args = f"    description='{self.description}',\n"
-        args += "\n".join(
-            f"    {key}={val!r}," for key, val in self._elements_dictionary.items()
+        args = textwrap.indent("description=", " " * 4)
+        if "\n" in self.description:
+            args += "'''\n"
+            args += textwrap.indent(self.description, " " * 8)
+            args += "\n    ''',\n"
+        else:
+            args += f"'{self.description}',\n"
+        args += textwrap.indent(
+            "\n".join(
+                f"{key}={val!r}," for key, val in self._elements_dictionary.items()
+            ),
+            " " * 4,
         )
         return f"{self.__class__.__name__}(\n{args}\n)"
 
@@ -563,7 +573,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
         data = pd.read_csv(f, comment="#", sep=",")
         scalar_data = len(data) == 1
 
-    result = EntityCollection(description=" ".join(collection_description))
+    result = EntityCollection(description="".join(collection_description))
 
     for name, ontology_label, description, iri, unit in zip(
         names, ontology_labels, descriptions, ontology_iris, units, strict=True
