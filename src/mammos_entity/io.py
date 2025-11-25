@@ -470,8 +470,7 @@ class EntityCollection:
 
         The description is a string containing any information relevant to the entity
         collection. This can include, e.g., whether it is a set of experimental
-        quantities, at what time at night the data was stored, or what was is your
-        favourite entity of the collection.
+        or simulation quantities or outline the overall workflow.
         """
         return self._description
 
