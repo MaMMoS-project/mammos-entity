@@ -131,8 +131,8 @@ class Entity:
         >>> import mammos_units as u
         >>> Ms = me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
         >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
-        >>> Tc_kK = me.Entity("CurieTemperature", 0.1, unit=u.kK)
-        >>> Tc_K = me.Entity("CurieTemperature", Tc_kK, unit=u.K)
+        >>> Tc_mK = me.Entity("CurieTemperature", 300, unit=u.mK)
+        >>> Tc_K = me.Entity("CurieTemperature", Tc_mK, unit=u.K)
         >>> Tc_kuzmin = me.Entity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
 
     """  # noqa: E501
