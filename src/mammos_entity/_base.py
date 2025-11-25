@@ -326,7 +326,7 @@ class Entity:
         if str(self.unit):
             args.append(f"unit='{self.unit!s}'")
         if self.description:
-            args.append(f"description='{self.description}'")
+            args.append(f"description={self.description!r}")
 
         return f"{self.__class__.__name__}({', '.join(args)})"
 
@@ -336,7 +336,7 @@ class Entity:
         if not self.unit.is_equivalent(u.dimensionless_unscaled):
             repr_str += f",{new_line} unit={self.unit}"
         if self.description:
-            repr_str += f",{new_line} description='{self.description}'"
+            repr_str += f",{new_line} description={self.description!r}"
         return repr_str + ")"
 
     def _repr_html_(self) -> str:
