@@ -34,6 +34,24 @@ def test_concat_flat():
     assert me.concat_flat(e_1, 3 * u.A / u.m)
 
 
+def test_concat_flat_description():
+    """Test description attribute in the concat flat operation."""
+    e_1 = me.Ms(1, description="Entity 1.")
+    e_2 = me.Ms(2, description="Entity 2.")
+    e_3 = me.Ms(3)
+    assert me.concat_flat(e_1, e_2).description == "Entity 1.Entity 2."
+    assert me.concat_flat(e_1, e_3).description == "Entity 1."
+    assert (
+        me.concat_flat(e_1, e_2, description="Concatenated.").description
+        == "Concatenated."
+    )
+
+    q = [5, 6] * u.A / u.m
+    assert me.concat_flat(e_1, q).description == "Entity 1."
+    assert me.concat_flat(q, e_1).description == "Entity 1."
+    assert me.concat_flat(e_3, q).description == ""
+
+
 def test_failing_concat():
     """Test concat operation supposed to fail."""
     with pytest.raises(ValueError):
