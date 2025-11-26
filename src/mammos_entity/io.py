@@ -205,6 +205,7 @@ Example:
 from __future__ import annotations
 
 import csv
+import io
 import re
 import textwrap
 import warnings
@@ -338,22 +339,26 @@ def _entities_to_csv(
             writer.writerow(["#" + "-" * 40])
         writer.writerows(
             [
-                *_add_hash_to_first_element(
-                    ontology_labels, descriptions, ontology_iris, units
-                )
+                _add_hash_to_first_element(row)
+                for row in [
+                    ontology_labels,
+                    descriptions,
+                    ontology_iris,
+                    units,
+                ]
             ]
         )
         dataframe.to_csv(csvfile, index=False)
 
 
-def _add_hash_to_first_element(*lists):
-    """Add hash symbol (#) to the first element of every list given as input.
+def _add_hash_to_first_element(row: list) -> list:
+    """Add hash symbol (#) to the first element of the input row.
 
-    This is a convenience function only used in :py:func:`entities_to_csv`.
-    Each metadata line starts with the hash symbol. This function adds the hash symbol
-    to the first element of each line.
+    This is a convenience function only used in :py:func:`_entities_to_csv`.
+    Each metadata line starts with the hash symbol. This function is used to add the
+    hash symbol to the first element of each line.
     """
-    return [[f"#{ll[0]}", *ll[1:]] for ll in lists]
+    return [f"#{row[0]}", *row[1:]]
 
 
 def _entities_to_yaml(
@@ -478,7 +483,7 @@ class EntityCollection:
 
     @property
     def description(self) -> str:
-        """Description of the entity collection containing useful information.
+        """Additional description of the entity collection.
 
         The description is a string containing any information relevant to the entity
         collection. This can include, e.g., whether it is a set of experimental
@@ -501,20 +506,11 @@ class EntityCollection:
 
     def __repr__(self):
         """Show container elements."""
-        args = textwrap.indent("description=", " " * 4)
-        if "\n" in self.description:
-            args += "'''\n"
-            args += textwrap.indent(self.description, " " * 8)
-            args += "\n    ''',\n"
-        else:
-            args += f"'{self.description}',\n"
-        args += textwrap.indent(
-            "\n".join(
-                f"{key}={val!r}," for key, val in self._elements_dictionary.items()
-            ),
-            " " * 4,
+        args = f"description={self.description!r},\n"
+        args += "\n".join(
+            f"{key}={val!r}," for key, val in self._elements_dictionary.items()
         )
-        return f"{self.__class__.__name__}(\n{args}\n)"
+        return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
 
     def to_dataframe(self, include_units: bool = True):
         """Convert values to dataframe.
@@ -576,42 +572,43 @@ def entities_from_csv(filename: str | Path) -> EntityCollection:
 
 
 def _entities_from_csv(filename: str | Path) -> EntityCollection:
-    with open(filename) as f:
-        file_version_information = f.readline()
-        version = re.search(r"v\d+", file_version_information)
-        if not version:
-            raise RuntimeError("File does not have version information in line 1.")
-        if version.group() not in [f"v{i}" for i in range(1, 4)]:
-            raise RuntimeError(
-                f"Reading mammos csv {version.group()} is not supported."
-            )
-        else:
-            version_number = int(version.group().lstrip("v"))
-        next_line = f.readline()
-        collection_description = []
-        if "#--" in next_line:
-            while True:
-                line = f.readline()
-                if "#--" in line:
-                    break
-                else:
-                    collection_description.append(line.removeprefix("# "))
-            next_line = f.readline()
+    with open(filename, newline="") as csvfile:
+        reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+        lines = [row for row in reader]
+    if not lines:
+        raise RuntimeError(f"Trying to read empty file: {filename}")
 
-        ontology_labels = next_line.strip().removeprefix("#").split(",")
-        if version_number >= 3:
-            descriptions = f.readline().strip().removeprefix("#").split(",")
-        else:
-            descriptions = [""] * len(ontology_labels)
-        ontology_iris = f.readline().strip().removeprefix("#").split(",")
-        units = f.readline().strip().removeprefix("#").split(",")
-        names = f.readline().strip().removeprefix("#").split(",")
+    version = re.search(r"v\d+", lines.pop(0)[0])
+    if not version:
+        raise RuntimeError("File does not have version information in line 1.")
+    if version.group() not in [f"v{i}" for i in range(1, 4)]:
+        raise RuntimeError(f"Reading mammos csv {version.group()} is not supported.")
+    else:
+        version_number = int(version.group().lstrip("v"))
 
-        f.seek(0)
-        data = pd.read_csv(f, comment="#", sep=",")
-        scalar_data = len(data) == 1
+    next_line = lines.pop(0)
+    collection_description = []
+    if "#--" in next_line[0]:
+        while True:
+            line = lines.pop(0)[0]
+            if "#--" in line:
+                break
+            else:
+                collection_description.append(line.removeprefix("# "))
+        next_line = lines.pop(0)
+    ontology_labels = _remove_hash_to_first_element(next_line)
+    if version_number >= 3:
+        descriptions = _remove_hash_to_first_element(lines.pop(0))
+    else:
+        descriptions = [""] * len(ontology_labels)
+    ontology_iris, units = (
+        _remove_hash_to_first_element(row) for row in (lines.pop(0) for _ in range(2))
+    )
+    names = lines[0]
+    data = pd.read_csv(io.StringIO("\n".join([",".join(line) for line in lines])))
+    scalar_data = len(data) == 1
 
-    result = EntityCollection(description="".join(collection_description).rstrip("\n"))
+    result = EntityCollection(description="\n".join(collection_description))
 
     for name, ontology_label, description, iri, unit in zip(
         names, ontology_labels, descriptions, ontology_iris, units, strict=True
@@ -627,6 +624,16 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             setattr(result, name, data_values)
 
     return result
+
+
+def _remove_hash_to_first_element(row: list) -> list:
+    """Remove hash symbol (#) from the first element of the input row.
+
+    This is a convenience function only used in :py:func:`_entities_from_csv`.
+    Each metadata line starts with the hash symbol. This function removes the hash
+    symbol to the first element of each line.
+    """
+    return [row[0].removeprefix("#"), *row[1:]]
 
 
 def _entities_from_yaml(filename: str | Path) -> EntityCollection:
@@ -646,7 +653,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     ]:
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
     else:
-        version_number = int(version.group().lstrip("v"))
+        version_number = int(version.lstrip("v"))
 
     description = file_content["metadata"]["description"] if version_number >= 2 else ""
     result = EntityCollection(description=description)
