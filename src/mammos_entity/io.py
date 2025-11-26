@@ -581,10 +581,12 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
         version = re.search(r"v\d+", file_version_information)
         if not version:
             raise RuntimeError("File does not have version information in line 1.")
-        if version.group() not in ["v1", "v2", "v3"]:
+        if version.group() not in [f"v{i}" for i in range(1, 4)]:
             raise RuntimeError(
                 f"Reading mammos csv {version.group()} is not supported."
             )
+        else:
+            version_number = int(version.group().lstrip("v"))
         next_line = f.readline()
         collection_description = []
         if "#--" in next_line:
@@ -597,7 +599,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             next_line = f.readline()
 
         ontology_labels = next_line.strip().removeprefix("#").split(",")
-        if version.group() == "v3":
+        if version_number >= 3:
             descriptions = f.readline().strip().removeprefix("#").split(",")
         else:
             descriptions = [""] * len(ontology_labels)
@@ -639,16 +641,20 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     if not file_content["metadata"] or "version" not in file_content["metadata"]:
         raise RuntimeError("File does not have a key metadata:version.")
 
-    if (version := file_content["metadata"]["version"]) not in ["v1", "v2"]:
+    if (version := file_content["metadata"]["version"]) not in [
+        f"v{i}" for i in range(1, 3)
+    ]:
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
+    else:
+        version_number = int(version.group().lstrip("v"))
 
-    description = file_content["metadata"]["description"] if version == "v2" else ""
+    description = file_content["metadata"]["description"] if version_number >= 2 else ""
     result = EntityCollection(description=description)
 
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
 
-    if version == "v2":
+    if version_number >= 2:
         req_subkeys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
     else:
         req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
@@ -664,7 +670,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
                 ontology_label=item["ontology_label"],
                 value=item["value"],
                 unit=item["unit"],
-                description=item["description"] if version == "v2" else "",
+                description=item["description"] if version_number >= 2 else "",
             )
             _check_iri(entity, item["ontology_iri"])
             setattr(result, key, entity)
