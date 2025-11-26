@@ -188,7 +188,7 @@ class Entity:
 
     @property
     def description(self) -> str:
-        """Description of the entity containing useful information.
+        """Additional description of the entity.
 
         The description is a string containing any information relevant to the entity.
         This can include, e.g., whether it is an experimentally measured or a simulated
@@ -202,7 +202,10 @@ class Entity:
         if isinstance(value, str):
             self._description = value
         else:
-            raise ValueError("Description must be a string.")
+            raise ValueError(
+                "Description must be a string. "
+                f"Received value: {value} of type: {type(value)}."
+            )
 
     @property
     def ontology_label(self) -> str:
