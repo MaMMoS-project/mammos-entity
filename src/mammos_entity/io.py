@@ -204,7 +204,7 @@ Example:
 
 from __future__ import annotations
 
-import os
+import csv
 import re
 import textwrap
 import warnings
@@ -329,19 +329,31 @@ def _entities_to_csv(
     dataframe = (
         pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
     )
-    with open(_filename, "w", newline="") as f:
-        # newline="" required for pandas to_csv
-        f.write(f"#mammos csv v3{os.linesep}")
+    with open(_filename, "w", newline="") as csvfile:
+        writer = csv.writer(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+        writer.writerow(["#mammos csv v3"])
         if description:
-            f.write("#" + "-" * 40 + os.linesep)
-            for d in description.split("\n"):
-                f.write(f"# {d}{os.linesep}")
-            f.write("#" + "-" * 40 + os.linesep)
-        f.write("#" + ",".join(ontology_labels) + os.linesep)
-        f.write("#" + ",".join(descriptions) + os.linesep)
-        f.write("#" + ",".join(ontology_iris) + os.linesep)
-        f.write("#" + ",".join(units) + os.linesep)
-        dataframe.to_csv(f, index=False)
+            writer.writerow(["#" + "-" * 40])
+            writer.writerows([[f"# {line}"] for line in description.split("\n")])
+            writer.writerow(["#" + "-" * 40])
+        writer.writerows(
+            [
+                *_add_hash_to_first_element(
+                    ontology_labels, descriptions, ontology_iris, units
+                )
+            ]
+        )
+        dataframe.to_csv(csvfile, index=False)
+
+
+def _add_hash_to_first_element(*lists):
+    """Add hash symbol (#) to the first element of every list given as input.
+
+    This is a convenience function only used in :py:func:`entities_to_csv`.
+    Each metadata line starts with the hash symbol. This function adds the hash symbol
+    to the first element of each line.
+    """
+    return [[f"#{ll[0]}", *ll[1:]] for ll in lists]
 
 
 def _entities_to_yaml(
