@@ -5,4 +5,4 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-      - mammos-entity==0.10.0
+      - mammos-entity==0.11.0

@@ -6,6 +6,17 @@ This project uses [towncrier](https://towncrier.readthedocs.io/) and the changes
 
 <!-- towncrier release notes start -->
 
+## [mammos-entity 0.11.0](https://github.com/MaMMoS-project/mammos-entity/tree/0.11.0) – 2025-11-27
+
+### Changed
+
+- Improved `mammos_entity.io` notebook. Use cases for working with `EntityCollection` objects are added. ([#83](https://github.com/MaMMoS-project/mammos-entity/pull/83))
+
+### Misc
+
+- Fix dependencies: remove upper limit for `emmontopy` and add `pandas>2`. ([#93](https://github.com/MaMMoS-project/mammos-entity/pull/93))
+
+
 ## [mammos-entity 0.10.0](https://github.com/MaMMoS-project/mammos-entity/tree/0.10.0) – 2025-08-07
 
 ### Added
