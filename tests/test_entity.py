@@ -156,11 +156,16 @@ def test_repr():
     Test 1: Test repr for scalar value.
     Test 2: Test repr for vectorial value.
     Test 3: Test repr for unitless Entity.
+
+    Note that the representation of floats will be slightly different for NumPy 1
+    and for NumPy 2. In particular `zero_string` = `'0.0'` for NumPy 1,
+    and = `'np.float64(0.0)'` for NumPy 2.
     """
     e = me.Entity("CurieTemperature")
+    zero_string = f"{np.float64(0.0)!r}"  # differs for NumPy 1 and NumPy 2.
     assert (
         e.__repr__()
-        == "Entity(ontology_label='CurieTemperature', value=np.float64(0.0), unit='K')"
+        == f"Entity(ontology_label='CurieTemperature', value={zero_string}, unit='K')"
     )
     assert eval(repr(e)) == e
 
@@ -175,7 +180,7 @@ def test_repr():
     e = me.Entity("DemagnetizingFactor")
     assert (
         e.__repr__()
-        == "Entity(ontology_label='DemagnetizingFactor', value=np.float64(0.0))"
+        == f"Entity(ontology_label='DemagnetizingFactor', value={zero_string})"
     )
     assert eval(repr(e)) == e
 
