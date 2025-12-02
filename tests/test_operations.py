@@ -352,8 +352,8 @@ def test_merge_how_behaviour():
     merge_right = me.merge(ec_1, ec_2, how="right")
     assert isinstance(merge_left.Ms, me.Entity)
     assert merge_left.Ms == ec_1.Ms
-    assert isinstance(merge_right.Ms, u.Quantity)
-    assert np.allclose(merge_right.Ms, ec_2.Ms)
+    assert isinstance(merge_right.Ms, me.Entity)
+    assert np.allclose(merge_right.Ms.quantity, ec_2.Ms)
 
     assert np.allclose(merge_left.x, ec_1.x)
     assert np.allclose(merge_left.y, ec_2.y)

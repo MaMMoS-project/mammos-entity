@@ -71,14 +71,15 @@ def merge(
 
     This function merges two `EntityCollection` instances in a dataframe-like manner.
     Before merging, it identifies overlapping entities (i.e., attributes with the same
-    ontology label) and harmonises their units. The merged result is returned as a new
+    ontology label) and harmonises their units, as well as, tries to carry forward
+    as much metadata as possible. The merged result is returned as a new
     `EntityCollection` that retains ontology labels and units where available.
 
     Args:
         left (EntityCollection):
-            The primary `EntityCollection`.
+            The given `EntityCollection`.
         right (EntityCollection):
-            The secondary `EntityCollection` to merge with.
+            The `EntityCollection` to merge with.
         **kwargs:
             Additional keyword arguments passed to `pandas.merge()`
             (e.g., `on`, `how`, `left_on`, `right_on`, `suffixes`, etc.).
@@ -88,36 +89,28 @@ def merge(
             A new `EntityCollection` containing the merged data. Each entity retains
             ontology labels and units from the original collections when available.
     """
+    # NOTE: require deepcopy to ensure no modification of original EntityCollections
     left = deepcopy(left)
     right = deepcopy(right)
+
     if "how" in kwargs and kwargs["how"].lower() == "right":
         preferred_collection = right
         other_collection = left
     else:
         preferred_collection = left
         other_collection = right
+
     # NOTE: pre-process entity collections for matching keys
-    for key in set(preferred_collection.__dict__.keys()) & set(
+    matching_keys = set(preferred_collection.__dict__.keys()) & set(
         other_collection.__dict__.keys()
-    ):
+    )
+    for key in matching_keys:
         # NOTE: if preferred collection object is entity:
         if isinstance(pref_obj := getattr(preferred_collection, key), me.Entity):
             # NOTE: if other collection object is entity, check for label and units
             if isinstance(other_obj := getattr(other_collection, key), me.Entity):
                 # NOTE: different ontology -> raise error
                 if pref_obj.ontology_label != other_obj.ontology_label:
-                    # preferred_collection.__dict__.pop(key)
-                    # other_collection.__dict__.pop(key)
-                    # setattr(
-                    #     preferred_collection,
-                    #     f"{key}_{pref_obj.ontology_label}",
-                    #     pref_obj
-                    # )
-                    # setattr(
-                    #     other_collection,
-                    #     f"{key}_{other_obj.ontology_label}",
-                    #     other_obj
-                    # )
                     raise ValueError(
                         f"Cannot have the same entry {key} for entity "
                         f"with label {pref_obj.ontology_label} in the "
@@ -142,10 +135,6 @@ def merge(
                 if pu.is_equivalent(ou):
                     setattr(other_collection, key, other_obj.to(pu))
                 else:
-                    # preferred_collection.__dict__.pop(key)
-                    # other_collection.__dict__.pop(key)
-                    # setattr(preferred_collection, f"{key}_{pref_obj.unit}", pref_obj)
-                    # setattr(other_collection, f"{key}_{other_obj.unit}", other_obj)
                     raise ValueError(
                         f"Cannot have different units for the entry {key} "
                         f"with unit {pu} in the {preferred_collection} and "
@@ -165,35 +154,18 @@ def merge(
                 new_other_quantity = (
                     other_obj.to(pu)
                     if isinstance(other_obj, u.Quantity)
-                    else other_obj.quantity.to(pu)
+                    else me.Entity(other_obj.ontology_label, other_obj.quantity.to(pu))
                 )
                 setattr(other_collection, key, new_other_quantity)
             else:
-                # preferred_collection.__dict__.pop(key)
-                # other_collection.__dict__.pop(key)
-                # setattr(preferred_collection, f"{key}_{pref_obj.unit}", pref_obj)
-                # setattr(other_collection, f"{key}_{other_obj.unit}", other_obj)
                 raise ValueError(
                     f"Cannot have different units for the entry {key} "
                     f"with unit {pu} in the {preferred_collection} and "
                     f"unit {ou} in the {other_collection}."
                 )
 
-    pref_onto_info = {
-        key: {
-            "label": getattr(val, "ontology_label", None),
-            "unit": getattr(val, "unit", None),
-        }
-        for key, val in preferred_collection.__dict__.items()
-    }
-    other_onto_info = {
-        key: {
-            "label": getattr(val, "ontology_label", None),
-            "unit": getattr(val, "unit", None),
-        }
-        for key, val in other_collection.__dict__.items()
-    }
-
+    # NOTE: use left and right collections here because pandas will handle the
+    # preference based on the `how` parameter.
     merged_df = pd.merge(
         left.to_dataframe(include_units=False),
         right.to_dataframe(include_units=False),
@@ -202,37 +174,58 @@ def merge(
 
     result = me.io.EntityCollection()
 
+    suffix_values = kwargs.get("suffixes", ["_x", "_y"])
+
     for key, val in merged_df.items():
-        # NOTE: when the key from merged DataFrame is not in info dictionaries
-        if key not in pref_onto_info and key not in other_onto_info:
-            suffix_values = kwargs.get("suffixes", ["_x", "_y"])
-            found_suffix = False
-            if key.endswith(suffix_values[0]):
-                key_new = key.removesuffix(suffix_values[0])
-                selected_info_dict = pref_onto_info
-                found_suffix = True
-            elif key.endswith(suffix_values[1]):
-                key_new = key.removesuffix(suffix_values[1])
-                selected_info_dict = other_onto_info
-                found_suffix = True
+        # NOTE: when the key from merged DataFrame is not in the collections
+        key_with_suffix = None
+        if not (hasattr(preferred_collection, key) or hasattr(other_collection, key)):
+            if any([key.endswith(i) for i in suffix_values]):
+                key_with_suffix = key
+                key = (
+                    key.removesuffix(suffix_values[0])
+                    if key.endswith(suffix_values[0])
+                    else key.removesuffix(suffix_values[1])
+                )
+            # NOTE: when the key does not end with the defined suffixes
+            # e.g. `indicator=True` for pandas merge function
+            else:
+                setattr(result, key, val)
+                continue
 
-            ontology_label = (
-                selected_info_dict[key_new]["label"] if found_suffix else None
-            )
-            unit = selected_info_dict[key_new]["unit"] if found_suffix else None
+        ontology_label = None
+        unit = None
+        if key in matching_keys:
+            pref_obj = getattr(preferred_collection, key)
+            other_obj = getattr(other_collection, key)
 
+            if (pref_entity := isinstance(pref_obj, me.Entity)) or isinstance(
+                other_obj, me.Entity
+            ):
+                selected_obj = pref_obj if pref_entity else other_obj
+                ontology_label = selected_obj.ontology_label
+                unit = selected_obj.unit
+            elif (pref_quantity := isinstance(pref_obj, u.Quantity)) or isinstance(
+                other_obj, u.Quantity
+            ):
+                unit = pref_obj.unit if pref_quantity else other_obj.unit
         else:
-            seleted_info_dict = (
-                pref_onto_info if key in pref_onto_info else other_onto_info
+            obj = (
+                getattr(preferred_collection, key)
+                if hasattr(preferred_collection, key)
+                else getattr(other_collection, key)
             )
-            ontology_label = seleted_info_dict[key]["label"]
-            unit = seleted_info_dict[key]["unit"]
+            if isinstance(obj, me.Entity):
+                ontology_label = obj.ontology_label
+                unit = obj.unit
+            elif isinstance(obj, u.Quantity):
+                unit = obj.unit
 
+        key = key_with_suffix if key_with_suffix else key
         if ontology_label:
-            setattr(result, key, me.Entity(ontology_label, val.to_numpy(), unit))
+            setattr(result, key, me.Entity(ontology_label, val, unit))
         elif unit:
-            setattr(result, key, u.Quantity(val.to_numpy(), unit))
+            setattr(result, key, u.Quantity(val, unit))
         else:
-            setattr(result, key, val.to_numpy())
-
+            setattr(result, key, val)
     return result
