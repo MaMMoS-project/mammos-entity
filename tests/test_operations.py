@@ -40,8 +40,8 @@ def test_concat_flat_description():
     e_2 = me.Ms(2, description="Entity 2.")
     e_3 = me.Ms(3)
     assert me.concat_flat(e_1, e_2).description in (
-        "Entity 1.Entity 2.",
-        "Entity 2.Entity 1.",
+        "Entity 1.|Entity 2.",
+        "Entity 2.|Entity 1.",
     )
     assert me.concat_flat(e_1, e_3).description == "Entity 1."
     assert (

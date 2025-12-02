@@ -86,7 +86,7 @@ def concat_flat(
             "into a single string.",
             stacklevel=1,
         )
-        description = "".join(set(_descriptions))
+        description = "|".join(set(_descriptions))
     return me.Entity(
         ontology_labels[0], np.concatenate(values), unit, description=description
     )
