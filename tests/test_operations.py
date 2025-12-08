@@ -371,3 +371,35 @@ def test_merge_how_behaviour():
     assert merge_right.Ms.unit == u.A / u.m
 
     assert np.allclose(merge_left.Ms, merge_right.Ms)
+
+
+def test_merge_left_right_on():
+    ec1 = me.io.EntityCollection(
+        T_K=me.T([1, 2, 3], "K"),
+        Ms=me.Ms([40, 50, 60]),
+    )
+    ec2 = me.io.EntityCollection(
+        T_mK=me.T([1, 2, 3], "mK"),
+        A=me.A([70, 80, 90]),
+    )
+    ec_merged = me.merge(ec1, ec2, left_on="T_K", right_on="T_mK")
+    assert ec_merged.to_dataframe().empty
+
+    ec1 = me.io.EntityCollection(
+        T_K=me.T([1, 2, 3], "K"),
+        Ms=me.Ms([40, 50, 60]),
+    )
+    ec2 = me.io.EntityCollection(
+        T_mK=me.T([1000, 2000, 3000], "mK"),
+        A=me.A([70, 80, 90]),
+    )
+    ec_merged = me.merge(ec1, ec2, left_on="T_K", right_on="T_mK")
+
+    assert isinstance(ec_merged.T_K, me.Entity)
+    assert isinstance(ec_merged.T_mK, me.Entity)
+    assert isinstance(ec_merged.Ms, me.Entity)
+    assert isinstance(ec_merged.A, me.Entity)
+    assert ec_merged.T_K == ec1.T_K
+    assert ec_merged.T_mK == ec1.T_K
+    assert ec_merged.Ms == ec1.Ms
+    assert ec_merged.A == ec2.A
