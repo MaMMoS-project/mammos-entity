@@ -218,9 +218,9 @@ def merge(
 
         key = key_with_suffix if key_with_suffix else key
         if ontology_label:
-            setattr(result, key, me.Entity(ontology_label, val, unit))
+            setattr(result, key, me.Entity(ontology_label, val.to_numpy(), unit))
         elif unit:
-            setattr(result, key, u.Quantity(val, unit))
+            setattr(result, key, u.Quantity(val.to_numpy(), unit))
         else:
-            setattr(result, key, val)
+            setattr(result, key, val.to_numpy())
     return result
