@@ -166,11 +166,11 @@ def merge(
             for suffix in suffix_values:
                 if key.endswith(suffix):
                     key_with_suffix = key
-                    key.removesuffix(suffix)
+                    key = key.removesuffix(suffix)
                     break
             # when the key does not end with the defined suffixes
             # e.g. `indicator=True` for pandas merge function
-            else:
+            if not key_with_suffix:
                 setattr(result, key, val)
                 continue
 
