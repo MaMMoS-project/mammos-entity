@@ -180,13 +180,11 @@ def merge(
         # NOTE: when the key from merged DataFrame is not in the collections
         key_with_suffix = None
         if not (hasattr(preferred_collection, key) or hasattr(other_collection, key)):
-            if any([key.endswith(i) for i in suffix_values]):
-                key_with_suffix = key
-                key = (
-                    key.removesuffix(suffix_values[0])
-                    if key.endswith(suffix_values[0])
-                    else key.removesuffix(suffix_values[1])
-                )
+            for suffix in suffix_values:
+                if key.endswith(suffix):
+                    key_with_suffix = key
+                    key.removesuffix(suffix)
+                    break
             # NOTE: when the key does not end with the defined suffixes
             # e.g. `indicator=True` for pandas merge function
             else:
