@@ -76,18 +76,15 @@ def merge(
     `EntityCollection` that retains ontology labels and units where available.
 
     Args:
-        left (EntityCollection):
-            The given `EntityCollection`.
-        right (EntityCollection):
-            The `EntityCollection` to merge with.
-        **kwargs:
-            Additional keyword arguments passed to `pandas.merge()`
-            (e.g., `on`, `how`, `left_on`, `right_on`, `suffixes`, etc.).
+        left: The given `EntityCollection`.
+        right: The `EntityCollection` to merge with.
+        **kwargs: Additional keyword arguments passed to `pandas.merge()`
+                  (e.g., `on`, `how`, `left_on`, `right_on`, `suffixes`, etc.).
 
     Returns:
-        EntityCollection:
-            A new `EntityCollection` containing the merged data. Each entity retains
-            ontology labels and units from the original collections when available.
+        EntityCollection: A new `EntityCollection` containing the merged data. Each
+                          entity retains ontology labels and units from the original
+                          collections when available.
     """
     # NOTE: require deepcopy to ensure no modification of original EntityCollections
     left = deepcopy(left)
