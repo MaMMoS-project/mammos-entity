@@ -71,7 +71,7 @@ def merge(
 
     This function merges two `EntityCollection` instances in a dataframe-like manner.
     Before merging, it identifies overlapping entities (i.e., attributes with the same
-    ontology label) and harmonises their units, as well as, tries to carry forward
+    ontology label) and harmonizes their units, as well as, tries to carry forward
     as much metadata as possible. The merged result is returned as a new
     `EntityCollection` that retains ontology labels and units where available.
 
