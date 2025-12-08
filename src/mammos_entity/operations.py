@@ -147,6 +147,60 @@ def merge(
                     )
                 setattr(other_collection, key, other_q.to(pref_q.unit))
 
+    # harmonise units for left_on and right_on kwargs
+    if {"left_on", "right_on"}.issubset(kwargs):
+        if left is preferred_collection:
+            pref_keys = (
+                kwargs["left_on"]
+                if not isinstance(kwargs["left_on"], str)
+                else [kwargs["left_on"]]
+            )
+            other_keys = (
+                kwargs["right_on"]
+                if not isinstance(kwargs["right_on"], str)
+                else [kwargs["right_on"]]
+            )
+        else:
+            pref_keys = (
+                kwargs["right_on"]
+                if not isinstance(kwargs["right_on"], str)
+                else [kwargs["right_on"]]
+            )
+            other_keys = (
+                kwargs["left_on"]
+                if not isinstance(kwargs["left_on"], str)
+                else [kwargs["left_on"]]
+            )
+
+        for pref_key, other_key in zip(pref_keys, other_keys, strict=True):
+            match (
+                getattr(preferred_collection, pref_key),
+                getattr(other_collection, other_key),
+            ):
+                case me.Entity() as pref_obj, me.Entity() as other_obj:
+                    if pref_obj.ontology_label == other_obj.ontology_label:
+                        setattr(
+                            other_collection,
+                            other_key,
+                            me.Entity(
+                                other_obj.ontology_label, other_obj.q.to(pref_obj.unit)
+                            ),
+                        )
+                case me.Entity() as pref_obj, u.Quantity() as other_obj:
+                    if pref_obj.unit.is_equivalent(other_obj.unit):
+                        setattr(
+                            other_collection, other_key, other_obj.to(pref_obj.unit)
+                        )
+                case u.Quantity() as pref_obj, me.Entity() as other_obj:
+                    if pref_obj.unit.is_equivalent(other_obj.unit):
+                        setattr(
+                            other_collection,
+                            other_key,
+                            me.Entity(
+                                other_obj.ontology_label, other_obj.q.to(pref_obj.unit)
+                            ),
+                        )
+
     # use left and right collections here because pandas will handle the
     # preference based on the `how` parameter.
     merged_df = pd.merge(
