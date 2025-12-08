@@ -101,65 +101,51 @@ def merge(
     matching_keys = set(preferred_collection.__dict__.keys()) & set(
         other_collection.__dict__.keys()
     )
+    # check compatibility of entities and quantities and homogenize for merging:
+    # - fail if the two entity_likes are not compatible
+    # - convert all values to the units of the entity_like from the preferred collection
+    # - preserve ontology_label if it is present in one of the two entity_likes
     for key in matching_keys:
-        # if preferred collection object is entity:
-        if isinstance(pref_obj := getattr(preferred_collection, key), me.Entity):
-            # if other collection object is entity, check for label and units
-            if isinstance(other_obj := getattr(other_collection, key), me.Entity):
-                # different ontology -> raise error
-                if pref_obj.ontology_label != other_obj.ontology_label:
+        match (getattr(preferred_collection, key), getattr(other_collection, key)):
+            case me.Entity() as pref_e, me.Entity() as other_e:
+                if pref_e.ontology_label != other_e.ontology_label:
                     raise ValueError(
-                        f"Cannot have the same entry {key} for entity "
-                        f"with label {pref_obj.ontology_label} in the "
-                        f"{preferred_collection} and label "
-                        f"{other_obj.ontology_label} in the {other_collection}."
+                        f"incompatible ontology labels for '{pref_e}' and '{other_e}'"
                     )
-                # same ontology -> harmonise units
-                elif (
-                    pref_obj.ontology_label == other_obj.ontology_label
-                    and (pu := pref_obj.unit) != other_obj.unit
-                ):
-                    setattr(
-                        other_collection,
-                        key,
-                        me.Entity(other_obj.ontology_label, other_obj.quantity.to(pu)),
-                    )
-            # if other object is quantity, check if the units match
-            # if they do not, harmonise the units or raise error
-            elif isinstance(
-                other_obj := getattr(other_collection, key), u.Quantity
-            ) and (pu := pref_obj.unit) != (ou := other_obj.unit):
-                if pu.is_equivalent(ou):
-                    setattr(other_collection, key, other_obj.to(pu))
-                else:
+                setattr(
+                    other_collection,
+                    key,
+                    me.Entity(pref_e.ontology_label, other_e.q.to(pref_e.unit)),
+                )
+            case me.Entity() as pref_e, u.Quantity() as other_q:
+                if not pref_e.unit.is_equivalent(other_q.unit):
                     raise ValueError(
-                        f"Cannot have different units for the entry {key} "
-                        f"with unit {pu} in the {preferred_collection} and "
-                        f"unit {ou} in the {other_collection}."
+                        f"incompatible units for '{pref_e}' and '{other_q}'"
                     )
-        # if preferred collection is quantity
-        # if other collection is an entity/quantity, check units
-        # if the units do not match, harmonise/raise error
-        elif (
-            isinstance(pref_obj := getattr(preferred_collection, key), u.Quantity)
-            and isinstance(
-                other_obj := getattr(other_collection, key), (me.Entity, u.Quantity)
-            )
-            and (pu := pref_obj.unit) != (ou := other_obj.unit)
-        ):
-            if pu.is_equivalent(ou):
-                new_other_quantity = (
-                    other_obj.to(pu)
-                    if isinstance(other_obj, u.Quantity)
-                    else me.Entity(other_obj.ontology_label, other_obj.quantity.to(pu))
+                setattr(
+                    other_collection,
+                    key,
+                    me.Entity(pref_e.ontology_label, other_q.to(pref_e.unit)),
                 )
-                setattr(other_collection, key, new_other_quantity)
-            else:
-                raise ValueError(
-                    f"Cannot have different units for the entry {key} "
-                    f"with unit {pu} in the {preferred_collection} and "
-                    f"unit {ou} in the {other_collection}."
+            case u.Quantity() as pref_q, me.Entity() as other_e:
+                if not pref_q.unit.is_equivalent(other_e.unit):
+                    raise ValueError(
+                        f"incompatible units for '{pref_q}' and '{other_e}'"
+                    )
+                setattr(
+                    preferred_collection, key, me.Entity(other_e.ontology_label, pref_q)
                 )
+                setattr(
+                    other_collection,
+                    key,
+                    me.Entity(other_e.ontology_label, other_e.q.to(pref_q.unit)),
+                )
+            case u.Quantity() as pref_q, u.Quantity() as other_q:
+                if not pref_q.unit.is_equivalent(other_q.unit):
+                    raise ValueError(
+                        f"incompatible units for '{pref_q}' and '{other_q}'"
+                    )
+                setattr(other_collection, key, other_q.to(pref_q.unit))
 
     # use left and right collections here because pandas will handle the
     # preference based on the `how` parameter.
