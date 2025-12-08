@@ -86,7 +86,7 @@ def merge(
                           entity retains ontology labels and units from the original
                           collections when available.
     """
-    # NOTE: require deepcopy to ensure no modification of original EntityCollections
+    # require deepcopy to ensure no modification of original EntityCollections
     left = deepcopy(left)
     right = deepcopy(right)
 
@@ -97,16 +97,16 @@ def merge(
         preferred_collection = left
         other_collection = right
 
-    # NOTE: pre-process entity collections for matching keys
+    # pre-process entity collections for matching keys
     matching_keys = set(preferred_collection.__dict__.keys()) & set(
         other_collection.__dict__.keys()
     )
     for key in matching_keys:
-        # NOTE: if preferred collection object is entity:
+        # if preferred collection object is entity:
         if isinstance(pref_obj := getattr(preferred_collection, key), me.Entity):
-            # NOTE: if other collection object is entity, check for label and units
+            # if other collection object is entity, check for label and units
             if isinstance(other_obj := getattr(other_collection, key), me.Entity):
-                # NOTE: different ontology -> raise error
+                # different ontology -> raise error
                 if pref_obj.ontology_label != other_obj.ontology_label:
                     raise ValueError(
                         f"Cannot have the same entry {key} for entity "
@@ -114,7 +114,7 @@ def merge(
                         f"{preferred_collection} and label "
                         f"{other_obj.ontology_label} in the {other_collection}."
                     )
-                # NOTE: same ontology -> harmonise units
+                # same ontology -> harmonise units
                 elif (
                     pref_obj.ontology_label == other_obj.ontology_label
                     and (pu := pref_obj.unit) != other_obj.unit
@@ -124,7 +124,7 @@ def merge(
                         key,
                         me.Entity(other_obj.ontology_label, other_obj.quantity.to(pu)),
                     )
-            # NOTE: if other object is quantity, check if the units match
+            # if other object is quantity, check if the units match
             # if they do not, harmonise the units or raise error
             elif isinstance(
                 other_obj := getattr(other_collection, key), u.Quantity
@@ -137,7 +137,7 @@ def merge(
                         f"with unit {pu} in the {preferred_collection} and "
                         f"unit {ou} in the {other_collection}."
                     )
-        # NOTE: if preferred collection is quantity
+        # if preferred collection is quantity
         # if other collection is an entity/quantity, check units
         # if the units do not match, harmonise/raise error
         elif (
@@ -161,7 +161,7 @@ def merge(
                     f"unit {ou} in the {other_collection}."
                 )
 
-    # NOTE: use left and right collections here because pandas will handle the
+    # use left and right collections here because pandas will handle the
     # preference based on the `how` parameter.
     merged_df = pd.merge(
         left.to_dataframe(include_units=False),
@@ -174,7 +174,7 @@ def merge(
     suffix_values = kwargs.get("suffixes", ["_x", "_y"])
 
     for key, val in merged_df.items():
-        # NOTE: when the key from merged DataFrame is not in the collections
+        # when the key from merged DataFrame is not in the collections
         key_with_suffix = None
         if not (hasattr(preferred_collection, key) or hasattr(other_collection, key)):
             for suffix in suffix_values:
@@ -182,7 +182,7 @@ def merge(
                     key_with_suffix = key
                     key.removesuffix(suffix)
                     break
-            # NOTE: when the key does not end with the defined suffixes
+            # when the key does not end with the defined suffixes
             # e.g. `indicator=True` for pandas merge function
             else:
                 setattr(result, key, val)
