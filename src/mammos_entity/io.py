@@ -254,8 +254,8 @@ def entities_to_file(
 
     Args:
         _filename: Name or path of file where to store data.
-        description: Optional description of data. If given, it will appear in the
-            metadata part of the file.
+        description: Optional description of data. It is added to the
+           metadata part of the file.
         **entities: Data to be saved to file. For CSV all entity like objects need to
             have the same length and shape 0 or 1, YAML supports different lengths and
             arbitrary shape.
