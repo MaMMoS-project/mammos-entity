@@ -49,7 +49,7 @@ def concat_flat(
 
     """  # noqa: E501
     _elements = []
-    _descriptions = [""]
+    _descriptions = {}
     for e in elements:
         if isinstance(e, list | tuple):
             _elements.extend(e)
