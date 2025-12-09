@@ -36,8 +36,7 @@ def concat_flat(
 
     Args:
         *elements: object arguments to be concatenated.
-        unit: If specified, all objects are converted to this units or initialized with
-            it.
+        unit: If specified, all values are converted to this unit.
         description: If specified, this description string is assigned to the resulting
             entity. If not specified, all unique descriptions from the input entities
             are collected and concatenated. The order of the collected descriptions
