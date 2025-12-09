@@ -117,79 +117,75 @@ def merge(
            ``indicator=True``), it is stored as a plain NumPy array.
        - Any non-unit metadata (ontology labels) is preserved when possible.
 
-    Parameters:
-    ----------
-    left : The left-hand ``EntityCollection`` to merge. Unless ``how='right'`` is
-           specified, this collection is treated as the preferred source of
-           ontology labels and units for overlapping attributes.
-    right : The right-hand ``EntityCollection`` to merge with. When ``how='right'``
-            is used, this becomes the preferred collection for resolving ontology
-            labels and units.
-    **kwargs : Additional keyword arguments forwarded directly to ``pandas.merge``.
+    Args:
+        left : The left-hand ``EntityCollection`` to merge. Unless ``how='right'`` is
+               specified, this collection is treated as the preferred source of
+               ontology labels and units for overlapping attributes.
+        right : The right-hand ``EntityCollection`` to merge with. When ``how='right'``
+                is used, this becomes the preferred collection for resolving ontology
+                labels and units.
+        **kwargs : Additional keyword arguments forwarded directly to ``pandas.merge``.
 
     Returns:
-    -------
-    mammos_entity.io.EntityCollection
-        A new ``EntityCollection`` containing the merged data. Attribute types are:
+        mammos_entity.io.EntityCollection
+            A new ``EntityCollection`` containing the merged data. Attribute types are:
 
-        - ``mammos_entity.Entity`` for merged attributes that originated from entity
-          instances or quantities with known ontology labels and units.
-        - ``mammos_units.Quantity`` when unit information is known but there is no
-          ontology label.
-        - Plain NumPy arrays for columns without associated ontology or unit
-          metadata.
+            - ``mammos_entity.Entity`` for merged attributes that originated from entity
+              instances or quantities with known ontology labels and units.
+            - ``mammos_units.Quantity`` when unit information is known but there is no
+              ontology label.
+            - Plain NumPy arrays for columns without associated ontology or unit
+              metadata.
 
-        The returned collection does not share data with the input collections;
-        both the input collections and their underlying data remain unchanged.
+            The returned collection does not share data with the input collections;
+            both the input collections and their underlying data remain unchanged.
 
     Raises:
-    ------
-    ValueError
-        If overlapping attributes have incompatible ontology labels or
-        non-convertible units, for example:
+        ValueError
+            If overlapping attributes have incompatible ontology labels or
+            non-convertible units, for example:
 
-        - Two entity attributes with different ``ontology_label`` values under
-          the same attribute name.
-        - Quantities with units that cannot be converted into each other
-          (e.g. meters vs seconds).
+            - Two entity attributes with different ``ontology_label`` values under
+              the same attribute name.
+            - Quantities with units that cannot be converted into each other
+              (e.g. meters vs seconds).
 
     Example:
-    -------
-    >>> import mammos_entity as me
-    >>> A_collection = me.io.EntityCollection(
-    ...     x_pos=me.Entity("Length", [-10.0, -10.0, -10.0], "mm"),
-    ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
-    ...     a=me.Entity("LocalLatticeConstantA", [8.783, 8.783, 8.783], "Angstrom"),
-    ...     c=me.Entity("LocalLatticeConstantC", [12.163, 12.162, 12.162], "Angstrom"),
-    ...     volume=me.Entity("CellVolume", [938.468, 938.366, 938.321], "Angstrom^3"),
-    ...     Ms=me.Ms([1205044.626, 1203469.633, 1202605.731]),
-    ...     A=me.A([7.071, 7.053, 7.043], "pJ/m"),
-    ...     K1=me.Ku([3.411, 3.388, 3.376], "MJ/m3"),
-    ...     Ha=me.Entity(
-    ...         "AnisotropyField",
-    ...         [4505434.713, 4481343.844, 4468220.343],
-    ...         "A/m",
-    ...     ),
-    ... )
-    >>> B_collection = me.io.EntityCollection(
-    ...     x_pos=me.Entity("Length", [-1, -1, -1], "cm"),
-    ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
-    ...     integral_abs_diff=[1.176, 1.174, 1.153],
-    ... )
-    >>> merged_collection = me.merge(A_collection, B_collection, how="inner")
-    >>> merged_collection
-    EntityCollection(
-        x_pos=Entity(ontology_label='Length', value=array([-10., -10., -10.]), unit='mm'),
-        y_pos=Entity(ontology_label='Length', value=array([-10., -15., -20.]), unit='mm'),
-        a=Entity(ontology_label='LocalLatticeConstantA', value=array([8.783, 8.783, 8.783]), unit='Angstrom'),
-        c=Entity(ontology_label='LocalLatticeConstantC', value=array([12.163, 12.162, 12.162]), unit='Angstrom'),
-        volume=Entity(ontology_label='CellVolume', value=array([938.468, 938.366, 938.321]), unit='Angstrom3'),
-        Ms=Entity(ontology_label='SpontaneousMagnetization', value=array([1205044.626, 1203469.633, 1202605.731]), unit='A / m'),
-        A=Entity(ontology_label='ExchangeStiffnessConstant', value=array([7.071, 7.053, 7.043]), unit='pJ / m'),
-        K1=Entity(ontology_label='UniaxialAnisotropyConstant', value=array([3.411, 3.388, 3.376]), unit='MJ / m3'),
-        Ha=Entity(ontology_label='AnisotropyField', value=array([4505434.713, 4481343.844, 4468220.343]), unit='A / m'),
-        integral_abs_diff=array([1.176, 1.174, 1.153]),
-    )
+        >>> import mammos_entity as me
+        >>> A_collection = me.io.EntityCollection(
+        ...     x_pos=me.Entity("Length", [-10.0, -10.0, -10.0], "mm"),
+        ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
+        ...     a=me.Entity("LocalLatticeConstantA", [8.783, 8.783, 8.783], "Angstrom"),
+        ...     c=me.Entity("LocalLatticeConstantC", [12.163, 12.162, 12.162], "Angstrom"),
+        ...     volume=me.Entity("CellVolume", [938.468, 938.366, 938.321], "Angstrom^3"),
+        ...     Ms=me.Ms([1205044.626, 1203469.633, 1202605.731]),
+        ...     A=me.A([7.071, 7.053, 7.043], "pJ/m"),
+        ...     K1=me.Ku([3.411, 3.388, 3.376], "MJ/m3"),
+        ...     Ha=me.Entity(
+        ...         "AnisotropyField",
+        ...         [4505434.713, 4481343.844, 4468220.343],
+        ...         "A/m",
+        ...     ),
+        ... )
+        >>> B_collection = me.io.EntityCollection(
+        ...     x_pos=me.Entity("Length", [-1, -1, -1], "cm"),
+        ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
+        ...     integral_abs_diff=[1.176, 1.174, 1.153],
+        ... )
+        >>> merged_collection = me.merge(A_collection, B_collection, how="inner")
+        >>> merged_collection
+        EntityCollection(
+            x_pos=Entity(ontology_label='Length', value=array([-10., -10., -10.]), unit='mm'),
+            y_pos=Entity(ontology_label='Length', value=array([-10., -15., -20.]), unit='mm'),
+            a=Entity(ontology_label='LocalLatticeConstantA', value=array([8.783, 8.783, 8.783]), unit='Angstrom'),
+            c=Entity(ontology_label='LocalLatticeConstantC', value=array([12.163, 12.162, 12.162]), unit='Angstrom'),
+            volume=Entity(ontology_label='CellVolume', value=array([938.468, 938.366, 938.321]), unit='Angstrom3'),
+            Ms=Entity(ontology_label='SpontaneousMagnetization', value=array([1205044.626, 1203469.633, 1202605.731]), unit='A / m'),
+            A=Entity(ontology_label='ExchangeStiffnessConstant', value=array([7.071, 7.053, 7.043]), unit='pJ / m'),
+            K1=Entity(ontology_label='UniaxialAnisotropyConstant', value=array([3.411, 3.388, 3.376]), unit='MJ / m3'),
+            Ha=Entity(ontology_label='AnisotropyField', value=array([4505434.713, 4481343.844, 4468220.343]), unit='A / m'),
+            integral_abs_diff=array([1.176, 1.174, 1.153]),
+        )
     """  # noqa: E501
     # require deepcopy to ensure no modification of original EntityCollections
     left = deepcopy(left)
