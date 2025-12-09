@@ -79,12 +79,13 @@ def concat_flat(
         else:
             values.append(np.asarray(e).flatten() * unit)
     if description is None:
-        warnings.warn(
-            "concat_flat was called without specifying a description input. "
-            "The descriptions from all entities are collected and concatenated "
-            "into a single string.",
-            stacklevel=1,
-        )
+        if len(_descriptions) > 1:
+            warnings.warn(
+                "concat_flat was called without specifying a description input. "
+                "The descriptions from all entities are collected and concatenated "
+                "into a single string.",
+                stacklevel=1,
+            )
         description = "|".join(set(_descriptions))
     return me.Entity(
         ontology_labels[0], np.concatenate(values), unit, description=description
