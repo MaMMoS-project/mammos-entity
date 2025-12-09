@@ -64,7 +64,7 @@ def concat_flat(
             if not first_unit:
                 first_unit = e.unit
             ontology_labels.append(e.ontology_label)
-            _descriptions.append(e.description)
+            _descriptions.add(e.description)
     if not ontology_labels:
         raise ValueError("At least one Entity is required.")
     elif len(set(ontology_labels)) > 1:
