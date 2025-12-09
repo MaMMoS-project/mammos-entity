@@ -168,6 +168,7 @@ def test_read_csv_v2(tmp_path):
     (tmp_path / "data.csv").write_text(file_content)
     read_data = entities_from_file(tmp_path / "data.csv")
 
+    assert read_data.description == "File description."
     assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
     assert me.T([1, 2, 3]) == read_data.T
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
