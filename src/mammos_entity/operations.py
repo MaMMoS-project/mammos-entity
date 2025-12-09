@@ -39,7 +39,7 @@ def concat_flat(
         unit: If specified, all values are converted to this unit.
         description: If specified, this description string is assigned to the resulting
             entity. If not specified, all unique descriptions from the input entities
-            are collected and concatenated. The order of the collected descriptions
+            are collected and concatenated (separated by |). The order of the collected descriptions
             might change.
 
     Examples:
