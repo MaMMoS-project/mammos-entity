@@ -179,16 +179,17 @@ def merge(
     >>> merged_collection = me.merge(A_collection, B_collection, how="inner")
     >>> merged_collection
     EntityCollection(
-    x_pos=Entity(ontology_label='Length', value=array([-10., -10., -10.]), unit='mm'),
-    y_pos=Entity(ontology_label='Length', value=array([-10., -15., -20.]), unit='mm'),
-    a=Entity(ontology_label='LocalLatticeConstantA', value=array([8.783, 8.783, 8.783]), unit='Angstrom'),
-    c=Entity(ontology_label='LocalLatticeConstantC', value=array([12.163, 12.162, 12.162]), unit='Angstrom'),
-    volume=Entity(ontology_label='CellVolume', value=array([938.468, 938.366, 938.321]), unit='Angstrom3'),
-    Ms=Entity(ontology_label='SpontaneousMagnetization', value=array([1205044.626, 1203469.633, 1202605.731]), unit='A / m'),
-    A=Entity(ontology_label='ExchangeStiffnessConstant', value=array([7.071, 7.053, 7.043]), unit='pJ / m'),
-    K1=Entity(ontology_label='UniaxialAnisotropyConstant', value=array([3.411, 3.388, 3.376]), unit='MJ / m3'),
-    Ha=Entity(ontology_label='AnisotropyField', value=array([4505434.713, 4481343.844, 4468220.343]), unit='A / m'),
-    integral_abs_diff=array([1.176, 1.174, 1.153]),
+        x_pos=Entity(ontology_label='Length', value=array([-10., -10., -10.]), unit='mm'),
+        y_pos=Entity(ontology_label='Length', value=array([-10., -15., -20.]), unit='mm'),
+        a=Entity(ontology_label='LocalLatticeConstantA', value=array([8.783, 8.783, 8.783]), unit='Angstrom'),
+        c=Entity(ontology_label='LocalLatticeConstantC', value=array([12.163, 12.162, 12.162]), unit='Angstrom'),
+        volume=Entity(ontology_label='CellVolume', value=array([938.468, 938.366, 938.321]), unit='Angstrom3'),
+        Ms=Entity(ontology_label='SpontaneousMagnetization', value=array([1205044.626, 1203469.633, 1202605.731]), unit='A / m'),
+        A=Entity(ontology_label='ExchangeStiffnessConstant', value=array([7.071, 7.053, 7.043]), unit='pJ / m'),
+        K1=Entity(ontology_label='UniaxialAnisotropyConstant', value=array([3.411, 3.388, 3.376]), unit='MJ / m3'),
+        Ha=Entity(ontology_label='AnisotropyField', value=array([4505434.713, 4481343.844, 4468220.343]), unit='A / m'),
+        integral_abs_diff=array([1.176, 1.174, 1.153]),
+    )
     """  # noqa: E501
     # require deepcopy to ensure no modification of original EntityCollections
     left = deepcopy(left)
