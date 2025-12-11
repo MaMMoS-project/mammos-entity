@@ -6,6 +6,13 @@ This project uses [towncrier](https://towncrier.readthedocs.io/) and the changes
 
 <!-- towncrier release notes start -->
 
+## [mammos-entity 0.11.1](https://github.com/MaMMoS-project/mammos-entity/tree/0.11.1) – 2025-12-11
+
+### Fixed
+
+- Fixed logic to establish ontology-preferred units. ([#98](https://github.com/MaMMoS-project/mammos-entity/pull/98))
+
+
 ## [mammos-entity 0.11.0](https://github.com/MaMMoS-project/mammos-entity/tree/0.11.0) – 2025-11-27
 
 ### Changed
