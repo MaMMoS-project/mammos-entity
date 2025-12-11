@@ -33,6 +33,10 @@ def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
     a coherent SI derived unit (or if none found, an SI dimensional unit),
     then return that class's UCUM code.
 
+    Given a list of ontology classes, we consider only the ones that are classified
+    as `SIDimensionalUnit` and we filter out the ones classified as `NonCoherent`.
+    If a non `Derived` unit can be found, than we filter out all the `Derived` units.
+
     Args:
         list_cls: A list of ontology classes.
 
@@ -41,19 +45,22 @@ def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
         in the given list of classes.
 
     """
-    si_unit_cls = [
-        cls
-        for cls in list_cls
-        if mammos_ontology.SICoherentDerivedUnit in cls.ancestors()
+    possible_units = [
+        c
+        for c in list_cls
+        if (
+            mammos_ontology.SIDimensionalUnit in c.ancestors()
+            and mammos_ontology.SINonCoherentUnit not in c.ancestors()
+            and mammos_ontology.SINonCoherentDerivedUnit not in c.ancestors()
+        )
     ]
-    if not si_unit_cls:
-        si_unit_cls = [
-            cls
-            for cls in list_cls
-            if (mammos_ontology.SIDimensionalUnit in cls.ancestors())
-        ]
+    not_derived = [
+        c for c in possible_units if (mammos_ontology.DerivedUnit not in c.ancestors())
+    ]
+    if not_derived:
+        possible_units = not_derived
 
-    # Explanation of the following line:
+    # Explanation of the following lines:
     # 1. We find all ucum (Unified Code for Units of Measure) Code for all units
     #    in si_unit_cls.
     # 2. Astropy complains if it sees unit strings with parentheses, so we exclude
@@ -64,8 +71,8 @@ def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
     #    astropy will make the conversion to base units later on.
     return [
         unit
-        for si_unit_cls_i in si_unit_cls
-        for unit in si_unit_cls_i.ucumCode
+        for unit_class in possible_units
+        for unit in unit_class.ucumCode
         if "(" not in unit
     ][0]
 
@@ -90,7 +97,11 @@ def extract_SI_units(ontology_label: str) -> str | None:
     si_unit = ""
     for ancestor in thing.ancestors():
         if hasattr(ancestor, "hasMeasurementUnit") and ancestor.hasMeasurementUnit:
-            if sub_class := list(ancestor.hasMeasurementUnit[0].subclasses()):
+            if ancestor.hasMeasurementUnit[0] == mammos_ontology.get_by_label(
+                "DimensionlessUnit"
+            ):
+                si_unit = ""
+            elif sub_class := list(ancestor.hasMeasurementUnit[0].subclasses()):
                 si_unit = si_unit_from_list(sub_class)
             elif ontology_label := ancestor.hasMeasurementUnit[0].ucumCode:
                 si_unit = ontology_label[0]
@@ -155,7 +166,7 @@ class Entity:
                         f" {ontology_label} '{u.Unit(si_unit)}'"
                     )
         elif (si_unit is not None) and (unit is None):
-            with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K}):
+            with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K, "har": u.ha}):
                 comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
             unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
         elif (si_unit is None) and unit:
