@@ -51,7 +51,7 @@ def concat_flat(
 
     """  # noqa: E501
     _elements = []
-    _descriptions = {}
+    _descriptions = set()
     for e in elements:
         if isinstance(e, list | tuple):
             _elements.extend(e)
@@ -64,7 +64,8 @@ def concat_flat(
             if not first_unit:
                 first_unit = e.unit
             ontology_labels.append(e.ontology_label)
-            _descriptions.add(e.description)
+            if e.description:
+                _descriptions.add(e.description)
     if not ontology_labels:
         raise ValueError("At least one Entity is required.")
     elif len(set(ontology_labels)) > 1:
