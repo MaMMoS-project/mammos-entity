@@ -403,3 +403,19 @@ def test_merge_left_right_on():
     assert ec_merged.T_mK == ec1.T_K
     assert ec_merged.Ms == ec1.Ms
     assert ec_merged.A == ec2.A
+
+
+def test_merge_on():
+    ec1 = me.io.EntityCollection(
+        x=[1, 2, 3],
+        magnetisation=me.Ms([100, 200, 300]),
+    )
+    ec2 = me.io.EntityCollection(
+        x=[1, 2, 3],
+        magnetisation=me.Js([1, 2, 3]),
+    )
+    merged_collection = me.merge(ec1, ec2, on="x", suffixes=["_sim", "_exp"])
+    assert np.allclose(merged_collection.x, ec1.x)
+    assert np.allclose(merged_collection.x, ec2.x)
+    assert merged_collection.magnetisation_sim == ec1.magnetisation
+    assert merged_collection.magnetisation_exp == ec2.magnetisation
