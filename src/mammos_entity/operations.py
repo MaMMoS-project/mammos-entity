@@ -199,9 +199,12 @@ def merge(
         other_collection = right
 
     # pre-process entity collections for matching keys
-    matching_keys = set(preferred_collection.__dict__.keys()) & set(
-        other_collection.__dict__.keys()
-    )
+    if "on" in kwargs and kwargs["on"]:
+        matching_keys = set(kwargs["on"])
+    else:
+        matching_keys = set(preferred_collection.__dict__.keys()) & set(
+            other_collection.__dict__.keys()
+        )
     # check compatibility of entities and quantities and homogenize for merging:
     # - fail if the two entity_likes are not compatible
     # - convert all values to the units of the entity_like from the preferred collection
@@ -317,11 +320,20 @@ def merge(
     for key, val in merged_df.items():
         # when the key from merged DataFrame is not in the collections
         key_with_suffix = None
+        ontology_label = None
+        unit = None
         if not (hasattr(preferred_collection, key) or hasattr(other_collection, key)):
-            for suffix in suffix_values:
+            for i, suffix in enumerate(suffix_values):
+                collection = left if i == 0 else right
                 if key.endswith(suffix):
                     key_with_suffix = key
                     key = key.removesuffix(suffix)
+                    obj = getattr(collection, key)
+                    if isinstance(obj, me.Entity):
+                        ontology_label = obj.ontology_label
+                        unit = obj.unit
+                    elif isinstance(obj, u.Quantity):
+                        unit = obj.unit
                     break
             # when the key does not end with the defined suffixes
             # e.g. `indicator=True` for pandas merge function
@@ -329,8 +341,6 @@ def merge(
                 setattr(result, key, val)
                 continue
 
-        ontology_label = None
-        unit = None
         if key in matching_keys:
             pref_obj = getattr(preferred_collection, key)
             other_obj = getattr(other_collection, key)
@@ -351,10 +361,10 @@ def merge(
                 if hasattr(preferred_collection, key)
                 else getattr(other_collection, key)
             )
-            if isinstance(obj, me.Entity):
+            if isinstance(obj, me.Entity) and ontology_label is None:
                 ontology_label = obj.ontology_label
                 unit = obj.unit
-            elif isinstance(obj, u.Quantity):
+            elif isinstance(obj, u.Quantity) and unit is None:
                 unit = obj.unit
 
         key = key_with_suffix if key_with_suffix else key
