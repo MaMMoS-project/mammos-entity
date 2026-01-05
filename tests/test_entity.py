@@ -292,3 +292,9 @@ def test_equality():
 def test_known_labels(function, expected_label):
     """Check predefined entities."""
     assert function().ontology_label == expected_label
+
+
+def test_bad_description():
+    """Check bad type for description."""
+    with pytest.raises(ValueError):
+        me.Ms(1, description=1)
