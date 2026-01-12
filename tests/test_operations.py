@@ -34,6 +34,7 @@ def test_concat_flat():
     assert me.concat_flat(e_1, 3 * u.A / u.m)
 
 
+@pytest.mark.filterwarnings("ignore:.*called without specifying a description.*")
 def test_concat_flat_description():
     """Test description attribute in the concat flat operation."""
     e_1 = me.Ms(1, description="Entity 1.")
