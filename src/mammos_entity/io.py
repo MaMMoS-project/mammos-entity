@@ -599,13 +599,13 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
                 else:
                     collection_description.append(line.removeprefix("# "))
             next_line = next(reader)
-        ontology_labels = _remove_hash_to_first_element(next_line)
+        ontology_labels = _remove_hash_from_first_element(next_line)
         if version_number >= 3:
-            descriptions = _remove_hash_to_first_element(next(reader))
+            descriptions = _remove_hash_from_first_element(next(reader))
         else:
             descriptions = [""] * len(ontology_labels)
-        ontology_iris = _remove_hash_to_first_element(next(reader))
-        units = _remove_hash_to_first_element(next(reader))
+        ontology_iris = _remove_hash_from_first_element(next(reader))
+        units = _remove_hash_from_first_element(next(reader))
         data = pd.read_csv(csvfile)
         names = data.keys()
         scalar_data = len(data) == 1
