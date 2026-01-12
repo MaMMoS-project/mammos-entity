@@ -335,7 +335,8 @@ def _entities_to_csv(
         writer.writerow(["#mammos csv v3"])
         if description:
             writer.writerow(["#" + "-" * 40])
-            writer.writerows([[f"# {line}"] for line in description.split("\n")])
+            for line in description.split("\n"):
+                csvfile.write(f"# {line}\n")
             writer.writerow(["#" + "-" * 40])
         writer.writerows(
             [
