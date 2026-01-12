@@ -628,7 +628,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
     return result
 
 
-def _remove_hash_to_first_element(row: list) -> list:
+def _remove_hash_from_first_element(row: list) -> list:
     """Remove hash symbol (#) from the first element of the input row.
 
     This is a convenience function only used in :py:func:`_entities_from_csv`.
