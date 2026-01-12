@@ -28,7 +28,7 @@ def concat_flat(
 ) -> mammos_entity.Entity:
     """Concatenate objects into a unique flat Entity.
 
-    At least one of the inputs must be an Entity with a `ontology_label`.
+    At least one of the inputs must be an Entity with an `ontology_label`.
     The unit of the first Entity is accepted unless the optional argument `unit` is
     defined.
 
