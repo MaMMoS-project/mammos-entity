@@ -205,7 +205,6 @@ Example:
 from __future__ import annotations
 
 import csv
-import io
 import re
 import textwrap
 import warnings
@@ -575,39 +574,41 @@ def entities_from_csv(filename: str | Path) -> EntityCollection:
 def _entities_from_csv(filename: str | Path) -> EntityCollection:
     with open(filename, newline="") as csvfile:
         reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
-        lines = [row for row in reader]
-    if not lines:
-        raise RuntimeError(f"Trying to read empty file: {filename}")
 
-    version = re.search(r"v\d+", lines.pop(0)[0])
-    if not version:
-        raise RuntimeError("File does not have version information in line 1.")
-    if version.group() not in [f"v{i}" for i in range(1, 4)]:
-        raise RuntimeError(f"Reading mammos csv {version.group()} is not supported.")
-    else:
-        version_number = int(version.group().lstrip("v"))
+        try:
+            version = re.search(r"v\d+", next(reader)[0])
+        except StopIteration:
+            raise RuntimeError(f"Trying to read empty file: {filename}") from None
 
-    next_line = lines.pop(0)
-    collection_description = []
-    if "#--" in next_line[0]:
-        while True:
-            line = lines.pop(0)[0]
-            if "#--" in line:
-                break
-            else:
-                collection_description.append(line.removeprefix("# "))
-        next_line = lines.pop(0)
-    ontology_labels = _remove_hash_to_first_element(next_line)
-    if version_number >= 3:
-        descriptions = _remove_hash_to_first_element(lines.pop(0))
-    else:
-        descriptions = [""] * len(ontology_labels)
-    ontology_iris, units = (
-        _remove_hash_to_first_element(row) for row in (lines.pop(0) for _ in range(2))
-    )
-    names = lines[0]
-    data = pd.read_csv(io.StringIO("\n".join([",".join(line) for line in lines])))
-    scalar_data = len(data) == 1
+        if not version:
+            raise RuntimeError("File does not have version information in line 1.")
+        if version.group() not in [f"v{i}" for i in range(1, 4)]:
+            raise RuntimeError(
+                f"Reading mammos csv {version.group()} is not supported."
+            )
+        else:
+            version_number = int(version.group().lstrip("v"))
+
+        next_line = next(reader)
+        collection_description = []
+        if "#--" in next_line[0]:
+            while True:
+                line = next(reader)[0]
+                if "#--" in line:
+                    break
+                else:
+                    collection_description.append(line.removeprefix("# "))
+            next_line = next(reader)
+        ontology_labels = _remove_hash_to_first_element(next_line)
+        if version_number >= 3:
+            descriptions = _remove_hash_to_first_element(next(reader))
+        else:
+            descriptions = [""] * len(ontology_labels)
+        ontology_iris = _remove_hash_to_first_element(next(reader))
+        units = _remove_hash_to_first_element(next(reader))
+        data = pd.read_csv(csvfile)
+        names = data.keys()
+        scalar_data = len(data) == 1
 
     result = EntityCollection(description="\n".join(collection_description))
 
