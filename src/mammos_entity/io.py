@@ -502,7 +502,7 @@ class EntityCollection:
     @property
     def _elements_dictionary(self):
         """Return a dictionary of all elements stored in the collection."""
-        elements = {k: val for k, val in self.__dict__.items() if k != "_description"}
+        elements = {k: val for k, val in vars(self).items() if k != "_description"}
         return elements
 
     def __repr__(self):
