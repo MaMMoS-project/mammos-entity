@@ -330,7 +330,9 @@ def _entities_to_csv(
         pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
     )
     with open(_filename, "w", newline="") as csvfile:
-        writer = csv.writer(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(
+            csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator="\n"
+        )
         writer.writerow(["#mammos csv v3"])
         if description:
             writer.writerow(["#" + "-" * 40])
