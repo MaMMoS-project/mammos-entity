@@ -56,6 +56,18 @@ def test_concat_flat_description():
     assert me.concat_flat(e_3, q).description == ""
 
 
+@pytest.mark.filterwarnings("error:.*called without specifying a description.*")
+def test_concat_flat_description_warning():
+    """Test warning in the concat flat operation.
+
+    This warning shows when concatenating entities without specifying a description.
+    """
+    e_1 = me.Ms(1, description="Entity 1.")
+    e_2 = me.Ms(2, description="Entity 2.")
+    with pytest.raises(UserWarning):
+        me.concat_flat(e_1, e_2)
+
+
 def test_failing_concat():
     """Test concat operation supposed to fail."""
     with pytest.raises(ValueError):
