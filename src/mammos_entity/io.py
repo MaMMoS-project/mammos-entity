@@ -210,8 +210,8 @@ if TYPE_CHECKING:
 
 def entities_to_file(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     """Write entity data to file.
@@ -234,8 +234,8 @@ def entities_to_file(
 
     Args:
         _filename: Name or path of file where to store data.
-        _description: Optional description of data. If given, it will appear in the
-            metadata part of the file.
+        description: Optional description of data. It is added to the
+           metadata part of the file.
         **entities: Data to be saved to file. For CSV all entity like objects need to
             have the same length and shape 0 or 1, YAML supports different lengths and
             arbitrary shape.
@@ -245,9 +245,9 @@ def entities_to_file(
         raise RuntimeError("No data to write.")
     match Path(_filename).suffix:
         case ".csv":
-            _entities_to_csv(_filename, _description, **entities)
+            _entities_to_csv(_filename, description, **entities)
         case ".yml" | ".yaml":
-            _entities_to_yaml(_filename, _description, **entities)
+            _entities_to_yaml(_filename, description, **entities)
         case unknown_suffix:
             raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
