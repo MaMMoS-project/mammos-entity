@@ -18,6 +18,7 @@ The lines are, in order:
   dashed lines. It is meant to be human readable and is ignored by reading routines
   in :py:mod:`mammos_entity.io`.
 - (Commented) the preferred ontology label.
+- (Commented) a description string.
 - (Commented) the ontology IRI.
 - (Commented) units.
 - The short labels used to refer to individual columns when
@@ -33,17 +34,24 @@ In columns without ontology the lines containing labels and IRIs are empty.
 
 Similarly, columns without units (with or without ontology entry) have empty units line.
 
+For any column, the description line can be empty. Only entities can store descriptions,
+i.e., if the ontology-related lines are empty, the description string will not be read.
+
 .. versionadded:: v2
    The optional description of the file.
+
+.. versionadded:: v3
+   Additional description metadata row containing a description for each column.
 
 Example:
     Here is an example with five columns:
 
     - an index with no units or ontology label
-    - the entity spontaneous magnetization with an entry in the ontology
+    - the entity spontaneous magnetization with an entry in the ontology and a
+      description
     - a made-up quantity alpha with a unit but no ontology label
     - demagnetizing factor with an ontology entry but no unit
-    - a column `description` containing a string description without units or ontology
+    - a column `comment` containing a string comment without units or ontology
       label
 
     The file has a description reading "Test data".
@@ -55,30 +63,31 @@ Example:
     ...     "example.csv",
     ...     "Test data",
     ...     index=[0, 1, 2],
-    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m"),
+    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m", description="Magnetization at 0 Kelvin"),
     ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
     ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
-    ...     description=[
-    ...         "Description of the first data row",
-    ...         "Description of the second data row",
-    ...         "Description of the third data row",
+    ...     comment=[
+    ...         "Comment in the first row",
+    ...         "Comment in the second row",
+    ...         "Comment in the third row",
     ...     ],
     ... )
 
     The new file has the following content:
 
     >>> print(Path("example.csv").read_text())
-    #mammos csv v2
+    #mammos csv v3
     #----------------------------------------
     # Test data
     #----------------------------------------
     #,SpontaneousMagnetization,,DemagnetizingFactor,
+    #,Magnetization at 0 Kelvin,,,
     #,https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
     #,kA / m,s2,,
-    index,Ms,alpha,DemagnetizingFactor,description
-    0,100.0,1.2,1.0,Description of the first data row
-    1,100.0,3.4,0.5,Description of the second data row
-    2,100.0,5.6,0.5,Description of the third data row
+    index,Ms,alpha,DemagnetizingFactor,comment
+    0,100.0,1.2,1.0,Comment in the first row
+    1,100.0,3.4,0.5,Comment in the second row
+    2,100.0,5.6,0.5,Comment in the third row
     <BLANKLINE>
 
     Finally, remove the file.
@@ -99,20 +108,25 @@ YAML files written by :py:mod:`mammos_entity.io` have the following format:
 - ``data`` contains on key per object saved in the file. Each object has the keys:
 
   - ``ontology_label``: label in the ontology, ``null`` if the element is no Entity.
+  - ``description`` a description string, ``""`` if the element is no Entity or has no
+    description.
   - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity.
   - ``unit``: unit of the entity or quantity, ``null`` if the element has no unit, empty
     string for dimensionless quantities and entities.
   - ``value``: value of the data.
 
+.. versionadded:: v2
+   The ``description`` key for each object.
 
 Example:
     Here is an example with six entries:
 
     - an index with no units or ontology label
-    - the entity spontaneous magnetization with an entry in the ontology
+    - the entity spontaneous magnetization with an entry in the ontology and a
+      description
     - a made-up quantity alpha with a unit but no ontology label
     - demagnetizing factor with an ontology entry but no unit
-    - a column `description` containing a string description without units or ontology
+    - a column `comment` containing a string comment without units or ontology
       label
     - an element Tc with only a single value
 
@@ -125,13 +139,13 @@ Example:
     ...     "example.yaml",
     ...     "Test data",
     ...     index=[0, 1, 2],
-    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m"),
+    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m", description="Magnetization at 0 Kelvin"),
     ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
     ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
-    ...     description=[
-    ...         "Description of the first data row",
-    ...         "Description of the second data row",
-    ...         "Description of the third data row",
+    ...     comment=[
+    ...         "Comment in the first row",
+    ...         "Comment in the second row",
+    ...         "Comment in the third row",
     ...     ],
     ...     Tc=me.Tc(300, "K"),
     ... )
@@ -140,37 +154,43 @@ Example:
 
     >>> print(Path("example.yaml").read_text())
     metadata:
-      version: v1
+      version: v2
       description: Test data
     data:
       index:
         ontology_label: null
+        description: ''
         ontology_iri: null
         unit: null
         value: [0, 1, 2]
       Ms:
         ontology_label: SpontaneousMagnetization
+        description: Magnetization at 0 Kelvin
         ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
         unit: kA / m
         value: [100.0, 100.0, 100.0]
       alpha:
         ontology_label: null
+        description: ''
         ontology_iri: null
         unit: s2
         value: [1.2, 3.4, 5.6]
       DemagnetizingFactor:
         ontology_label: DemagnetizingFactor
+        description: ''
         ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
         unit: ''
         value: [1.0, 0.5, 0.5]
-      description:
+      comment:
         ontology_label: null
+        description: ''
         ontology_iri: null
         unit: null
-        value: [Description of the first data row, Description of the second data row,
-          Description of the third data row]
+        value: [Comment in the first row, Comment in the second row, Comment in the third
+            row]
       Tc:
         ontology_label: CurieTemperature
+        description: ''
         ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
         unit: K
         value: 300.0
