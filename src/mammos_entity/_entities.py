@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 
 
 def A(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the exchange stiffness constant (A).
 
@@ -28,16 +30,20 @@ def A(
             Numpy array.
         unit: Unit of measure for the value (e.g., 'J/m'). If omitted, the SI unit
             from the ontology, i.e. J/m, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labeled "ExchangeStiffnessConstant".
 
     """
-    return Entity("ExchangeStiffnessConstant", value, unit)
+    return Entity("ExchangeStiffnessConstant", value, unit, **kwargs)
 
 
 def BHmax(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the maximum energy product of the hysteresis loop.
 
@@ -46,16 +52,20 @@ def BHmax(
             be a Numpy array.
         unit : Unit of measure for the value (e.g., 'J/m3'). If omitted, the SI unit
             from the ontology, i.e. J/m3, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labelled "MaximumEnergyProduct".
 
     """
-    return Entity("MaximumEnergyProduct", value, unit)
+    return Entity("MaximumEnergyProduct", value, unit, **kwargs)
 
 
 def B(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the magnetic flux density (B).
 
@@ -64,16 +74,18 @@ def B(
             be a Numpy array.
         unit : Unit of measure for the value (e.g., 'T'). If omitted, the SI unit
             from the ontology, i.e. T, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labelled "MagneticFluxDensity".
 
     """
-    return Entity("MagneticFluxDensity", value, unit)
+    return Entity("MagneticFluxDensity", value, unit, **kwargs)
 
 
 def H(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None, **kwargs
 ) -> mammos_entity.Entity:
     """Create an Entity representing the external magnetic field (H).
 
@@ -82,17 +94,21 @@ def H(
             be a Numpy array.
         unit: Unit of measure for the value (e.g., 'T' for Tesla). If omitted, the SI
             unit from the ontology, i.e. T, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         Entity: An `Entity` object labeled "ExternalMagneticField".
 
 
     """
-    return Entity("ExternalMagneticField", value, unit)
+    return Entity("ExternalMagneticField", value, unit, **kwargs)
 
 
 def Hc(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the external coercive field (Hc).
 
@@ -101,16 +117,20 @@ def Hc(
             be a Numpy array.
         unit : Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
             from the ontology, i.e. A/m, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         Entity: An `Entity` object labeled "CoercivityHcExternal".
 
     """
-    return Entity("CoercivityHcExternal", value, unit)
+    return Entity("CoercivityHcExternal", value, unit, **kwargs)
 
 
 def J(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the magnetic polarisation (J).
 
@@ -119,16 +139,20 @@ def J(
             a Numpy array.
         unit: Unit of measure for the value (e.g., 'J/(A m2)' or 'T'). If omitted,
             the SI unit from the ontology, i.e. J/(A m2), will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labeled "MagneticPolarisation".
 
     """
-    return Entity("MagneticPolarisation", value, unit)
+    return Entity("MagneticPolarisation", value, unit, **kwargs)
 
 
 def Js(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the spontaneous magnetic polarisation (Js).
 
@@ -137,16 +161,20 @@ def Js(
             It can also be a Numpy array.
         unit: Unit of measure for the value (e.g., 'J/(A m2)' or 'T'). If omitted,
             the SI unit from the ontology, i.e. 'J/(A m2)', will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labeled "SpontaneousMagneticPolarisation".
 
     """
-    return Entity("SpontaneousMagneticPolarisation", value, unit)
+    return Entity("SpontaneousMagneticPolarisation", value, unit, **kwargs)
 
 
 def Ku(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the uniaxial anisotropy constant (Ku).
 
@@ -155,16 +183,20 @@ def Ku(
             also be a Numpy array.
         unit: Unit of measure for the value (e.g., 'J/m^3'). If omitted, the SI unit
             from the ontology, i.e. J/m^3 will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labeled "UniaxialAnisotropyConstant".
 
     """
-    return Entity("UniaxialAnisotropyConstant", value, unit)
+    return Entity("UniaxialAnisotropyConstant", value, unit, **kwargs)
 
 
 def M(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the magnetization.
 
@@ -173,16 +205,20 @@ def M(
             also be a Numpy array.
         unit : Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
             from the ontology, i.e. A/m, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labelled "Magnetization".
 
     """
-    return Entity("Magnetization", value, unit)
+    return Entity("Magnetization", value, unit, **kwargs)
 
 
 def Mr(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the remanent magnetisation (Mr).
 
@@ -191,16 +227,20 @@ def Mr(
             be a Numpy array.
         unit : Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
             from the ontology, i.e. A/m, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labelled "Remanence".
 
     """
-    return Entity("Remanence", value, unit)
+    return Entity("Remanence", value, unit, **kwargs)
 
 
 def Ms(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the spontaneous magnetization (Ms).
 
@@ -209,16 +249,20 @@ def Ms(
             a Numpy array.
         unit: Unit of measure for the value (e.g., 'A/m'). If omitted, the SI unit
             from the ontology, i.e. A/m, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labelled "SpontaneousMagnetization".
 
     """
-    return Entity("SpontaneousMagnetization", value, unit)
+    return Entity("SpontaneousMagnetization", value, unit, **kwargs)
 
 
 def T(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the temperature (T).
 
@@ -227,16 +271,20 @@ def T(
             be a Numpy array.
         unit : Unit of measure for the value (e.g., 'K'). If omitted, the SI unit
             from the ontology, i.e. K, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labelled "ThermodynamicTemperature".
 
     """
-    return Entity("ThermodynamicTemperature", value, unit)
+    return Entity("ThermodynamicTemperature", value, unit, **kwargs)
 
 
 def Tc(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None
+    value: int | float | numpy.typing.ArrayLike = 0,
+    unit: None | str = None,
+    **kwargs,
 ) -> mammos_entity.Entity:
     """Create an Entity representing the Curie temperature (Tc).
 
@@ -245,9 +293,11 @@ def Tc(
             Numpy array.
         unit : Unit of measure for the value (e.g., 'K' for Kelvin). If omitted, the SI
             unit from the ontology, i.e. K, will be inferred.
+        **kwargs : Additional keyword arguments passed to
+            :py:class:`~mammos_entity.Entity`.
 
     Returns:
         An `Entity` object labelled "CurieTemperature".
 
     """
-    return Entity("CurieTemperature", value, unit)
+    return Entity("CurieTemperature", value, unit, **kwargs)

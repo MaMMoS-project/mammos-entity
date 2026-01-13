@@ -124,14 +124,16 @@ class Entity:
         ontology_label: Ontology label
         value: Value
         unit: Unit
+        description: Description
 
     Examples:
         >>> import mammos_entity as me
         >>> import mammos_units as u
         >>> Ms = me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
         >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
-        >>> Tc_kK = me.Entity("CurieTemperature", 0.1, unit=u.kK)
-        >>> Tc_K = me.Entity("CurieTemperature", Tc_kK, unit=u.K)
+        >>> Tc_mK = me.Entity("CurieTemperature", 300, unit=u.mK)
+        >>> Tc_K = me.Entity("CurieTemperature", Tc_mK, unit=u.K)
+        >>> Tc_kuzmin = me.Entity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
 
     """  # noqa: E501
 
@@ -142,7 +144,9 @@ class Entity:
         | mammos_units.Quantity
         | mammos_entity.Entity = 0,
         unit: str | None | mammos_units.UnitBase = None,
+        description: str = "",
     ):
+        self.description = description
         if isinstance(value, Entity):
             if value.ontology_label != ontology_label:
                 raise ValueError(
@@ -181,6 +185,27 @@ class Entity:
         with u.set_enabled_equivalencies(None):
             self._quantity = u.Quantity(value=value, unit=comp_unit)
         self._ontology_label = ontology_label
+
+    @property
+    def description(self) -> str:
+        """Additional description of the entity.
+
+        The description is a string containing any information relevant to the entity.
+        This can include, e.g., whether it is an experimentally measured or a simulated
+        quantity, what techniques were used in its calculation, or the experimental
+        precision.
+        """
+        return self._description
+
+    @description.setter
+    def description(self, value) -> None:
+        if isinstance(value, str):
+            self._description = value
+        else:
+            raise ValueError(
+                "Description must be a string. "
+                f"Received value: {value} of type: {type(value)}."
+            )
 
     @property
     def ontology_label(self) -> str:
@@ -279,6 +304,8 @@ class Entity:
         Entities are considered identical if they have the same ontology label and
         numerical data, i.e. unit prefixes have no effect.
 
+        Equality ignores the ``description`` attribute.
+
         Examples:
             >>> import mammos_entity as me
             >>> ms_1 = me.Ms(1, "kA/m")
@@ -301,19 +328,19 @@ class Entity:
         args = [f"ontology_label='{self._ontology_label}'", f"value={self.value!r}"]
         if str(self.unit):
             args.append(f"unit='{self.unit!s}'")
+        if self.description:
+            args.append(f"description={self.description!r}")
 
         return f"{self.__class__.__name__}({', '.join(args)})"
 
     def __str__(self) -> str:
         new_line = "\n" if self.value.size > 4 else ""
-        if self.unit.is_equivalent(u.dimensionless_unscaled):
-            repr_str = f"{self.ontology_label}(value={new_line}{self.value})"
-        else:
-            repr_str = (
-                f"{self.ontology_label}(value={new_line}{self.value}"
-                f",{new_line} unit={self.unit})"
-            )
-        return repr_str
+        repr_str = f"{self.ontology_label}(value={new_line}{self.value}"
+        if not self.unit.is_equivalent(u.dimensionless_unscaled):
+            repr_str += f",{new_line} unit={self.unit}"
+        if self.description:
+            repr_str += f",{new_line} description={self.description!r}"
+        return repr_str + ")"
 
     def _repr_html_(self) -> str:
         html_str = str(self).replace("\n", "<br>").replace(" ", "&nbsp;")
