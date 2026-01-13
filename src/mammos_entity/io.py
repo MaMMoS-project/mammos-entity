@@ -341,43 +341,49 @@ def _add_hash_to_first_element(row: list) -> list:
 
 def _entities_to_yaml(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     def _preprocess_entity_args(entities: dict[str, str]) -> Iterator[tuple]:
-        """Extract name, label, iri, unit and value for each item."""
+        """Extract name, label, description, iri, unit and value for each item."""
         for name, element in entities.items():
             if isinstance(element, me.Entity):
                 label = element.ontology_label
+                description = element.description
                 iri = element.ontology.iri
                 unit = str(element.unit)
                 value = element.value.tolist()
             elif isinstance(element, u.Quantity):
                 label = None
+                description = ""
                 iri = None
                 unit = str(element.unit)
                 value = element.value.tolist()
             else:
                 label = None
+                description = ""
                 iri = None
                 unit = None
                 value = np.asanyarray(element).tolist()
-            yield name, label, iri, unit, value
+            yield name, label, description, iri, unit, value
 
     entity_dict = {
         "metadata": {
-            "version": "v1",
-            "description": _description,
+            "version": "v2",
+            "description": description,
         },
         "data": {
             name: {
                 "ontology_label": label,
+                "description": description,
                 "ontology_iri": iri,
                 "unit": unit,
                 "value": value,
             }
-            for name, label, iri, unit, value in _preprocess_entity_args(entities)
+            for name, label, description, iri, unit, value in _preprocess_entity_args(
+                entities
+            )
         },
     }
 
@@ -619,16 +625,25 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     if not file_content["metadata"] or "version" not in file_content["metadata"]:
         raise RuntimeError("File does not have a key metadata:version.")
 
-    if (version := file_content["metadata"]["version"]) != "v1":
+    if (version := file_content["metadata"]["version"]) not in [
+        f"v{i}" for i in range(1, 3)
+    ]:
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
+    else:
+        version_number = int(version.lstrip("v"))
 
-    result = EntityCollection()
+    description = file_content["metadata"]["description"] if version_number >= 2 else ""
+    result = EntityCollection(description=description)
 
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
 
-    for key, item in file_content["data"].items():
+    if version_number >= 2:
+        req_subkeys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
+    else:
         req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
+
+    for key, item in file_content["data"].items():
         if set(item) != req_subkeys:
             raise RuntimeError(
                 f"Element '{key}' does not have the required keys,"
@@ -639,6 +654,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
                 ontology_label=item["ontology_label"],
                 value=item["value"],
                 unit=item["unit"],
+                description=item["description"] if version_number >= 2 else "",
             )
             _check_iri(entity, item["ontology_iri"])
             setattr(result, key, entity)
