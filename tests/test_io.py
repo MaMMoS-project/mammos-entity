@@ -121,7 +121,7 @@ def test_write_read_yaml_multi_shape(tmp_path):
 
 def test_wrong_file_version_csv(tmp_path):
     file_content = textwrap.dedent(
-        """
+        """\
         #mammos csv v0
         #
         #

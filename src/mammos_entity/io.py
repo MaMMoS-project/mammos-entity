@@ -184,6 +184,7 @@ Example:
 
 from __future__ import annotations
 
+import csv
 import os
 import re
 import warnings
@@ -304,18 +305,37 @@ def _entities_to_csv(
     dataframe = (
         pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
     )
-    with open(_filename, "w", newline="") as f:
-        # newline="" required for pandas to_csv
-        f.write(f"#mammos csv v2{os.linesep}")
+    with open(_filename, "w", newline="") as csvfile:
+        writer = csv.writer(
+            csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator=os.linesep
+        )
+        writer.writerow(["#mammos csv v2"])
         if _description:
-            f.write("#" + "-" * 40 + os.linesep)
-            for d in _description.split("\n"):
-                f.write(f"# {d}{os.linesep}")
-            f.write("#" + "-" * 40 + os.linesep)
-        f.write("#" + ",".join(ontology_labels) + os.linesep)
-        f.write("#" + ",".join(ontology_iris) + os.linesep)
-        f.write("#" + ",".join(units) + os.linesep)
-        dataframe.to_csv(f, index=False)
+            writer.writerow(["#" + "-" * 40])
+            for line in _description.split("\n"):
+                writer.writerow([f"# {line}"])
+            writer.writerow(["#" + "-" * 40])
+        writer.writerows(
+            [
+                _add_hash_to_first_element(row)
+                for row in [
+                    ontology_labels,
+                    ontology_iris,
+                    units,
+                ]
+            ]
+        )
+        dataframe.to_csv(csvfile, index=False)
+
+
+def _add_hash_to_first_element(row: list) -> list:
+    """Add hash symbol (#) to the first element of the input row.
+
+    This is a convenience function only used in :py:func:`_entities_to_csv`.
+    Each metadata line starts with the hash symbol. This function is used to add the
+    hash symbol to the first element of each line.
+    """
+    return [f"#{row[0]}", *row[1:]]
 
 
 def _entities_to_yaml(
@@ -483,28 +503,36 @@ def entities_from_csv(filename: str | Path) -> EntityCollection:
 
 
 def _entities_from_csv(filename: str | Path) -> EntityCollection:
-    with open(filename) as f:
-        file_version_information = f.readline()
-        version = re.search(r"v\d+", file_version_information)
+    with open(filename, newline="") as csvfile:
+        reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+
+        try:
+            version = re.search(r"v\d+", next(reader)[0])
+        except StopIteration:
+            raise RuntimeError(f"Trying to read empty file: {filename}") from None
+
         if not version:
             raise RuntimeError("File does not have version information in line 1.")
         if version.group() not in ["v1", "v2"]:
             raise RuntimeError(
                 f"Reading mammos csv {version.group()} is not supported."
             )
-        next_line = f.readline()
-        if "#--" in next_line:
-            while True:
-                if "#--" in f.readline():
-                    break
-            next_line = f.readline()
-        ontology_labels = next_line.strip().removeprefix("#").split(",")
-        ontology_iris = f.readline().strip().removeprefix("#").split(",")
-        units = f.readline().strip().removeprefix("#").split(",")
-        names = f.readline().strip().removeprefix("#").split(",")
 
-        f.seek(0)
-        data = pd.read_csv(f, comment="#", sep=",")
+        next_line = next(reader)
+        collection_description = []
+        if "#--" in next_line[0]:
+            while True:
+                line = next(reader)[0]
+                if "#--" in line:
+                    break
+                else:
+                    collection_description.append(line.removeprefix("# "))
+            next_line = next(reader)
+        ontology_labels = _remove_hash_from_first_element(next_line)
+        ontology_iris = _remove_hash_from_first_element(next(reader))
+        units = _remove_hash_from_first_element(next(reader))
+        data = pd.read_csv(csvfile)
+        names = data.keys()
         scalar_data = len(data) == 1
 
     result = EntityCollection()
@@ -523,6 +551,16 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             setattr(result, name, data_values)
 
     return result
+
+
+def _remove_hash_from_first_element(row: list) -> list:
+    """Remove hash symbol (#) from the first element of the input row.
+
+    This is a convenience function only used in :py:func:`_entities_from_csv`.
+    Each metadata line starts with the hash symbol. This function removes the hash
+    symbol to the first element of each line.
+    """
+    return [row[0].removeprefix("#"), *row[1:]]
 
 
 def _entities_from_yaml(filename: str | Path) -> EntityCollection:
