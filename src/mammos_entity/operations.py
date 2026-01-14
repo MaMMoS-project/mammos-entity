@@ -206,6 +206,7 @@ def merge(
         >>> merged_collection = me.merge(A_collection, B_collection, how="inner")
         >>> merged_collection
         EntityCollection(
+            description='',
             x_pos=Entity(ontology_label='Length', value=array([-10., -10., -10.]), unit='mm'),
             y_pos=Entity(ontology_label='Length', value=array([-10., -15., -20.]), unit='mm'),
             a=Entity(ontology_label='LocalLatticeConstantA', value=array([8.783, 8.783, 8.783]), unit='Angstrom'),
