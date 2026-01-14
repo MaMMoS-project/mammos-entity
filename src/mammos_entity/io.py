@@ -274,7 +274,7 @@ def entities_to_file(
 
 def entities_to_csv(
     _filename: str | Path,
-    _description: str | None = None,
+    description: str = "",
     /,
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
@@ -286,16 +286,17 @@ def entities_to_csv(
         DeprecationWarning,
         stacklevel=2,
     )
-    _entities_to_csv(_filename, _description, **entities)
+    _entities_to_csv(_filename, description, **entities)
 
 
 def _entities_to_csv(
     _filename: str | Path,
-    _description: str | None = None,
+    description: str = "",
     /,
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     ontology_labels = []
+    descriptions = []
     ontology_iris = []
     units = []
     data = {}
@@ -303,18 +304,21 @@ def _entities_to_csv(
     for name, element in entities.items():
         if isinstance(element, me.Entity):
             ontology_labels.append(element.ontology_label)
+            descriptions.append(element.description)
             ontology_iris.append(element.ontology.iri)
             units.append(str(element.unit))
             data[name] = element.value
             if_scalar_list.append(pd.api.types.is_scalar(element.value))
         elif isinstance(element, u.Quantity):
             ontology_labels.append("")
+            descriptions.append("")
             ontology_iris.append("")
             units.append(str(element.unit))
             data[name] = element.value
             if_scalar_list.append(pd.api.types.is_scalar(element.value))
         else:
             ontology_labels.append("")
+            descriptions.append("")
             ontology_iris.append("")
             units.append("")
             data[name] = element
@@ -330,17 +334,18 @@ def _entities_to_csv(
         writer = csv.writer(
             csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator=os.linesep
         )
-        writer.writerow(["#mammos csv v2"])
-        if _description:
+        writer.writerow(["#mammos csv v3"])
+        if description:
             writer.writerow(["#" + "-" * 40])
-            for line in _description.split("\n"):
-                writer.writerow([f"# {line}"])
+            for line in description.split("\n"):
+                writer.writerow([f"# {line}"])  # TODO: fix descriptions with commas
             writer.writerow(["#" + "-" * 40])
         writer.writerows(
             [
                 _add_hash_to_first_element(row)
                 for row in [
                     ontology_labels,
+                    descriptions,
                     ontology_iris,
                     units,
                 ]
@@ -396,12 +401,12 @@ def _entities_to_yaml(
         "data": {
             name: {
                 "ontology_label": label,
-                "description": description,
+                "description": descr,
                 "ontology_iri": iri,
                 "unit": unit,
                 "value": value,
             }
-            for name, label, description, iri, unit, value in _preprocess_entity_args(
+            for name, label, descr, iri, unit, value in _preprocess_entity_args(
                 entities
             )
         },
@@ -583,7 +588,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
 
         if not version:
             raise RuntimeError("File does not have version information in line 1.")
-        if version.group() not in ["v1", "v2"]:
+        if version.group() not in [f"v{i}" for i in range(1, 4)]:
             raise RuntimeError(
                 f"Reading mammos csv {version.group()} is not supported."
             )
