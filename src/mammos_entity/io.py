@@ -668,8 +668,8 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     else:
         version_number = int(version.lstrip("v"))
 
-    description = file_content["metadata"]["description"] if version_number >= 2 else ""
-    result = EntityCollection(description=description)
+    collection_description = file_content["metadata"]["description"] or ""
+    result = EntityCollection(description=collection_description)
 
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
@@ -690,7 +690,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
                 ontology_label=item["ontology_label"],
                 value=item["value"],
                 unit=item["unit"],
-                description=item["description"] if version_number >= 2 else "",
+                description=item.get("description", ""),
             )
             _check_iri(entity, item["ontology_iri"])
             setattr(result, key, entity)
