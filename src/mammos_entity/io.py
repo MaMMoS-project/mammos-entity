@@ -17,10 +17,10 @@ The lines are, in order:
 - (Commented, optional) a description of the file if given. It will appear delimited by
   dashed lines. It is meant to be human readable and is ignored by reading routines
   in :py:mod:`mammos_entity.io`.
-- (Commented) the preferred ontology label.
-- (Commented) a description string.
-- (Commented) the ontology IRI.
-- (Commented) units.
+- the preferred ontology label.
+- a description string.
+- the ontology IRI.
+- units.
 - The short labels used to refer to individual columns when
   working with the data, e.g. in a :py:class:`pandas.DataFrame`. Omitting spaces in this
   string is advisable.
@@ -42,6 +42,7 @@ i.e., if the ontology-related lines are empty, the description string will not b
 
 .. versionadded:: v3
    Additional description metadata row containing a description for each column.
+   Ontology labels, entity descriptions, IRIs, and units are no longer commented.
 
 Example:
     Here is an example with five columns:
@@ -80,10 +81,10 @@ Example:
     #----------------------------------------
     # Test data
     #----------------------------------------
-    #,SpontaneousMagnetization,,DemagnetizingFactor,
-    #,Magnetization at 0 Kelvin,,,
-    #,https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
-    #,kA / m,s2,,
+    ,SpontaneousMagnetization,,DemagnetizingFactor,
+    ,Magnetization at 0 Kelvin,,,
+    ,https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+    ,kA / m,s2,,
     index,Ms,alpha,DemagnetizingFactor,comment
     0,100.0,1.2,1.0,Comment in the first row
     1,100.0,3.4,0.5,Comment in the second row
