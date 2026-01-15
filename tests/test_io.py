@@ -88,7 +88,7 @@ def test_read_collection_type(tmp_path, extension):
 
 @pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
 def test_write_read(tmp_path, extension):
-    Ms = me.Ms([1e6, 2e6, 3e6])
+    Ms = me.Ms([1e6, 2e6, 3e6], description="Magnetization evaluated experimentally")
     T = me.T([1, 2, 3])
     theta_angle = [0, 0.5, 0.7] * u.rad
     demag_factor = me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
@@ -107,6 +107,7 @@ def test_write_read(tmp_path, extension):
 
     assert read_data.description == "Test file description.\nTest second line."
     assert read_data.Ms == Ms
+    assert read_data.Ms.description == "Magnetization evaluated experimentally"
     assert read_data.T == T
     # Floating-point comparisons with == should ensure that we do not loose precision
     # when writing the data to file.
