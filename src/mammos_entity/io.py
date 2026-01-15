@@ -668,7 +668,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     else:
         version_number = int(version.lstrip("v"))
 
-    collection_description = file_content["metadata"]["description"] or ""
+    collection_description = file_content["metadata"].get("description", "")
     result = EntityCollection(description=collection_description)
 
     if not file_content["data"]:
