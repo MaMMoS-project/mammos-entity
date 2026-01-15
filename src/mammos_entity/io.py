@@ -487,7 +487,7 @@ class EntityCollection:
         )
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
 
-    def to_dataframe(self, include_units: bool = True):
+    def to_dataframe(self, include_units: bool = True) -> pd.DataFrame:
         """Convert values to dataframe.
 
         Args:
@@ -512,6 +512,65 @@ class EntityCollection:
                 for key, val in self._elements_dictionary.items()
             }
         )
+
+    def entity_metadata(self) -> dict[str, dict[str, str | None]]:
+        """TODO."""
+        result = {}
+        for name, entity_like in self._elements_dictionary.items():
+            result[name] = {}
+            if isinstance(entity_like, me.Entity):
+                result[name]["ontology_label"] = entity_like.ontology_label
+                result[name]["unit"] = str(entity_like.unit)
+                result[name]["description"] = entity_like.description
+            elif isinstance(entity_like, u.Quantity):
+                result[name]["ontology_label"] = None
+                result[name]["unit"] = entity_like.unit
+                result[name]["description"] = None
+            else:
+                result[name]["ontology_label"] = None
+                result[name]["unit"] = None
+                result[name]["description"] = None
+
+        return result
+
+    @classmethod
+    def from_dataframe(
+        cls, dataframe: pd.DataFrame, metadata: dict
+    ) -> EntityCollection:
+        """TODO."""
+        # description = metadata.pop("description")
+        if missing_keys := set(dataframe.columns) - set(metadata):
+            raise ValueError(
+                f"Metadata is missing for columns: {', '.join(missing_keys)}"
+            )
+        if missing_keys := set(metadata) - set(dataframe.columns):
+            raise ValueError(
+                f"Metadata is missing for columns: {', '.join(missing_keys)}"
+            )
+
+        collection = cls()  # description
+        for name in metadata:
+            value = dataframe[name].to_numpy()
+            if len(value) == 1:
+                value = value[0]
+
+            if metadata[name]["ontology_label"] is not None:
+                elem = me.Entity(
+                    ontology_label=metadata[name]["ontology_label"],
+                    value=value,
+                    unit=metadata[name]["unit"],
+                    description=metadata[name]["description"] or "",
+                )
+            elif metadata[name]["unit"] is not None:
+                elem = u.Quantity(
+                    value=value,
+                    unit=metadata[name]["unit"],
+                )
+            else:
+                elem = value
+            setattr(collection, name, elem)
+
+        return collection
 
 
 def entities_from_file(filename: str | Path) -> EntityCollection:
