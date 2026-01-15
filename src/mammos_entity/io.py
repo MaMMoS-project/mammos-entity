@@ -274,8 +274,8 @@ def entities_to_file(
 
 def entities_to_csv(
     _filename: str | Path,
-    description: str = "",
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     """Deprecated: write tabular data to csv file, use entities_to_file."""
@@ -291,8 +291,8 @@ def entities_to_csv(
 
 def _entities_to_csv(
     _filename: str | Path,
-    description: str = "",
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     ontology_labels = []
