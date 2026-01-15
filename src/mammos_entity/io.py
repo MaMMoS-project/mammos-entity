@@ -592,6 +592,8 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             raise RuntimeError(
                 f"Reading mammos csv {version.group()} is not supported."
             )
+        else:
+            version_number = int(version.group().lstrip("v"))
 
         next_line = next(reader)
         collection_description = []
@@ -604,20 +606,29 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
                     collection_description.append(line.removeprefix("# "))
             next_line = next(reader)
         ontology_labels = _remove_hash_from_first_element(next_line)
+        if version_number >= 3:
+            descriptions = _remove_hash_from_first_element(next(reader))
+        else:
+            descriptions = [""] * len(ontology_labels)
         ontology_iris = _remove_hash_from_first_element(next(reader))
         units = _remove_hash_from_first_element(next(reader))
         data = pd.read_csv(csvfile)
         names = data.keys()
         scalar_data = len(data) == 1
 
-    result = EntityCollection()
+    result = EntityCollection(description="\n".join(collection_description))
 
-    for name, ontology_label, iri, unit in zip(
-        names, ontology_labels, ontology_iris, units, strict=True
+    for name, ontology_label, description, iri, unit in zip(
+        names, ontology_labels, descriptions, ontology_iris, units, strict=True
     ):
         data_values = data[name].values if not scalar_data else data[name].values[0]
         if ontology_label:
-            entity = me.Entity(ontology_label, data_values, unit)
+            entity = me.Entity(
+                ontology_label=ontology_label,
+                value=data_values,
+                unit=unit,
+                description=description,
+            )
             _check_iri(entity, iri)
             setattr(result, name, entity)
         elif unit:
