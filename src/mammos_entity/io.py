@@ -334,34 +334,21 @@ def _entities_to_csv(
         writer = csv.writer(
             csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator=os.linesep
         )
-        writer.writerow(["#mammos csv v3"])
+        csvfile.write(f"#mammos csv v3{os.linesep}")
         if description:
-            writer.writerow(["#" + "-" * 40])
+            csvfile.write("#" + "-" * 40 + os.linesep)
             for line in description.split("\n"):
-                writer.writerow([f"# {line}"])  # TODO: fix descriptions with commas
-            writer.writerow(["#" + "-" * 40])
+                csvfile.write(f"# {line}{os.linesep}")
+            csvfile.write("#" + "-" * 40 + os.linesep)
         writer.writerows(
             [
-                _add_hash_to_first_element(row)
-                for row in [
-                    ontology_labels,
-                    descriptions,
-                    ontology_iris,
-                    units,
-                ]
+                ontology_labels,
+                descriptions,
+                ontology_iris,
+                units,
             ]
         )
         dataframe.to_csv(csvfile, index=False)
-
-
-def _add_hash_to_first_element(row: list) -> list:
-    """Add hash symbol (#) to the first element of the input row.
-
-    This is a convenience function only used in :py:func:`_entities_to_csv`.
-    Each metadata line starts with the hash symbol. This function is used to add the
-    hash symbol to the first element of each line.
-    """
-    return [f"#{row[0]}", *row[1:]]
 
 
 def _entities_to_yaml(
@@ -579,10 +566,10 @@ def entities_from_csv(filename: str | Path) -> EntityCollection:
 
 def _entities_from_csv(filename: str | Path) -> EntityCollection:
     with open(filename, newline="") as csvfile:
-        reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+        file_version_information = csvfile.readline()
 
         try:
-            version = re.search(r"v\d+", next(reader)[0])
+            version = re.search(r"v\d+", file_version_information)
         except StopIteration:
             raise RuntimeError(f"Trying to read empty file: {filename}") from None
 
@@ -595,23 +582,34 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
         else:
             version_number = int(version.group().lstrip("v"))
 
-        next_line = next(reader)
         collection_description = []
-        if "#--" in next_line[0]:
+
+        # read description
+        position = csvfile.tell()
+        if "#--" in next(csvfile):
             while True:
-                line = next(reader)[0]
+                line = next(csvfile)
                 if "#--" in line:
                     break
                 else:
-                    collection_description.append(line.removeprefix("# "))
-            next_line = next(reader)
-        ontology_labels = _remove_hash_from_first_element(next_line)
-        if version_number >= 3:
-            descriptions = _remove_hash_from_first_element(next(reader))
+                    collection_description.append(line.strip().removeprefix("# "))
         else:
+            # reset the file position
+            csvfile.seek(position)
+
+        # read ontology metadata
+        if version_number >= 3:
+            reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+            ontology_labels = next(reader)
+            descriptions = next(reader)
+            ontology_iris = next(reader)
+            units = next(reader)
+        else:
+            ontology_labels = csvfile.readline().strip().removeprefix("#").split(",")
             descriptions = [""] * len(ontology_labels)
-        ontology_iris = _remove_hash_from_first_element(next(reader))
-        units = _remove_hash_from_first_element(next(reader))
+            ontology_iris = csvfile.readline().strip().removeprefix("#").split(",")
+            units = csvfile.readline().strip().removeprefix("#").split(",")
+
         data = pd.read_csv(csvfile)
         names = data.keys()
         scalar_data = len(data) == 1
@@ -637,16 +635,6 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             setattr(result, name, data_values)
 
     return result
-
-
-def _remove_hash_from_first_element(row: list) -> list:
-    """Remove hash symbol (#) from the first element of the input row.
-
-    This is a convenience function only used in :py:func:`_entities_from_csv`.
-    Each metadata line starts with the hash symbol. This function removes the hash
-    symbol to the first element of each line.
-    """
-    return [row[0].removeprefix("#"), *row[1:]]
 
 
 def _entities_from_yaml(filename: str | Path) -> EntityCollection:

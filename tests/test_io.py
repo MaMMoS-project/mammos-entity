@@ -128,7 +128,7 @@ def test_write_read(tmp_path, extension):
     assert list(df_without_units.columns) == ["Ms", "T", "angle", "n", "comment"]
 
     if extension == "csv":
-        df = pd.read_csv(tmp_path / "example.csv", comment="#")
+        df = pd.read_csv(tmp_path / "example.csv", header=9)
 
         assert all(df == df_without_units)
 
@@ -139,7 +139,7 @@ def test_descriptions(tmp_path):
     theta_angle = [0, 0.5, 0.7] * u.rad
     entities_to_file(
         tmp_path / "example.csv",
-        description="Test file description.\nTest second line.",
+        description="Test file description.\nTest 1, 2, 3.",
         Ms=Ms,
         T=T,
         angle=theta_angle,
@@ -147,12 +147,32 @@ def test_descriptions(tmp_path):
 
     read_data = entities_from_file(tmp_path / "example.csv")
 
-    assert read_data.description == "Test file description.\nTest second line."
+    assert read_data.description == "Test file description.\nTest 1, 2, 3."
     assert read_data.Ms == Ms
     assert read_data.Ms.description == "first line\nsecond line."
     assert read_data.T == T
     assert read_data.T.description == "description, comma, test."
     assert all(read_data.angle == theta_angle)
+
+    file_content = textwrap.dedent(
+        """\
+        #mammos csv v3
+        #----------------------------------------
+        # Test file description.
+        # Test 1, 2, 3.
+        #----------------------------------------
+        SpontaneousMagnetization,ThermodynamicTemperature,
+        "first line
+        second line.","description, comma, test.",
+        https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,
+        A / m,K,rad
+        Ms,T,angle
+        1000000.0,1.0,0.0
+        2000000.0,2.0,0.5
+        3000000.0,3.0,0.7
+        """
+    )
+    assert (tmp_path / "example.csv").read_text() == file_content
 
 
 def test_read_csv_v1(tmp_path):
