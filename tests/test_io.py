@@ -448,6 +448,7 @@ def test_no_data_yaml(tmp_path):
         """
         metadata:
           version: v1
+          description: null
         data:
         """
     )
