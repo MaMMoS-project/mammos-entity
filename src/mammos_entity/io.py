@@ -604,7 +604,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
                 csvfile,
                 delimiter=",",
                 quoting=csv.QUOTE_MINIMAL,
-                lineterminator="\n",
+                lineterminator=os.linesep,
             )
             ontology_labels = next(reader)
             descriptions = next(reader)
