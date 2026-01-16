@@ -154,26 +154,6 @@ def test_descriptions(tmp_path):
     assert read_data.T.description == "description, comma, test."
     assert all(read_data.angle == theta_angle)
 
-    file_content = textwrap.dedent(
-        """\
-        #mammos csv v3
-        #----------------------------------------
-        # Test file description.
-        # Test 1, 2, 3.
-        #----------------------------------------
-        SpontaneousMagnetization,ThermodynamicTemperature,
-        "first line
-        second line.","description, comma, test.",
-        https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,
-        A / m,K,rad
-        Ms,T,angle
-        1000000.0,1.0,0.0
-        2000000.0,2.0,0.5
-        3000000.0,3.0,0.7
-        """
-    )
-    assert (tmp_path / "example.csv").read_text() == file_content
-
 
 def test_read_csv_v1(tmp_path):
     file_content = textwrap.dedent(
@@ -230,6 +210,41 @@ def test_read_csv_v2(tmp_path):
     assert read_data.demag_factor == me.Entity(
         "DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]
     )
+    assert list(read_data.comment) == [
+        "Some comment",
+        "Some other comment",
+        "A third comment",
+    ]
+
+
+def test_read_csv_v3(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        #mammos csv v3
+        #----------------------------------------
+        # Test file description.
+        # Test 1, 2, 3.
+        #----------------------------------------
+        SpontaneousMagnetization,ThermodynamicTemperature,,
+        "first line
+        second line","description, with a comma",,
+        https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
+        kA / m,K,rad,
+        Ms,T,angle,comment
+        600.0,1.0,0.0,Some comment
+        650.0,2.0,0.5,Some other comment
+        700.0,3.0,0.7,A third comment
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+    read_data = entities_from_file(tmp_path / "data.csv")
+
+    assert read_data.description == "Test file description.\nTest 1, 2, 3."
+    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert read_data.Ms.description == "first line\nsecond line"
+    assert me.T([1, 2, 3]) == read_data.T
+    assert read_data.T.description == "description, with a comma"
+    assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
     assert list(read_data.comment) == [
         "Some comment",
         "Some other comment",
