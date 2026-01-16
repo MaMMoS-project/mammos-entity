@@ -600,7 +600,12 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
 
         # read ontology metadata
         if version_number >= 3:
-            reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+            reader = csv.reader(
+                csvfile,
+                delimiter=",",
+                quoting=csv.QUOTE_MINIMAL,
+                lineterminator=os.linesep,
+            )
             ontology_labels = next(reader)
             descriptions = next(reader)
             ontology_iris = next(reader)
