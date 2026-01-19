@@ -88,8 +88,8 @@ def test_read_collection_type(tmp_path, extension):
 
 @pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
 def test_write_read(tmp_path, extension):
-    Ms = me.Ms([1e6, 2e6, 3e6], description="Magnetization evaluated experimentally")
-    T = me.T([1, 2, 3])
+    Ms = me.Ms([1e6, 2e6, 3e6], description="evaluated\nexperimentally")
+    T = me.T([1, 2, 3], description="description, with comma")
     theta_angle = [0, 0.5, 0.7] * u.rad
     demag_factor = me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     comments = ["Some comment", "Some other comment", "A third comment"]
@@ -107,8 +107,9 @@ def test_write_read(tmp_path, extension):
 
     assert read_data.description == "Test file description.\nTest second line."
     assert read_data.Ms == Ms
-    assert read_data.Ms.description == "Magnetization evaluated experimentally"
+    assert read_data.Ms.description == "evaluated\nexperimentally"
     assert read_data.T == T
+    assert read_data.T.description == "description, with comma"
     # Floating-point comparisons with == should ensure that we do not loose precision
     # when writing the data to file.
     assert all(read_data.angle == theta_angle)
@@ -131,28 +132,6 @@ def test_write_read(tmp_path, extension):
         df = pd.read_csv(tmp_path / "example.csv", header=9)
 
         assert all(df == df_without_units)
-
-
-def test_descriptions(tmp_path):
-    Ms = me.Ms([1e6, 2e6, 3e6], description="first line\nsecond line.")
-    T = me.T([1, 2, 3], description="description, comma, test.")
-    theta_angle = [0, 0.5, 0.7] * u.rad
-    entities_to_file(
-        tmp_path / "example.csv",
-        description="Test file description.\nTest 1, 2, 3.",
-        Ms=Ms,
-        T=T,
-        angle=theta_angle,
-    )
-
-    read_data = entities_from_file(tmp_path / "example.csv")
-
-    assert read_data.description == "Test file description.\nTest 1, 2, 3."
-    assert read_data.Ms == Ms
-    assert read_data.Ms.description == "first line\nsecond line."
-    assert read_data.T == T
-    assert read_data.T.description == "description, comma, test."
-    assert all(read_data.angle == theta_angle)
 
 
 def test_read_csv_v1(tmp_path):
