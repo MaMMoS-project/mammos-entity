@@ -33,11 +33,13 @@ Similarly, columns without units (with or without ontology entry) have empty uni
 For any column, the description line can be empty. Only entities can store descriptions,
 i.e., if the ontology-related lines are empty, the description string will not be read.
 
-.. versionadded:: v2
+.. version-added:: v2
    The optional description of the file.
 
-.. versionadded:: v3
+.. version-added:: v3
    Additional description metadata row containing a description for each column.
+
+.. version-changed:: v3
    Ontology labels, entity descriptions, IRIs, and units are no longer commented.
 
 Example:
@@ -112,7 +114,7 @@ YAML files written by :py:mod:`mammos_entity.io` have the following format:
     string for dimensionless quantities and entities
   - ``value``: value of the data
 
-.. versionadded:: v2
+.. version-added:: v2
    The ``description`` key for each object.
 
 Example:
