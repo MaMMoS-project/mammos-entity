@@ -573,6 +573,10 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
             raise RuntimeError(f"Trying to read empty file: {filename}") from None
 
         if not version:
+            raise RuntimeError(
+                f"Cannot read version information from file {filename}. "
+                f"Content of the first line: '{file_version_information}'"
+            )
             raise RuntimeError("File does not have version information in line 1.")
         if version.group() not in [f"v{i}" for i in range(1, 4)]:
             raise RuntimeError(
