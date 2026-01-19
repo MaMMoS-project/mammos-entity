@@ -11,21 +11,17 @@ additional commented metadata lines at the top of the file. Comment lines start 
 
 The lines are, in order:
 
-- (Commented) the file version in the form ``mammos csv v<VERSION>``
-  The reading code checks the version number (using regex v\\d+) to ensure
-  compatibility.
-- (Commented, optional) a description of the file if given. It will appear delimited by
-  dashed lines. It is meant to be human readable and is ignored by reading routines
-  in :py:mod:`mammos_entity.io`.
-- the preferred ontology label.
-- a description string.
-- the ontology IRI.
-- units.
-- The short labels used to refer to individual columns when
-  working with the data, e.g. in a :py:class:`pandas.DataFrame`. Omitting spaces in this
-  string is advisable.
-  Ideally this string is the short ontology label.
-- All remaining lines contain data.
+- (commented) the file version in the form ``mammos csv v<VERSION>`` (matching regex v\\d+)
+- (commented, optional) a description of the file, appearing delimited by
+  dashed lines
+- (optional, only for entities) the preferred ontology label
+- (optional, only for entities) a description string
+- (optional, only for entities) the ontology IRI
+- (optional, for entities and quantities) units
+- the short labels used to refer to individual columns when working with the data,
+  e.g. in a :py:class:`pandas.DataFrame` (omitting spaces in this
+  string is advisable; ideally this string is the short ontology label)
+- all remaining lines contain data.
 
 Elements in a line are separated by a comma without any surrounding whitespace. A
 trailing comma is not permitted.
@@ -100,21 +96,21 @@ YAML
 
 YAML files written by :py:mod:`mammos_entity.io` have the following format:
 
-- They have two top-level keys ``metadata`` and ``data``.
+- two top-level keys ``metadata`` and ``data``
 - ``metadata`` contains keys
 
   - ``version``: a string that matches the regex v\\d+
   - ``description``: a (multi-line) string with arbitrary content
 
-- ``data`` contains on key per object saved in the file. Each object has the keys:
+- ``data`` contains one key per object saved in the file. Each object has the keys:
 
-  - ``ontology_label``: label in the ontology, ``null`` if the element is no Entity.
+  - ``ontology_label``: label in the ontology, ``null`` if the element is no Entity
   - ``description`` a description string, ``""`` if the element is no Entity or has no
-    description.
-  - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity.
+    description
+  - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity
   - ``unit``: unit of the entity or quantity, ``null`` if the element has no unit, empty
-    string for dimensionless quantities and entities.
-  - ``value``: value of the data.
+    string for dimensionless quantities and entities
+  - ``value``: value of the data
 
 .. versionadded:: v2
    The ``description`` key for each object.
