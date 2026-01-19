@@ -30,7 +30,7 @@ The lines are, in order:
 Elements in a line are separated by a comma without any surrounding whitespace. A
 trailing comma is not permitted.
 
-In columns without ontology the lines containing labels and IRIs are empty.
+In columns without ontology the lines containing labels, IRIs, and description are empty.
 
 Similarly, columns without units (with or without ontology entry) have empty units line.
 
