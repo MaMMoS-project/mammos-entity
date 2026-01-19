@@ -1,4 +1,3 @@
-import os
 import textwrap
 
 import mammos_units as u
@@ -242,7 +241,7 @@ def test_read_csv_v3(tmp_path):
 
     assert read_data.description == "Test file description.\nTest 1, 2, 3."
     assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
-    assert read_data.Ms.description == f"first line\nsecond line"
+    assert read_data.Ms.description == "first line\nsecond line"
     assert me.T([1, 2, 3]) == read_data.T
     assert read_data.T.description == "description, with a comma"
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
