@@ -13,7 +13,7 @@ import mammos_units as units
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 from mammos_entity._factory import A, B, BHmax, H, Hc, J, Js, Ku, M, Mr, Ms, T, Tc
-from mammos_entity._ontology import mammos_ontology
+from mammos_entity._ontology import mammos_ontology, search_labels
 
 from . import io, operations
 
@@ -39,5 +39,6 @@ __all__ = [
     "io",
     "mammos_ontology",
     "operations",
+    "search_labels",
     "units",
 ]
