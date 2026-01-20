@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     import numpy.typing
 
-from mammos_entity._base import Entity
+from mammos_entity._entity import Entity
 
 if TYPE_CHECKING:
     import mammos_entity

@@ -10,19 +10,18 @@ import mammos_units as u
 import numpy as np
 import pandas as pd
 
-import mammos_entity as me
+from mammos_entity._entity import Entity
+from mammos_entity._entity_collection import EntityCollection
 
 if TYPE_CHECKING:
-    import typing
-
-    import astropy
+    import astropy.units
     import numpy.typing
 
     import mammos_entity
 
 
 def concat_flat(
-    *elements: mammos_entity.typing.EntityLike | list[typing.Any] | tuple[typing.Any],
+    *elements: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
     unit: astropy.units.Unit | str | None = None,
     description: str | None = None,
 ) -> mammos_entity.Entity:
@@ -46,7 +45,7 @@ def concat_flat(
     >>> import mammos_entity as me
     >>> import mammos_units as u
     >>> Ms = me.Ms([500, 600], "kA/m")
-    >>> me.concat_flat(Ms, 0.3, 700000 * u.A / u.m, unit="MA/m", description="Merge XRD and literature values")
+    >>> me.operations.concat_flat(Ms, 0.3, 700000 * u.A / u.m, unit="MA/m", description="Merge XRD and literature values")
     Entity(ontology_label='SpontaneousMagnetization', value=array([0.5, 0.6, 0.3, 0.7]), unit='MA / m', description='Merge XRD and literature values')
 
     """  # noqa: E501
@@ -60,7 +59,7 @@ def concat_flat(
     first_unit = None
     ontology_labels = []
     for e in _elements:
-        if isinstance(e, me.Entity):
+        if isinstance(e, Entity):
             if not first_unit:
                 first_unit = e.unit
             ontology_labels.append(e.ontology_label)
@@ -73,7 +72,7 @@ def concat_flat(
     unit = u.Unit(unit) if unit is not None else first_unit
     values = []
     for e in _elements:
-        if isinstance(e, me.Entity):
+        if isinstance(e, Entity):
             values.append(e.q.flatten().to(unit))
         elif isinstance(e, u.Quantity):
             values.append(e.flatten().to(unit))
@@ -88,16 +87,16 @@ def concat_flat(
                 stacklevel=1,
             )
         description = "|".join(_descriptions)
-    return me.Entity(
+    return Entity(
         ontology_labels[0], np.concatenate(values), unit, description=description
     )
 
 
 def merge(
-    left: me.io.EntityCollection,
-    right: me.io.EntityCollection,
+    left: mammos_entity.EntityCollection,
+    right: mammos_entity.EntityCollection,
     **kwargs,
-) -> me.io.EntityCollection:
+) -> mammos_entity.EntityCollection:
     """Merges two ``EntityCollection`` objects while preserving ontology and units.
 
     This function behaves similarly to ``pandas.merge``, but is aware of
@@ -203,7 +202,7 @@ def merge(
         ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
         ...     integral_abs_diff=[1.176, 1.174, 1.153],
         ... )
-        >>> merged_collection = me.merge(A_collection, B_collection, how="inner")
+        >>> merged_collection = me.operations.merge(A_collection, B_collection, how="inner")
         >>> merged_collection
         EntityCollection(
             description='',
@@ -243,7 +242,7 @@ def merge(
     # - preserve ontology_label if it is present in one of the two entity_likes
     for key in matching_keys:
         match (getattr(preferred_collection, key), getattr(other_collection, key)):
-            case me.Entity() as pref_e, me.Entity() as other_e:
+            case Entity() as pref_e, Entity() as other_e:
                 if pref_e.ontology_label != other_e.ontology_label:
                     raise ValueError(
                         f"incompatible ontology labels for '{pref_e}' and '{other_e}'"
@@ -251,9 +250,9 @@ def merge(
                 setattr(
                     other_collection,
                     key,
-                    me.Entity(pref_e.ontology_label, other_e.q.to(pref_e.unit)),
+                    Entity(pref_e.ontology_label, other_e.q.to(pref_e.unit)),
                 )
-            case me.Entity() as pref_e, u.Quantity() as other_q:
+            case Entity() as pref_e, u.Quantity() as other_q:
                 if not pref_e.unit.is_equivalent(other_q.unit):
                     raise ValueError(
                         f"incompatible units for '{pref_e}' and '{other_q}'"
@@ -261,20 +260,20 @@ def merge(
                 setattr(
                     other_collection,
                     key,
-                    me.Entity(pref_e.ontology_label, other_q.to(pref_e.unit)),
+                    Entity(pref_e.ontology_label, other_q.to(pref_e.unit)),
                 )
-            case u.Quantity() as pref_q, me.Entity() as other_e:
+            case u.Quantity() as pref_q, Entity() as other_e:
                 if not pref_q.unit.is_equivalent(other_e.unit):
                     raise ValueError(
                         f"incompatible units for '{pref_q}' and '{other_e}'"
                     )
                 setattr(
-                    preferred_collection, key, me.Entity(other_e.ontology_label, pref_q)
+                    preferred_collection, key, Entity(other_e.ontology_label, pref_q)
                 )
                 setattr(
                     other_collection,
                     key,
-                    me.Entity(other_e.ontology_label, other_e.q.to(pref_q.unit)),
+                    Entity(other_e.ontology_label, other_e.q.to(pref_q.unit)),
                 )
             case u.Quantity() as pref_q, u.Quantity() as other_q:
                 if not pref_q.unit.is_equivalent(other_q.unit):
@@ -313,26 +312,26 @@ def merge(
                 getattr(preferred_collection, pref_key),
                 getattr(other_collection, other_key),
             ):
-                case me.Entity() as pref_obj, me.Entity() as other_obj:
+                case Entity() as pref_obj, Entity() as other_obj:
                     if pref_obj.ontology_label == other_obj.ontology_label:
                         setattr(
                             other_collection,
                             other_key,
-                            me.Entity(
+                            Entity(
                                 other_obj.ontology_label, other_obj.q.to(pref_obj.unit)
                             ),
                         )
-                case me.Entity() as pref_obj, u.Quantity() as other_obj:
+                case Entity() as pref_obj, u.Quantity() as other_obj:
                     if pref_obj.unit.is_equivalent(other_obj.unit):
                         setattr(
                             other_collection, other_key, other_obj.to(pref_obj.unit)
                         )
-                case u.Quantity() as pref_obj, me.Entity() as other_obj:
+                case u.Quantity() as pref_obj, Entity() as other_obj:
                     if pref_obj.unit.is_equivalent(other_obj.unit):
                         setattr(
                             other_collection,
                             other_key,
-                            me.Entity(
+                            Entity(
                                 other_obj.ontology_label, other_obj.q.to(pref_obj.unit)
                             ),
                         )
@@ -345,7 +344,7 @@ def merge(
         **kwargs,
     )
 
-    result = me.io.EntityCollection()
+    result = EntityCollection()
 
     suffix_values = kwargs.get("suffixes", ["_x", "_y"])
 
@@ -361,7 +360,7 @@ def merge(
                     key_with_suffix = key
                     key = key.removesuffix(suffix)
                     obj = getattr(collection, key)
-                    if isinstance(obj, me.Entity):
+                    if isinstance(obj, Entity):
                         ontology_label = obj.ontology_label
                         unit = obj.unit
                     elif isinstance(obj, u.Quantity):
@@ -377,8 +376,8 @@ def merge(
             pref_obj = getattr(preferred_collection, key)
             other_obj = getattr(other_collection, key)
 
-            if (pref_entity := isinstance(pref_obj, me.Entity)) or isinstance(
-                other_obj, me.Entity
+            if (pref_entity := isinstance(pref_obj, Entity)) or isinstance(
+                other_obj, Entity
             ):
                 selected_obj = pref_obj if pref_entity else other_obj
                 ontology_label = selected_obj.ontology_label
@@ -393,7 +392,7 @@ def merge(
                 if hasattr(preferred_collection, key)
                 else getattr(other_collection, key)
             )
-            if isinstance(obj, me.Entity) and ontology_label is None:
+            if isinstance(obj, Entity) and ontology_label is None:
                 ontology_label = obj.ontology_label
                 unit = obj.unit
             elif isinstance(obj, u.Quantity) and unit is None:
@@ -401,7 +400,7 @@ def merge(
 
         key = key_with_suffix if key_with_suffix else key
         if ontology_label:
-            setattr(result, key, me.Entity(ontology_label, val.to_numpy(), unit))
+            setattr(result, key, Entity(ontology_label, val.to_numpy(), unit))
         elif unit:
             setattr(result, key, u.Quantity(val.to_numpy(), unit))
         else:

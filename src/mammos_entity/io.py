@@ -187,7 +187,6 @@ from __future__ import annotations
 import csv
 import os
 import re
-import textwrap
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -197,7 +196,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
-import mammos_entity as me
+from mammos_entity._entity import Entity
+from mammos_entity._entity_collection import EntityCollection
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -281,7 +281,7 @@ def _entities_to_csv(
     data = {}
     if_scalar_list = []
     for name, element in entities.items():
-        if isinstance(element, me.Entity):
+        if isinstance(element, Entity):
             ontology_labels.append(element.ontology_label)
             ontology_iris.append(element.ontology.iri)
             units.append(str(element.unit))
@@ -348,7 +348,7 @@ def _entities_to_yaml(
     def _preprocess_entity_args(entities: dict[str, str]) -> Iterator[tuple]:
         """Extract name, label, iri, unit and value for each item."""
         for name, element in entities.items():
-            if isinstance(element, me.Entity):
+            if isinstance(element, Entity):
                 label = element.ontology_label
                 iri = element.ontology.iri
                 unit = str(element.unit)
@@ -435,86 +435,7 @@ def _entities_to_yaml(
         )
 
 
-class EntityCollection:
-    """Container class storing entity-like objects.
-
-    Attributes:
-        description: String containing information about the ``EntityCollection``.
-    """
-
-    def __init__(self, description: str = "", **kwargs):
-        """Initialize EntityCollection, keywords become attributes of the class.
-
-        Args:
-            description: Information string to assign to ``description`` attribute.
-            **kwargs : entities to be stored in the collection.
-        """
-        self.description = description
-        for key, val in kwargs.items():
-            setattr(self, key, val)
-
-    @property
-    def description(self) -> str:
-        """Additional description of the entity collection.
-
-        The description is a string containing any information relevant to the entity
-        collection. This can include, e.g., whether it is a set of experimental
-        or simulation quantities or outline the overall workflow.
-        """
-        return self._description
-
-    @description.setter
-    def description(self, value) -> None:
-        if isinstance(value, str):
-            self._description = value
-        else:
-            raise ValueError(
-                f"Description must be a string. "
-                f"Received value: {value} of type: {type(value)}."
-            )
-
-    @property
-    def _elements_dictionary(self):
-        """Return a dictionary of all elements stored in the collection."""
-        elements = {k: val for k, val in vars(self).items() if k != "_description"}
-        return elements
-
-    def __repr__(self):
-        """Show container elements."""
-        args = f"description={self.description!r},\n"
-        args += "\n".join(
-            f"{key}={val!r}," for key, val in self._elements_dictionary.items()
-        )
-        return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
-
-    def to_dataframe(self, include_units: bool = False):
-        """Convert values to dataframe.
-
-        Args:
-            include_units: If true, include units in the dataframe column names.
-        """
-
-        def unit(key: str) -> str:
-            """Get unit for element key.
-
-            Returns:
-                A string " (unit)" if the element has a unit, otherwise an empty string.
-            """
-            unit = getattr(getattr(self, key), "unit", None)
-            if unit and str(unit):
-                return f" ({unit!s})"
-            else:
-                return ""
-
-        return pd.DataFrame(
-            {
-                f"{key}{unit(key) if include_units else ''}": getattr(val, "value", val)
-                for key, val in self._elements_dictionary.items()
-            }
-        )
-
-
-def entities_from_file(filename: str | Path) -> EntityCollection:
+def entities_from_file(filename: str | Path) -> mammos_entity.EntityCollection:
     """Read files with ontology metadata.
 
     Reads a file as defined in the module description. The returned container provides
@@ -536,7 +457,7 @@ def entities_from_file(filename: str | Path) -> EntityCollection:
             raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
 
-def entities_from_csv(filename: str | Path) -> EntityCollection:
+def entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
     """Deprecated: read CSV file with ontology metadata, use entities_from_file."""
     warnings.warn(
         "Use `entities_from_file`, the file type is inferred from the file extension.",
@@ -546,7 +467,7 @@ def entities_from_csv(filename: str | Path) -> EntityCollection:
     return _entities_from_csv(filename)
 
 
-def _entities_from_csv(filename: str | Path) -> EntityCollection:
+def _entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
     with open(filename, newline="") as csvfile:
         reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
 
@@ -586,7 +507,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
     ):
         data_values = data[name].values if not scalar_data else data[name].values[0]
         if ontology_label:
-            entity = me.Entity(ontology_label, data_values, unit)
+            entity = Entity(ontology_label, data_values, unit)
             _check_iri(entity, iri)
             setattr(result, name, entity)
         elif unit:
@@ -607,7 +528,7 @@ def _remove_hash_from_first_element(row: list) -> list:
     return [row[0].removeprefix("#"), *row[1:]]
 
 
-def _entities_from_yaml(filename: str | Path) -> EntityCollection:
+def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     with open(filename) as f:
         file_content = yaml.safe_load(f)
 
@@ -635,7 +556,7 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
                 f" expected {req_subkeys}, found {list(item)}."
             )
         if item["ontology_label"] is not None:
-            entity = me.Entity(
+            entity = Entity(
                 ontology_label=item["ontology_label"],
                 value=item["value"],
                 unit=item["unit"],
@@ -664,4 +585,4 @@ def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
 
 
 # hide deprecated functions in documentation
-__all__ = ["entities_to_file", "entities_from_file", "EntityCollection"]
+__all__ = ["entities_to_file", "entities_from_file"]

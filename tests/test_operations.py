@@ -6,32 +6,33 @@ import pandas as pd
 import pytest
 
 import mammos_entity as me
+from mammos_entity.operations import concat_flat, merge
 
 
 def test_concat_flat():
     """Test concat operation."""
     e_1 = me.Ms(1)
     e_2 = me.Ms(2)
-    assert me.concat_flat(e_1, e_2) == me.Ms([1, 2])
-    assert me.concat_flat(e_1, e_1, e_2) == me.Ms([1, 1, 2])
-    assert me.concat_flat(e_1, 4) == me.Ms([1, 4])
-    assert me.concat_flat(4, e_1) == me.Ms([4, 1])
-    assert me.concat_flat(e_1, [[2], [3]]) == me.Ms([1, 2, 3])
+    assert concat_flat(e_1, e_2) == me.Ms([1, 2])
+    assert concat_flat(e_1, e_1, e_2) == me.Ms([1, 1, 2])
+    assert concat_flat(e_1, 4) == me.Ms([1, 4])
+    assert concat_flat(4, e_1) == me.Ms([4, 1])
+    assert concat_flat(e_1, [[2], [3]]) == me.Ms([1, 2, 3])
     e_3 = me.Ms([1, 2])
-    assert me.concat_flat(e_3, e_1, 4) == me.Ms([1, 2, 1, 4])
+    assert concat_flat(e_3, e_1, 4) == me.Ms([1, 2, 1, 4])
     ee = [e_1, e_2, e_3]
-    assert me.concat_flat(*ee) == me.Ms([1, 2, 1, 2])
-    assert me.concat_flat(*ee, 3) == me.Ms([1, 2, 1, 2, 3])
+    assert concat_flat(*ee) == me.Ms([1, 2, 1, 2])
+    assert concat_flat(*ee, 3) == me.Ms([1, 2, 1, 2, 3])
     e_4 = me.Ms(1, unit=u.kA / u.m)
-    assert me.concat_flat(e_1, e_4) == me.Ms([1, 1000])
-    assert me.concat_flat(e_4, e_4) == me.Ms([1, 1], unit=u.kA / u.m)
-    assert me.concat_flat(e_4, e_4).unit == u.kA / u.m
-    assert np.allclose(me.concat_flat(e_4, e_4, unit=u.mA / u.m).value, [1e6, 1e6])
-    assert me.concat_flat(e_4, e_4, unit=u.mA / u.m).unit == u.mA / u.m
-    assert me.concat_flat(me.Ms([[1, 2], [3, 4]]), 5) == me.Ms([1, 2, 3, 4, 5])
-    assert me.concat_flat([e_1, e_2]) == me.Ms([1, 2])
-    assert me.concat_flat([e_1, 2]) == me.Ms([1, 2])
-    assert me.concat_flat(e_1, 3 * u.A / u.m)
+    assert concat_flat(e_1, e_4) == me.Ms([1, 1000])
+    assert concat_flat(e_4, e_4) == me.Ms([1, 1], unit=u.kA / u.m)
+    assert concat_flat(e_4, e_4).unit == u.kA / u.m
+    assert np.allclose(concat_flat(e_4, e_4, unit=u.mA / u.m).value, [1e6, 1e6])
+    assert concat_flat(e_4, e_4, unit=u.mA / u.m).unit == u.mA / u.m
+    assert concat_flat(me.Ms([[1, 2], [3, 4]]), 5) == me.Ms([1, 2, 3, 4, 5])
+    assert concat_flat([e_1, e_2]) == me.Ms([1, 2])
+    assert concat_flat([e_1, 2]) == me.Ms([1, 2])
+    assert concat_flat(e_1, 3 * u.A / u.m)
 
 
 def test_concat_flat_description():
@@ -40,44 +41,44 @@ def test_concat_flat_description():
     e_2 = me.Ms(2, description="Entity 2.")
     e_3 = me.Ms(3)
     with pytest.warns(UserWarning):
-        assert me.concat_flat(e_1, e_2).description in (
+        assert concat_flat(e_1, e_2).description in (
             "Entity 1.|Entity 2.",
             "Entity 2.|Entity 1.",
         )
-    assert me.concat_flat(e_1, e_3).description == "Entity 1."
+    assert concat_flat(e_1, e_3).description == "Entity 1."
     assert (
-        me.concat_flat(e_1, e_2, description="Concatenated.").description
+        concat_flat(e_1, e_2, description="Concatenated.").description
         == "Concatenated."
     )
 
     q = [5, 6] * u.A / u.m
-    assert me.concat_flat(e_1, q).description == "Entity 1."
-    assert me.concat_flat(q, e_1).description == "Entity 1."
-    assert me.concat_flat(e_3, q).description == ""
+    assert concat_flat(e_1, q).description == "Entity 1."
+    assert concat_flat(q, e_1).description == "Entity 1."
+    assert concat_flat(e_3, q).description == ""
 
 
 def test_failing_concat():
     """Test concat operation supposed to fail."""
     with pytest.raises(ValueError):
-        me.concat_flat()
+        concat_flat()
     with pytest.raises(ValueError):
-        me.concat_flat(1, 2)
+        concat_flat(1, 2)
     with pytest.raises(ValueError):
-        me.concat_flat([1, 2] * u.m, 3)
+        concat_flat([1, 2] * u.m, 3)
     with pytest.raises(ValueError):
-        me.concat_flat(me.Ms(1), me.Js(2))
+        concat_flat(me.Ms(1), me.Js(2))
 
 
 def test_merge_no_intersections():
     """Test merge function."""
-    ec_1 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(
         Ms=me.Ms([1, 1]),
     )
-    ec_2 = me.io.EntityCollection(
+    ec_2 = me.EntityCollection(
         A=me.A([2, 2]),
     )
     with pytest.raises(pd.errors.MergeError):
-        me.merge(ec_1, ec_2)
+        merge(ec_1, ec_2)
 
 
 def test_merge_inner():
@@ -86,16 +87,14 @@ def test_merge_inner():
     By default, if two entity collections have any intersection we expect the merge
     function to use the flag `how="inner"`.
     """
-    ec_1 = me.io.EntityCollection(
-        x=[1, 2, 3, 3], y=[1, 1, 3, 3], Ms=me.Ms([1, 2, 3, 3.5])
-    )
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x=[1, 2, 3, 3], y=[1, 1, 3, 3], Ms=me.Ms([1, 2, 3, 3.5]))
+    ec_2 = me.EntityCollection(
         x=[2, 3, 4, 3],
         y=[1, 3, 5, 7],
         A=me.A([22, 33, 44, 33.55]),
     )
-    ec_merged_1 = me.merge(ec_1, ec_2, on="x", how="inner")
-    ec_check_1 = me.io.EntityCollection(
+    ec_merged_1 = merge(ec_1, ec_2, on="x", how="inner")
+    ec_check_1 = me.EntityCollection(
         x=np.array([2, 3, 3, 3, 3]),
         y_x=np.array([1, 3, 3, 3, 3]),
         y_y=np.array([1, 3, 7, 3, 7]),
@@ -108,8 +107,8 @@ def test_merge_inner():
     assert ec_merged_1.Ms == ec_check_1.Ms
     assert ec_merged_1.A == ec_check_1.A
 
-    ec_merged_2 = me.merge(ec_1, ec_2, on=["x", "y"], how="inner")
-    ec_check_2 = me.io.EntityCollection(
+    ec_merged_2 = merge(ec_1, ec_2, on=["x", "y"], how="inner")
+    ec_check_2 = me.EntityCollection(
         x=np.array([2, 3, 3]),
         y=np.array([1, 3, 3]),
         Ms=me.Ms([2, 3, 3.5]),
@@ -122,13 +121,13 @@ def test_merge_inner():
 
 def test_merge_inner_overlap():
     """Test inner merge function with overlapping columns."""
-    ec_1 = me.io.EntityCollection(x=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.EntityCollection(
         x=[2, 3, 4],
         Ms=me.Ms([22, 33, 44]),
     )
-    ec_merged_1 = me.merge(ec_1, ec_2, on="x")
-    ec_check_1 = me.io.EntityCollection(
+    ec_merged_1 = merge(ec_1, ec_2, on="x")
+    ec_check_1 = me.EntityCollection(
         x=np.array([2, 3]),
         Ms_x=me.Ms([2, 3]),
         Ms_y=me.Ms([22, 33]),
@@ -137,8 +136,8 @@ def test_merge_inner_overlap():
     assert ec_merged_1.Ms_x == ec_check_1.Ms_x
     assert ec_merged_1.Ms_y == ec_check_1.Ms_y
 
-    ec_merged_2 = me.merge(ec_1, ec_2, on="x", suffixes=("_1", "_2"))
-    ec_check_2 = me.io.EntityCollection(
+    ec_merged_2 = merge(ec_1, ec_2, on="x", suffixes=("_1", "_2"))
+    ec_check_2 = me.EntityCollection(
         x=np.array([2, 3]),
         Ms_1=me.Ms([2, 3]),
         Ms_2=me.Ms([22, 33]),
@@ -148,7 +147,7 @@ def test_merge_inner_overlap():
     assert ec_merged_2.Ms_2 == ec_check_2.Ms_2
 
     with pytest.raises(ValueError):
-        me.merge(ec_1, ec_2, on="x", suffixes=(None, None))
+        merge(ec_1, ec_2, on="x", suffixes=(None, None))
 
 
 def test_merge_inner_overlap_empty():
@@ -158,13 +157,13 @@ def test_merge_inner_overlap_empty():
     all the common columns. We generated a entity collection corresponding to an empty
     DataFrame and we check that the attributes have disappeared.
     """
-    ec_1 = me.io.EntityCollection(x=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.EntityCollection(
         x=[2, 3, 4],
         Ms=me.Ms([22, 33, 44]),
     )
 
-    ec_merged_empty = me.merge(ec_1, ec_2)
+    ec_merged_empty = merge(ec_1, ec_2)
     assert len(ec_merged_empty.x) == 0
     assert len(ec_merged_empty.Ms.value) == 0
     assert ec_merged_empty.Ms.ontology_label == ec_1.Ms.ontology_label
@@ -172,16 +171,16 @@ def test_merge_inner_overlap_empty():
 
 def test_merge_inner_different_units():
     """Test inner merge function with different units."""
-    ec_1 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(
         x=[1, 2, 3] * u.m,
         Ms=me.Ms([1, 2, 3]),
     )
-    ec_2 = me.io.EntityCollection(
+    ec_2 = me.EntityCollection(
         x=[2000, 3000, 4000] * u.mm,
         Ms=me.Ms([22, 33, 44]),
     )
-    ec_merged_1 = me.merge(ec_1, ec_2, on="x")
-    ec_check_1 = me.io.EntityCollection(
+    ec_merged_1 = merge(ec_1, ec_2, on="x")
+    ec_check_1 = me.EntityCollection(
         x=[2, 3] * u.m,
         Ms_x=me.Ms([2, 3]),
         Ms_y=me.Ms([22, 33]),
@@ -190,8 +189,8 @@ def test_merge_inner_different_units():
     assert ec_merged_1.Ms_x == ec_check_1.Ms_x
     assert ec_merged_1.Ms_y == ec_check_1.Ms_y
 
-    ec_merged_2 = me.merge(ec_2, ec_1, on="x")
-    ec_check_2 = me.io.EntityCollection(
+    ec_merged_2 = merge(ec_2, ec_1, on="x")
+    ec_check_2 = me.EntityCollection(
         x=[2000, 3000] * u.mm,
         Ms_x=me.Ms([22, 33]),
         Ms_y=me.Ms([2, 3]),
@@ -203,14 +202,14 @@ def test_merge_inner_different_units():
 
 def test_merge_left():
     """Test left merge function."""
-    ec_1 = me.io.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.EntityCollection(
         x=[2, 3, 4],
         y=[2, 3, 4],
         A=me.A([2, 3, 4]),
     )
-    ec_merged_left = me.merge(ec_1, ec_2, on=["x", "y"], how="left")
-    ec_check_left = me.io.EntityCollection(
+    ec_merged_left = merge(ec_1, ec_2, on=["x", "y"], how="left")
+    ec_check_left = me.EntityCollection(
         x=np.array([1, 2, 3]),
         y=np.array([1, 2, 3]),
         Ms=me.Ms([1, 2, 3]),
@@ -224,14 +223,14 @@ def test_merge_left():
 
 def test_merge_right():
     """Test right merge function."""
-    ec_1 = me.io.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.EntityCollection(
         x=[2, 3, 4],
         y=[2, 3, 4],
         A=me.A([2, 3, 4]),
     )
-    ec_merged_right = me.merge(ec_1, ec_2, on=["x", "y"], how="right")
-    ec_check_right = me.io.EntityCollection(
+    ec_merged_right = merge(ec_1, ec_2, on=["x", "y"], how="right")
+    ec_check_right = me.EntityCollection(
         x=np.array([2, 3, 4]),
         y=np.array([2, 3, 4]),
         Ms=me.Ms([2, 3, np.nan]),
@@ -245,14 +244,14 @@ def test_merge_right():
 
 def test_merge_outer():
     """Test outer merge function."""
-    ec_1 = me.io.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.EntityCollection(
         x=[2, 3, 4],
         y=[2, 3, 4],
         Ms=me.Ms([2, 3, 4]),
     )
-    ec_merged_outer = me.merge(ec_1, ec_2, on=["x", "y"], how="outer")
-    ec_check_outer = me.io.EntityCollection(
+    ec_merged_outer = merge(ec_1, ec_2, on=["x", "y"], how="outer")
+    ec_check_outer = me.EntityCollection(
         x=np.array([1, 2, 3, 4]),
         y=np.array([1, 2, 3, 4]),
         Ms_x=me.Ms([1, 2, 3, np.nan]),
@@ -266,16 +265,16 @@ def test_merge_outer():
 
 def test_merge_cross():
     """Test cross merge function."""
-    ec_1 = me.io.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.EntityCollection(
         x=[2, 3, 4],
         y=[2, 3, 4],
         Ms_other=me.Ms([2, 3, 4]),
     )
     with pytest.raises(ValueError):
-        me.merge(ec_1, ec_2, on=["x", "y"], how="cross")
-    ec_merged_cross = me.merge(ec_1, ec_2, how="cross")
-    ec_check_cross = me.io.EntityCollection(
+        merge(ec_1, ec_2, on=["x", "y"], how="cross")
+    ec_merged_cross = merge(ec_1, ec_2, how="cross")
+    ec_check_cross = me.EntityCollection(
         x_x=np.array([1, 1, 1, 2, 2, 2, 3, 3, 3]),
         y_x=np.array([1, 1, 1, 2, 2, 2, 3, 3, 3]),
         Ms=me.Ms([1, 1, 1, 2, 2, 2, 3, 3, 3]),
@@ -293,16 +292,16 @@ def test_merge_cross():
 
 def test_merge_different_names():
     """Test merge on different column names."""
-    ec_1 = me.io.EntityCollection(x_array=[1, 2], y_array=[1, 2], Ms=me.Ms([100, 200]))
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x_array=[1, 2], y_array=[1, 2], Ms=me.Ms([100, 200]))
+    ec_2 = me.EntityCollection(
         x=[1, 2],
         y=[1, 2],
         A=me.A([0.8, 0.8]),
     )
-    ec_merged_1 = me.merge(
+    ec_merged_1 = merge(
         ec_1, ec_2, left_on=["x_array", "y_array"], right_on=["x", "y"], how="inner"
     )
-    ec_check_1 = me.io.EntityCollection(
+    ec_check_1 = me.EntityCollection(
         x=np.array([1, 2]),
         x_array=np.array([1, 2]),
         y=np.array([1, 2]),
@@ -320,14 +319,14 @@ def test_merge_different_names():
 
 def test_merge_indicator():
     """Test merge with indicator=True."""
-    ec_1 = me.io.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
-    ec_2 = me.io.EntityCollection(
+    ec_1 = me.EntityCollection(x=[1, 2, 3], y=[1, 2, 3], Ms=me.Ms([1, 2, 3]))
+    ec_2 = me.EntityCollection(
         x=[2, 3, 4],
         y=[2, 3, 4],
         Ms=me.Ms([2, 3, 4]),
     )
-    ec_merged = me.merge(ec_1, ec_2, on=["x", "y"], how="outer", indicator=True)
-    ec_check = me.io.EntityCollection(
+    ec_merged = merge(ec_1, ec_2, on=["x", "y"], how="outer", indicator=True)
+    ec_check = me.EntityCollection(
         x=np.array([1, 2, 3, 4]),
         y=np.array([1, 2, 3, 4]),
         Ms_x=me.Ms([1, 2, 3, np.nan]),
@@ -342,36 +341,36 @@ def test_merge_indicator():
 
 
 def test_merge_different_entity_value_error():
-    ec_1 = me.io.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
-    ec_2 = me.io.EntityCollection(Ms=me.B([1, 2, 3, 4]), x=[10, 20, 30, 40])
+    ec_1 = me.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
+    ec_2 = me.EntityCollection(Ms=me.B([1, 2, 3, 4]), x=[10, 20, 30, 40])
 
     with pytest.raises(ValueError):
-        me.merge(ec_1, ec_2)
+        merge(ec_1, ec_2)
 
 
 def test_merge_different_units_value_error():
-    ec_1 = me.io.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
-    ec_2 = me.io.EntityCollection(Ms=[1, 2, 3, 4] * u.T, x=[10, 20, 30, 40])
+    ec_1 = me.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
+    ec_2 = me.EntityCollection(Ms=[1, 2, 3, 4] * u.T, x=[10, 20, 30, 40])
 
     with pytest.raises(ValueError):
-        me.merge(ec_1, ec_2)
+        merge(ec_1, ec_2)
     with pytest.raises(ValueError):
-        me.merge(ec_1, ec_2, how="right")
+        merge(ec_1, ec_2, how="right")
 
     ec_1.Ms = [1, 2, 3, 4] * u.A / u.m
 
     with pytest.raises(ValueError):
-        me.merge(ec_1, ec_2)
+        merge(ec_1, ec_2)
     with pytest.raises(ValueError):
-        me.merge(ec_1, ec_2, how="right")
+        merge(ec_1, ec_2, how="right")
 
 
 def test_merge_how_behaviour():
-    ec_1 = me.io.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
-    ec_2 = me.io.EntityCollection(Ms=[1, 2, 3, 4] * u.A / u.m, y=[50, 60, 70, 80])
+    ec_1 = me.EntityCollection(Ms=me.Ms([1, 2, 3, 4]), x=[10, 20, 30, 40])
+    ec_2 = me.EntityCollection(Ms=[1, 2, 3, 4] * u.A / u.m, y=[50, 60, 70, 80])
 
-    merge_left = me.merge(ec_1, ec_2)
-    merge_right = me.merge(ec_1, ec_2, how="right")
+    merge_left = merge(ec_1, ec_2)
+    merge_right = merge(ec_1, ec_2, how="right")
     assert isinstance(merge_left.Ms, me.Entity)
     assert merge_left.Ms == ec_1.Ms
     assert isinstance(merge_right.Ms, me.Entity)
@@ -383,8 +382,8 @@ def test_merge_how_behaviour():
     assert np.allclose(merge_right.y, ec_2.y)
 
     ec_1.Ms = [1000, 2000, 3000, 4000] * u.mA / u.m
-    merge_left = me.merge(ec_1, ec_2)
-    merge_right = me.merge(ec_1, ec_2, how="right")
+    merge_left = merge(ec_1, ec_2)
+    merge_right = merge(ec_1, ec_2, how="right")
 
     assert isinstance(merge_right.Ms, u.Quantity)
     assert isinstance(merge_left.Ms, u.Quantity)
@@ -396,26 +395,26 @@ def test_merge_how_behaviour():
 
 
 def test_merge_left_right_on():
-    ec1 = me.io.EntityCollection(
+    ec1 = me.EntityCollection(
         T_K=me.T([1, 2, 3], "K"),
         Ms=me.Ms([40, 50, 60]),
     )
-    ec2 = me.io.EntityCollection(
+    ec2 = me.EntityCollection(
         T_mK=me.T([1, 2, 3], "mK"),
         A=me.A([70, 80, 90]),
     )
-    ec_merged = me.merge(ec1, ec2, left_on="T_K", right_on="T_mK")
+    ec_merged = merge(ec1, ec2, left_on="T_K", right_on="T_mK")
     assert ec_merged.to_dataframe().empty
 
-    ec1 = me.io.EntityCollection(
+    ec1 = me.EntityCollection(
         T_K=me.T([1, 2, 3], "K"),
         Ms=me.Ms([40, 50, 60]),
     )
-    ec2 = me.io.EntityCollection(
+    ec2 = me.EntityCollection(
         T_mK=me.T([1000, 2000, 3000], "mK"),
         A=me.A([70, 80, 90]),
     )
-    ec_merged = me.merge(ec1, ec2, left_on="T_K", right_on="T_mK")
+    ec_merged = merge(ec1, ec2, left_on="T_K", right_on="T_mK")
 
     assert isinstance(ec_merged.T_K, me.Entity)
     assert isinstance(ec_merged.T_mK, me.Entity)
@@ -428,15 +427,15 @@ def test_merge_left_right_on():
 
 
 def test_merge_on():
-    ec1 = me.io.EntityCollection(
+    ec1 = me.EntityCollection(
         x=[1, 2, 3],
         magnetisation=me.Ms([100, 200, 300]),
     )
-    ec2 = me.io.EntityCollection(
+    ec2 = me.EntityCollection(
         x=[1, 2, 3],
         magnetisation=me.Js([1, 2, 3]),
     )
-    merged_collection = me.merge(ec1, ec2, on="x", suffixes=["_sim", "_exp"])
+    merged_collection = merge(ec1, ec2, on="x", suffixes=["_sim", "_exp"])
     assert np.allclose(merged_collection.x, ec1.x)
     assert np.allclose(merged_collection.x, ec2.x)
     assert merged_collection.magnetisation_sim == ec1.magnetisation

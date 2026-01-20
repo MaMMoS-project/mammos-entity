@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 import mammos_entity as me
-from mammos_entity.io import EntityCollection, entities_from_file, entities_to_file
+from mammos_entity.io import entities_from_file, entities_to_file
 
 
 def test_to_csv_no_data():
@@ -47,7 +47,7 @@ def test_scalar_column(tmp_path, data, extension):
 
 def test_EntityCollection_with_description():
     """Check that the description of an EntityCollection is well defined."""
-    ec = me.io.EntityCollection(
+    ec = me.EntityCollection(
         "Magnetization on a grid.", x=[0, 0, 1, 1], y=[0, 1, 0, 1], M=me.M([1, 2, 3, 4])
     )
     assert ec.description == "Magnetization on a grid."
@@ -57,12 +57,12 @@ def test_EntityCollection_with_description():
 def test_EntityCollection_bad_description():
     """Check bad type for description of an EntityCollection."""
     with pytest.raises(ValueError):
-        me.io.EntityCollection(description=1)
+        me.EntityCollection(description=1)
 
 
 def test_EntityCollection_dataframe():
     """Check that the conversion to DataFrame works as intended."""
-    ec = me.io.EntityCollection(
+    ec = me.EntityCollection(
         "Magnetization on a grid.",
         x=[0, 0, 1, 1],
         M=me.M([1, 2, 3, 4]),
@@ -90,7 +90,7 @@ def test_EntityCollection_dataframe():
 def test_read_collection_type(tmp_path, extension):
     entities_to_file(tmp_path / f"simple.{extension}", data=[1, 2, 3])
     read_data = entities_from_file(tmp_path / f"simple.{extension}")
-    assert isinstance(read_data, EntityCollection)
+    assert isinstance(read_data, me.EntityCollection)
     assert np.allclose(read_data.data, [1, 2, 3])
 
 
