@@ -184,6 +184,7 @@ Example:
 
 from __future__ import annotations
 
+import copy
 import csv
 import os
 import re
@@ -486,6 +487,17 @@ class EntityCollection:
             return self._entities[name]
         except KeyError:
             raise AttributeError(name) from None
+
+    def __copy__(self):
+        """Shallow copy of entities."""
+        return self.__class__(description=self.description, **self.entities)
+
+    def __deepcopy__(self, memo):
+        """Deep copy of entities."""
+        entities = {
+            name: copy.deepcopy(entity, memo) for name, entity in self.entities.items()
+        }
+        return self.__class__(description=self.description, **entities)
 
     @property
     def description(self) -> str:
