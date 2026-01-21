@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
 
 base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
+mammos_equivalencies = u.temperature()
 
 
 def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
@@ -77,7 +78,7 @@ def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
     ][0]
 
 
-def extract_SI_units(ontology_label: str) -> str | None:
+def extract_SI_units(ontology_label: str) -> str:
     """Find SI unit for the given label from the EMMO ontology.
 
     Given a label for an ontology concept, retrieve the corresponding SI unit
@@ -101,16 +102,11 @@ def extract_SI_units(ontology_label: str) -> str | None:
                 "DimensionlessUnit"
             ):
                 si_unit = ""
-            elif sub_class := list(ancestor.hasMeasurementUnit[0].subclasses()):
-                si_unit = si_unit_from_list(sub_class)
+            elif subclasses := list(ancestor.hasMeasurementUnit[0].subclasses()):
+                si_unit = si_unit_from_list(subclasses)
             elif ontology_label := ancestor.hasMeasurementUnit[0].ucumCode:
                 si_unit = ontology_label[0]
             break
-    # HACK: filter Celsius values as Kelvin and `Cel.K-1` as no units
-    if si_unit in {"Cel", "mCel"}:
-        si_unit = "K"
-    elif si_unit == "Cel.K-1":
-        si_unit = ""
     return si_unit
 
 
@@ -159,30 +155,32 @@ class Entity:
         if unit is None and isinstance(value, u.Quantity):
             unit = value.unit
 
-        si_unit = extract_SI_units(ontology_label)
+        with u.set_enabled_aliases(
+            # filtering units we do not want as default
+            {"Cel": "K", "mCel": "K", "har": "m2"}
+        ):
+            si_unit = u.Unit(extract_SI_units(ontology_label))
 
-        if (si_unit is not None) and (unit is not None):
-            # Remove any set equivalency to enforce unit strictness
-            with u.set_enabled_equivalencies(None):
-                if not u.Unit(si_unit).is_equivalent(unit):
+        if unit is None:
+            # the user does not specify a unit:
+            # so we initialize the entity with a SI ontology unit.
+            with u.set_enabled_equivalencies(mammos_equivalencies):
+                comp_si_unit = si_unit.decompose(bases=base_units)
+            unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
+
+        else:
+            # the user specify a unit:
+            # we just check this unit is coherent with the ontology
+            with u.set_enabled_equivalencies(mammos_equivalencies):
+                if not si_unit.is_equivalent(unit):
                     raise u.UnitConversionError(
                         f"The unit '{unit}' is not equivalent to the unit of"
-                        f" {ontology_label} '{u.Unit(si_unit)}'"
+                        f" {ontology_label} '{si_unit}'"
                     )
-        elif (si_unit is not None) and (unit is None):
-            with u.add_enabled_aliases({"Cel": u.K, "mCel": u.K, "har": u.ha}):
-                comp_si_unit = u.Unit(si_unit).decompose(bases=base_units)
-            unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
-        elif (si_unit is None) and unit:
-            raise TypeError(
-                f"{ontology_label} is a unitless entity."
-                f" Hence, {unit} is inappropriate."
-            )
 
         comp_unit = u.Unit(unit if unit else "")
 
-        # Remove any set equivalency to enforce unit strictness
-        with u.set_enabled_equivalencies(None):
+        with u.set_enabled_equivalencies(mammos_equivalencies):
             self._quantity = u.Quantity(value=value, unit=comp_unit)
         self._ontology_label = ontology_label
 
@@ -318,11 +316,12 @@ class Entity:
         """
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return (
-            self.ontology_label == other.ontology_label
-            and self.q.shape == other.q.shape
-            and u.allclose(self.q, other.q, equal_nan=True)
-        )
+        with u.set_enabled_equivalencies(mammos_equivalencies):
+            return (
+                self.ontology_label == other.ontology_label
+                and self.q.shape == other.q.shape
+                and u.allclose(self.q, other.q, equal_nan=True)
+            )
 
     def __repr__(self) -> str:
         args = [f"ontology_label='{self._ontology_label}'", f"value={self.value!r}"]
