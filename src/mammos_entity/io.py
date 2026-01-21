@@ -513,23 +513,17 @@ class EntityCollection:
             }
         )
 
-    def entity_metadata(self) -> dict[str, dict[str, str | None]]:
+    def metadata(self) -> dict[str, dict[str, str | None]]:
         """TODO."""
         result = {}
-        for name, entity_like in self._elements_dictionary.items():
+        for name, entity_like in self.entities.items():
             result[name] = {}
             if isinstance(entity_like, me.Entity):
                 result[name]["ontology_label"] = entity_like.ontology_label
                 result[name]["unit"] = str(entity_like.unit)
                 result[name]["description"] = entity_like.description
             elif isinstance(entity_like, u.Quantity):
-                result[name]["ontology_label"] = None
-                result[name]["unit"] = entity_like.unit
-                result[name]["description"] = None
-            else:
-                result[name]["ontology_label"] = None
-                result[name]["unit"] = None
-                result[name]["description"] = None
+                result[name]["unit"] = str(entity_like.unit)
 
         return result
 
@@ -554,14 +548,14 @@ class EntityCollection:
             if len(value) == 1:
                 value = value[0]
 
-            if metadata[name]["ontology_label"] is not None:
+            if "ontology_label" in metadata[name]:
                 elem = me.Entity(
                     ontology_label=metadata[name]["ontology_label"],
                     value=value,
-                    unit=metadata[name]["unit"],
-                    description=metadata[name]["description"] or "",
+                    unit=metadata[name].get("unit"),
+                    description=metadata[name].get("description", ""),
                 )
-            elif metadata[name]["unit"] is not None:
+            elif "unit" in metadata[name]:
                 elem = u.Quantity(
                     value=value,
                     unit=metadata[name]["unit"],
