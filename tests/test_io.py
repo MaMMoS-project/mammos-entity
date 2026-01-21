@@ -51,7 +51,7 @@ def test_EntityCollection_with_description():
         "Magnetization on a grid.", x=[0, 0, 1, 1], y=[0, 1, 0, 1], M=me.M([1, 2, 3, 4])
     )
     assert ec.description == "Magnetization on a grid."
-    assert list(ec._elements_dictionary.keys()) == ["x", "y", "M"]
+    assert list(ec.entities.keys()) == ["x", "y", "M"]
 
 
 def test_EntityCollection_bad_description():
