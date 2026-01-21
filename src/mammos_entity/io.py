@@ -617,8 +617,7 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
         names = data.keys()
         scalar_data = len(data) == 1
 
-    result = EntityCollection()
-
+    entities = {}
     for name, ontology_label, iri, unit in zip(
         names, ontology_labels, ontology_iris, units, strict=True
     ):
@@ -626,13 +625,13 @@ def _entities_from_csv(filename: str | Path) -> EntityCollection:
         if ontology_label:
             entity = me.Entity(ontology_label, data_values, unit)
             _check_iri(entity, iri)
-            setattr(result, name, entity)
+            entities[name] = entity
         elif unit:
-            setattr(result, name, u.Quantity(data_values, unit))
+            entities[name] = u.Quantity(data_values, unit)
         else:
-            setattr(result, name, data_values)
+            entities[name] = data_values
 
-    return result
+    return EntityCollection(**entities)
 
 
 def _remove_hash_from_first_element(row: list) -> list:
@@ -660,11 +659,10 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
     if (version := file_content["metadata"]["version"]) != "v1":
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
 
-    result = EntityCollection()
-
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
 
+    entities = {}
     for key, item in file_content["data"].items():
         req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
         if set(item) != req_subkeys:
@@ -679,13 +677,13 @@ def _entities_from_yaml(filename: str | Path) -> EntityCollection:
                 unit=item["unit"],
             )
             _check_iri(entity, item["ontology_iri"])
-            setattr(result, key, entity)
+            entities[key] = entity
         elif item["unit"] is not None:
-            setattr(result, key, u.Quantity(item["value"], item["unit"]))
+            entities[key] = u.Quantity(item["value"], item["unit"])
         else:
-            setattr(result, key, item["value"])
+            entities[key] = item["value"]
 
-    return result
+    return EntityCollection(**entities)
 
 
 def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
