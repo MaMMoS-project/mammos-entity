@@ -53,6 +53,26 @@ def test_EntityCollection_with_description():
     assert ec.description == "Magnetization on a grid."
     assert list(ec.entities.keys()) == ["x", "y", "M"]
 
+    ec.T = me.T(2)
+    assert list(ec.entities.keys()) == ["x", "y", "M", "T"]
+
+    # changing class elements does not change the entities
+    ec.description = "A new description"
+    assert list(ec.entities.keys()) == ["x", "y", "M", "T"]
+    assert ec.description == "A new description"
+
+
+def test_EntityCollection_name_clash():
+    ec = me.io.EntityCollection(to_dataframe="value")
+    assert list(ec.entities.keys()) == ["to_dataframe"]
+    assert callable(ec.to_dataframe)
+    assert ec.entities["to_dataframe"] == "value"
+
+    ec.to_dataframe = "missing"
+    assert list(ec.entities.keys()) == ["to_dataframe"]
+    assert ec.to_dataframe == "missing"
+    assert ec.entities["to_dataframe"] == "value"
+
 
 def test_EntityCollection_bad_description():
     """Check bad type for description of an EntityCollection."""
