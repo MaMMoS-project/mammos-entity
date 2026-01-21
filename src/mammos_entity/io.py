@@ -450,8 +450,42 @@ class EntityCollection:
             **kwargs : entities to be stored in the collection.
         """
         self.description = description
-        for key, val in kwargs.items():
-            setattr(self, key, val)
+        self._entities = kwargs
+
+    @property
+    def entities(self) -> dict:
+        """Dictionary of entities stored in the collection."""
+        return self._entities
+
+    def __setattr__(self, name, value):
+        """Add new elements to entities dictionary.
+
+        Public name (no leading underscore) becomes part of the ``entities`` dictionary.
+        Private names (at least one leading underscore) are added to the class normally.
+
+        If a property/method with the same name exists it takes precedence and the
+        entity will not be added to ``entities``. Instead, the property assignment is
+        called/the method is overwritten. In such cases add the entity via the dict
+        interface ``collection.entities["name"] = value``.
+        """
+        if name.startswith("_") or hasattr(type(self), name):
+            object.__setattr__(self, name, value)
+        else:
+            self._entities[name] = value
+
+    def __getattr__(self, name):
+        """Access entities via dot notation.
+
+        Allow access to entities using ``collection.name`` as a short-hand for
+        ``collection.entities["name"]``.
+
+        If a property/method with the same name exists it gets precedence. In such cases
+        access to the entity is only possible via the ``entities`` dictionary.
+        """
+        try:
+            return self._entities[name]
+        except KeyError:
+            raise AttributeError(name) from None
 
     @property
     def description(self) -> str:
@@ -473,18 +507,10 @@ class EntityCollection:
                 f"Received value: {value} of type: {type(value)}."
             )
 
-    @property
-    def _elements_dictionary(self):
-        """Return a dictionary of all elements stored in the collection."""
-        elements = {k: val for k, val in vars(self).items() if k != "_description"}
-        return elements
-
     def __repr__(self):
         """Show container elements."""
         args = f"description={self.description!r},\n"
-        args += "\n".join(
-            f"{key}={val!r}," for key, val in self._elements_dictionary.items()
-        )
+        args += "\n".join(f"{key}={val!r}," for key, val in self.entities.items())
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
 
     def to_dataframe(self, include_units: bool = True) -> pd.DataFrame:
@@ -509,7 +535,7 @@ class EntityCollection:
         return pd.DataFrame(
             {
                 f"{key}{unit(key) if include_units else ''}": getattr(val, "value", val)
-                for key, val in self._elements_dictionary.items()
+                for key, val in self.entities.items()
             }
         )
 
