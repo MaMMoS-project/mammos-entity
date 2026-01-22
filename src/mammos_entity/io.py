@@ -101,7 +101,7 @@ YAML files written by :py:mod:`mammos_entity.io` have the following format:
 - two top-level keys ``metadata`` and ``data``
 - ``metadata`` contains keys
 
-  - ``version``: a string that matches the regex v\\d+
+  - ``version``: a string that matches the regex v\d+
   - ``description``: a (multi-line) string with arbitrary content
 
 - ``data`` contains one key per object saved in the file. Each object has the keys:
