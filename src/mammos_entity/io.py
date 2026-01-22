@@ -75,7 +75,7 @@ Example:
     The new file has the following content:
 
     >>> print(Path("example.csv").read_text())
-    #mammos csv v3
+    # mammos csv v3
     #----------------------------------------
     # Test data
     #----------------------------------------
