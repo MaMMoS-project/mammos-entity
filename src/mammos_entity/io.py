@@ -117,6 +117,9 @@ YAML files written by :py:mod:`mammos_entity.io` have the following format:
 .. version-added:: v2
    The ``description`` key for each object.
 
+.. version-changed:: v2
+   The value of ``metadata:description`` is now always a string,  ``""`` if no description is provided (before, it was ``null``).
+
 Example:
     Here is an example with six entries:
 
