@@ -71,11 +71,19 @@ def test_EntityCollection_dataframe():
     df = pd.DataFrame(
         {
             "x": [0, 0, 1, 1],
+            "M": [1.0, 2.0, 3.0, 4.0],
+            "T": [100.0, 200.0, 300.0, 400.0],
+        }
+    )
+    assert df.equals(ec.to_dataframe())
+    df_with_units = pd.DataFrame(
+        {
+            "x": [0, 0, 1, 1],
             "M (A / m)": [1.0, 2.0, 3.0, 4.0],
             "T (mK)": [100.0, 200.0, 300.0, 400.0],
         }
     )
-    assert df.equals(ec.to_dataframe())
+    assert df_with_units.equals(ec.to_dataframe(include_units=True))
 
 
 @pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
@@ -112,7 +120,10 @@ def test_write_read(tmp_path, extension):
     assert read_data.n == demag_factor
     assert list(read_data.comment) == comments
 
-    df_with_units = read_data.to_dataframe()
+    df_without_units = read_data.to_dataframe()
+    assert list(df_without_units.columns) == ["Ms", "T", "angle", "n", "comment"]
+
+    df_with_units = read_data.to_dataframe(include_units=True)
     assert list(df_with_units.columns) == [
         "Ms (A / m)",
         "T (K)",
@@ -120,9 +131,6 @@ def test_write_read(tmp_path, extension):
         "n",
         "comment",
     ]
-
-    df_without_units = read_data.to_dataframe(include_units=False)
-    assert list(df_without_units.columns) == ["Ms", "T", "angle", "n", "comment"]
 
     if extension == "csv":
         df = pd.read_csv(tmp_path / "example.csv", comment="#")

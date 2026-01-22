@@ -487,7 +487,7 @@ class EntityCollection:
         )
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
 
-    def to_dataframe(self, include_units: bool = True):
+    def to_dataframe(self, include_units: bool = False):
         """Convert values to dataframe.
 
         Args:
