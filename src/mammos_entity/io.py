@@ -11,7 +11,7 @@ additional commented metadata lines at the top of the file. Comment lines start 
 
 The lines are, in order:
 
-- (commented) the file version in the form ``mammos csv v<VERSION>`` (matching regex v\\d+)
+- (commented) the file version in the form ``mammos csv v<VERSION>`` (matching regex v\d+)
 - (commented, optional) a description of the file, appearing delimited by
   dashed lines
 - (optional, only for entities) the preferred ontology label
