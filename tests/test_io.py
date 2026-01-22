@@ -199,7 +199,7 @@ def test_read_csv_v2(tmp_path):
 def test_read_csv_v3(tmp_path):
     file_content = textwrap.dedent(
         """\
-        #mammos csv v3
+        # mammos csv v3
         #----------------------------------------
         # Test file description.
         # Test 1, 2, 3.

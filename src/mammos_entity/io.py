@@ -336,7 +336,7 @@ def _entities_to_csv(
         writer = csv.writer(
             csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator=os.linesep
         )
-        csvfile.write(f"#mammos csv v3{os.linesep}")
+        csvfile.write(f"# mammos csv v3{os.linesep}")
         if description:
             csvfile.write("#" + "-" * 40 + os.linesep)
             for line in description.split("\n"):
