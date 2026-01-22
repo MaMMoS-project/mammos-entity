@@ -205,8 +205,7 @@ def test_read_csv_v3(tmp_path):
         # Test 1, 2, 3.
         #----------------------------------------
         SpontaneousMagnetization,ThermodynamicTemperature,,
-        "first line
-        second line","description, with a comma",,
+        "first line\nsecond line","description, with a comma",,
         https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
         kA / m,K,rad,
         Ms,T,angle,comment
