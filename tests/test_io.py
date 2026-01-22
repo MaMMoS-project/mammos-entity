@@ -1,3 +1,4 @@
+import os
 import textwrap
 
 import mammos_units as u
@@ -197,6 +198,7 @@ def test_read_csv_v2(tmp_path):
 
 
 def test_read_csv_v3(tmp_path):
+    # dedent would not work in the next string because of the `\n`
     file_content = """\
 # mammos csv v3
 #----------------------------------------
@@ -204,15 +206,15 @@ def test_read_csv_v3(tmp_path):
 # Test 1, 2, 3.
 #----------------------------------------
 SpontaneousMagnetization,ThermodynamicTemperature,,
-"first line\nsecond line","description, with a comma",,
+"first line{}second line","description, with a comma",,
 https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
 kA / m,K,rad,
 Ms,T,angle,comment
 600.0,1.0,0.0,Some comment
 650.0,2.0,0.5,Some other comment
 700.0,3.0,0.7,A third comment
-"""
-    (tmp_path / "data.csv").write_text(file_content)
+""".replace("\n", os.linesep).format("\n")
+    (tmp_path / "data.csv").write_text(file_content, newline="")
     read_data = entities_from_file(tmp_path / "data.csv")
 
     assert read_data.description == "Test file description.\nTest 1, 2, 3."
