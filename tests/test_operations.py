@@ -80,6 +80,47 @@ def test_merge_no_intersections():
         me.merge(ec_1, ec_2)
 
 
+def test_merge_description():
+    """Test description attribute in the merge operation."""
+    ec_1 = me.io.EntityCollection(
+        description="collection 1",
+        x=[1, 2, 3],
+        Ms=me.Ms([4, 5, 6]),
+    )
+    ec_2 = me.io.EntityCollection(
+        description="collection 2",
+        x=[2, 3, 4],
+        A=me.A([22, 33, 44]),
+    )
+    ec_3 = me.io.EntityCollection(
+        x=[1, 4],
+        T=me.T([300, 330]),
+    )
+
+    ec_4 = me.merge(
+        ec_1,
+        ec_2,
+        description="merged collection",
+        on="x",
+    )
+    assert ec_4.description == "merged collection"
+
+    ec_5 = me.merge(ec_1, ec_3)
+    assert ec_5.description == "collection 1"
+
+    ec_6 = me.merge(ec_3, ec_2)
+    assert ec_6.description == "collection 2"
+
+    ec_7 = me.merge(ec_3, ec_3)
+    assert ec_7.description == ""
+
+    with pytest.warns(UserWarning):
+        assert me.merge(ec_1, ec_2).description in (
+            "collection 1|collection 2",
+            "collection 2|collection 1",
+        )
+
+
 def test_merge_inner():
     """Test "inner" merge function.
 

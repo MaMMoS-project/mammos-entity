@@ -96,6 +96,7 @@ def concat_flat(
 def merge(
     left: me.io.EntityCollection,
     right: me.io.EntityCollection,
+    description: str | None = None,
     **kwargs,
 ) -> me.io.EntityCollection:
     """Merges two ``EntityCollection`` objects while preserving ontology and units.
@@ -155,6 +156,12 @@ def merge(
         right : The right-hand ``EntityCollection`` to merge with. When ``how='right'``
                 is used, this becomes the preferred collection for resolving ontology
                 labels and units.
+        description: If specified, this description string is assigned to the resulting
+                ``EntityCollection``. If not specified and only one of the inputs has a
+                description, it will be copied. If not specified and both have a
+                description, the output description is their concatenation. If not
+                specified and the inputs do not have a description, the output
+                description will be an empty string.
         **kwargs : Additional keyword arguments forwarded directly to ``pandas.merge``.
 
     Returns:
@@ -181,6 +188,11 @@ def merge(
             - Quantities with units that cannot be converted into each other
               (e.g. meters vs seconds).
 
+    Warns:
+        UserWarning: warns if a description is not specified and both merged collections
+            do have a unique description. In this case both descriptions are collected
+            and concatenated into the output ``EntityCollection.``
+
     Example:
         >>> import mammos_entity as me
         >>> A_collection = me.io.EntityCollection(
@@ -203,10 +215,10 @@ def merge(
         ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
         ...     integral_abs_diff=[1.176, 1.174, 1.153],
         ... )
-        >>> merged_collection = me.merge(A_collection, B_collection, how="inner")
+        >>> merged_collection = me.merge(A_collection, B_collection, description="merged collection", how="inner")
         >>> merged_collection
         EntityCollection(
-            description='',
+            description='merged collection',
             x_pos=Entity(ontology_label='Length', value=array([-10., -10., -10.]), unit='mm'),
             y_pos=Entity(ontology_label='Length', value=array([-10., -15., -20.]), unit='mm'),
             a=Entity(ontology_label='LocalLatticeConstantA', value=array([8.783, 8.783, 8.783]), unit='Angstrom'),
@@ -234,8 +246,8 @@ def merge(
     if "on" in kwargs and kwargs["on"]:
         matching_keys = set(kwargs["on"])
     else:
-        matching_keys = set(preferred_collection.__dict__.keys()) & set(
-            other_collection.__dict__.keys()
+        matching_keys = set(preferred_collection._elements_dictionary.keys()) & set(
+            other_collection._elements_dictionary.keys()
         )
     # check compatibility of entities and quantities and homogenize for merging:
     # - fail if the two entity_likes are not compatible
@@ -345,7 +357,20 @@ def merge(
         **kwargs,
     )
 
-    result = me.io.EntityCollection()
+    # entity collection description
+    if description is None:
+        _descriptions = set([left.description, right.description])
+        _descriptions.discard("")
+        if len(_descriptions) > 1:
+            warnings.warn(
+                "concat_flat was called without specifying a description input. "
+                "The descriptions from all entities are collected and concatenated "
+                "into a single string.",
+                stacklevel=1,
+            )
+        description = "|".join(_descriptions)
+
+    result = me.io.EntityCollection(description=description)
 
     suffix_values = kwargs.get("suffixes", ["_x", "_y"])
 
