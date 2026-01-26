@@ -76,9 +76,14 @@ Example:
     The new file has the following content:
 
     >>> print(Path("example.csv").read_text())
-    # mammos csv v3
-    #----------------------------------------
-    # Test data
+    # version: v3
+    # description: |-
+    #    Test data
+    #    Line 2
+    # ontology:
+    #  version_as_iri: https://w3id.org/emmo/domain/0.0.3/magnetic_material
+    #  imported:
+    #    - https://w3id.org/emmo/1.0.0-rc3
     #----------------------------------------
     ,SpontaneousMagnetization,,DemagnetizingFactor,
     ,Magnetization at 0 Kelvin,,,
@@ -159,6 +164,10 @@ Example:
     metadata:
       version: v2
       description: Test data
+      ontology:
+        version_as_iri: https://w3id.org/emmo/domain/0.0.3/magnetic_material
+        imported:
+          - https://w3id.org/emmo/1.0.0-rc3
     data:
       index:
         ontology_label: null
