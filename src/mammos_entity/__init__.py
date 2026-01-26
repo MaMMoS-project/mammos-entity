@@ -8,18 +8,19 @@ loaded MaMMoS ontology object.
 
 import importlib.metadata
 
-from mammos_entity._base import Entity
-from mammos_entity._entities import A, B, BHmax, H, Hc, J, Js, Ku, M, Mr, Ms, T, Tc
-from mammos_entity._onto import mammos_ontology
-from mammos_entity.operations import concat_flat, merge
+from mammos_entity._entity import Entity
+from mammos_entity._entity_collection import EntityCollection
+from mammos_entity._factory import A, B, BHmax, H, Hc, J, Js, Ku, M, Mr, Ms, T, Tc
+from mammos_entity._ontology import mammos_ontology
 
-from . import io
+from . import io, operations
 
 __version__ = importlib.metadata.version(__package__)
 
 
 __all__ = [
     "Entity",
+    "EntityCollection",
     "A",
     "B",
     "BHmax",
@@ -33,8 +34,7 @@ __all__ = [
     "Ms",
     "T",
     "Tc",
-    "concat_flat",
-    "merge",
-    "mammos_ontology",
     "io",
+    "mammos_ontology",
+    "operations",
 ]

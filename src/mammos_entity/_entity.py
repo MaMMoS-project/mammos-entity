@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import mammos_units as u
 
-from mammos_entity._onto import mammos_ontology
+from mammos_entity._ontology import mammos_ontology
 
 if TYPE_CHECKING:
     import astropy.units
@@ -27,7 +27,7 @@ base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
 
 
-def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
+def _si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
     """Return an SI unit from a list of entities from the EMMO ontology.
 
     Given a list of ontology classes, determine which class corresponds to
@@ -78,7 +78,7 @@ def si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
     ][0]
 
 
-def extract_SI_units(ontology_label: str) -> str:
+def _extract_SI_units(ontology_label: str) -> str:
     """Find SI unit for the given label from the EMMO ontology.
 
     Given a label for an ontology concept, retrieve the corresponding SI unit
@@ -102,8 +102,8 @@ def extract_SI_units(ontology_label: str) -> str:
                 "DimensionlessUnit"
             ):
                 si_unit = ""
-            elif subclasses := list(ancestor.hasMeasurementUnit[0].subclasses()):
-                si_unit = si_unit_from_list(subclasses)
+            elif sub_class := list(ancestor.hasMeasurementUnit[0].subclasses()):
+                si_unit = _si_unit_from_list(sub_class)
             elif ontology_label := ancestor.hasMeasurementUnit[0].ucumCode:
                 si_unit = ontology_label[0]
             break
@@ -159,7 +159,7 @@ class Entity:
             # filtering units we do not want as default
             {"Cel": "K", "mCel": "K", "har": "m2"}
         ):
-            si_unit = u.Unit(extract_SI_units(ontology_label))
+            si_unit = u.Unit(_extract_SI_units(ontology_label))
 
         if unit is None:
             # the user does not specify a unit:
