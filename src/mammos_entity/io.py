@@ -7,7 +7,8 @@ CSV
 
 CSV files written by :py:mod:`mammos_entity.io` contain data in normal CSV format and
 additional metadata lines at the top of the file. Some of the lines are commented with
-``#``. This structure is fixed and additional comment lines are not allowed.
+``#``. This structure is fixed and additional comment lines or inline comments
+in the data table are not allowed.
 
 The lines are, in order:
 
