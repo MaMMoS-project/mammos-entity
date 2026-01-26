@@ -6,44 +6,52 @@ CSV
 ===
 
 CSV files written by :py:mod:`mammos_entity.io` contain data in normal CSV format and
-additional commented metadata lines at the top of the file. Comment lines start with
-``#``, inline comments are not allowed.
+additional metadata lines at the top of the file. Some of the lines are commented with
+``#``. This structure is fixed and additional comment lines or inline comments
+in the data table are not allowed.
 
 The lines are, in order:
 
-- (Commented) the file version in the form ``mammos csv v<VERSION>``
-  The reading code checks the version number (using regex v\\d+) to ensure
-  compatibility.
-- (Commented, optional) a description of the file if given. It will appear delimited by
-  dashed lines. It is meant to be human readable and is ignored by reading routines
-  in :py:mod:`mammos_entity.io`.
-- (Commented) the preferred ontology label.
-- (Commented) the ontology IRI.
-- (Commented) units.
-- The short labels used to refer to individual columns when
-  working with the data, e.g. in a :py:class:`pandas.DataFrame`. Omitting spaces in this
-  string is advisable.
-  Ideally this string is the short ontology label.
-- All remaining lines contain data.
+- (commented) the file version in the form ``mammos csv v<VERSION>`` (matching regex v\d+)
+- (commented, optional) a description of the file, appearing delimited by
+  dashed lines
+- (optional, only for entities) the preferred ontology label
+- (optional, only for entities) a description string
+- (optional, only for entities) the ontology IRI
+- (optional, for entities and quantities) units
+- the short labels used to refer to individual columns when working with the data,
+  e.g. in a :py:class:`pandas.DataFrame` (omitting spaces in this
+  string is advisable; ideally this string is the short ontology label)
+- all remaining lines contain data.
 
 Elements in a line are separated by a comma without any surrounding whitespace. A
 trailing comma is not permitted.
 
-In columns without ontology the lines containing labels and IRIs are empty.
+In columns without ontology the lines containing labels, IRIs, and description are empty.
 
 Similarly, columns without units (with or without ontology entry) have empty units line.
 
-.. versionadded:: v2
+For any column, the description line can be empty. Only entities can store descriptions,
+i.e., if the ontology-related lines are empty, the description string will not be read.
+
+.. version-added:: v2
    The optional description of the file.
+
+.. version-added:: v3
+   Additional description metadata row containing a description for each column.
+
+.. version-changed:: v3
+   Ontology labels, entity descriptions, IRIs, and units are no longer commented.
 
 Example:
     Here is an example with five columns:
 
     - an index with no units or ontology label
-    - the entity spontaneous magnetization with an entry in the ontology
+    - the entity spontaneous magnetization with an entry in the ontology and a
+      description
     - a made-up quantity alpha with a unit but no ontology label
     - demagnetizing factor with an ontology entry but no unit
-    - a column `description` containing a string description without units or ontology
+    - a column `comment` containing a string comment without units or ontology
       label
 
     The file has a description reading "Test data".
@@ -55,30 +63,31 @@ Example:
     ...     "example.csv",
     ...     "Test data",
     ...     index=[0, 1, 2],
-    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m"),
+    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m", description="Magnetization at 0 Kelvin"),
     ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
     ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
-    ...     description=[
-    ...         "Description of the first data row",
-    ...         "Description of the second data row",
-    ...         "Description of the third data row",
+    ...     comment=[
+    ...         "Comment in the first row",
+    ...         "Comment in the second row",
+    ...         "Comment in the third row",
     ...     ],
     ... )
 
     The new file has the following content:
 
     >>> print(Path("example.csv").read_text())
-    #mammos csv v2
+    # mammos csv v3
     #----------------------------------------
     # Test data
     #----------------------------------------
-    #,SpontaneousMagnetization,,DemagnetizingFactor,
-    #,https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
-    #,kA / m,s2,,
-    index,Ms,alpha,DemagnetizingFactor,description
-    0,100.0,1.2,1.0,Description of the first data row
-    1,100.0,3.4,0.5,Description of the second data row
-    2,100.0,5.6,0.5,Description of the third data row
+    ,SpontaneousMagnetization,,DemagnetizingFactor,
+    ,Magnetization at 0 Kelvin,,,
+    ,https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+    ,kA / m,s2,,
+    index,Ms,alpha,DemagnetizingFactor,comment
+    0,100.0,1.2,1.0,Comment in the first row
+    1,100.0,3.4,0.5,Comment in the second row
+    2,100.0,5.6,0.5,Comment in the third row
     <BLANKLINE>
 
     Finally, remove the file.
@@ -90,29 +99,37 @@ YAML
 
 YAML files written by :py:mod:`mammos_entity.io` have the following format:
 
-- They have two top-level keys ``metadata`` and ``data``.
+- two top-level keys ``metadata`` and ``data``
 - ``metadata`` contains keys
 
-  - ``version``: a string that matches the regex v\\d+
+  - ``version``: a string that matches the regex v\d+
   - ``description``: a (multi-line) string with arbitrary content
 
-- ``data`` contains on key per object saved in the file. Each object has the keys:
+- ``data`` contains one key per object saved in the file. Each object has the keys:
 
-  - ``ontology_label``: label in the ontology, ``null`` if the element is no Entity.
-  - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity.
+  - ``ontology_label``: label in the ontology, ``null`` if the element is no Entity
+  - ``description`` a description string, ``""`` if the element is no Entity or has no
+    description
+  - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity
   - ``unit``: unit of the entity or quantity, ``null`` if the element has no unit, empty
-    string for dimensionless quantities and entities.
-  - ``value``: value of the data.
+    string for dimensionless quantities and entities
+  - ``value``: value of the data
 
+.. version-added:: v2
+   The ``description`` key for each object.
+
+.. version-changed:: v2
+   The value of ``metadata:description`` is now always a string,  ``""`` if no description is provided (before, it was ``null``).
 
 Example:
     Here is an example with six entries:
 
     - an index with no units or ontology label
-    - the entity spontaneous magnetization with an entry in the ontology
+    - the entity spontaneous magnetization with an entry in the ontology and a
+      description
     - a made-up quantity alpha with a unit but no ontology label
     - demagnetizing factor with an ontology entry but no unit
-    - a column `description` containing a string description without units or ontology
+    - a column `comment` containing a string comment without units or ontology
       label
     - an element Tc with only a single value
 
@@ -125,13 +142,13 @@ Example:
     ...     "example.yaml",
     ...     "Test data",
     ...     index=[0, 1, 2],
-    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m"),
+    ...     Ms=me.Ms([1e2, 1e2, 1e2], "kA/m", description="Magnetization at 0 Kelvin"),
     ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
     ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
-    ...     description=[
-    ...         "Description of the first data row",
-    ...         "Description of the second data row",
-    ...         "Description of the third data row",
+    ...     comment=[
+    ...         "Comment in the first row",
+    ...         "Comment in the second row",
+    ...         "Comment in the third row",
     ...     ],
     ...     Tc=me.Tc(300, "K"),
     ... )
@@ -140,37 +157,43 @@ Example:
 
     >>> print(Path("example.yaml").read_text())
     metadata:
-      version: v1
+      version: v2
       description: Test data
     data:
       index:
         ontology_label: null
+        description: ''
         ontology_iri: null
         unit: null
         value: [0, 1, 2]
       Ms:
         ontology_label: SpontaneousMagnetization
+        description: Magnetization at 0 Kelvin
         ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
         unit: kA / m
         value: [100.0, 100.0, 100.0]
       alpha:
         ontology_label: null
+        description: ''
         ontology_iri: null
         unit: s2
         value: [1.2, 3.4, 5.6]
       DemagnetizingFactor:
         ontology_label: DemagnetizingFactor
+        description: ''
         ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
         unit: ''
         value: [1.0, 0.5, 0.5]
-      description:
+      comment:
         ontology_label: null
+        description: ''
         ontology_iri: null
         unit: null
-        value: [Description of the first data row, Description of the second data row,
-          Description of the third data row]
+        value: [Comment in the first row, Comment in the second row, Comment in the third
+            row]
       Tc:
         ontology_label: CurieTemperature
+        description: ''
         ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
         unit: K
         value: 300.0
@@ -210,8 +233,8 @@ if TYPE_CHECKING:
 
 def entities_to_file(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     """Write entity data to file.
@@ -234,8 +257,8 @@ def entities_to_file(
 
     Args:
         _filename: Name or path of file where to store data.
-        _description: Optional description of data. If given, it will appear in the
-            metadata part of the file.
+        description: Optional description of data. It is added to the
+           metadata part of the file.
         **entities: Data to be saved to file. For CSV all entity like objects need to
             have the same length and shape 0 or 1, YAML supports different lengths and
             arbitrary shape.
@@ -245,17 +268,17 @@ def entities_to_file(
         raise RuntimeError("No data to write.")
     match Path(_filename).suffix:
         case ".csv":
-            _entities_to_csv(_filename, _description, **entities)
+            _entities_to_csv(_filename, description, **entities)
         case ".yml" | ".yaml":
-            _entities_to_yaml(_filename, _description, **entities)
+            _entities_to_yaml(_filename, description, **entities)
         case unknown_suffix:
             raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
 
 def entities_to_csv(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     """Deprecated: write tabular data to csv file, use entities_to_file."""
@@ -266,16 +289,17 @@ def entities_to_csv(
         DeprecationWarning,
         stacklevel=2,
     )
-    _entities_to_csv(_filename, _description, **entities)
+    _entities_to_csv(_filename, description, **entities)
 
 
 def _entities_to_csv(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     ontology_labels = []
+    descriptions = []
     ontology_iris = []
     units = []
     data = {}
@@ -283,18 +307,21 @@ def _entities_to_csv(
     for name, element in entities.items():
         if isinstance(element, Entity):
             ontology_labels.append(element.ontology_label)
+            descriptions.append(element.description)
             ontology_iris.append(element.ontology.iri)
             units.append(str(element.unit))
             data[name] = element.value
             if_scalar_list.append(pd.api.types.is_scalar(element.value))
         elif isinstance(element, u.Quantity):
             ontology_labels.append("")
+            descriptions.append("")
             ontology_iris.append("")
             units.append(str(element.unit))
             data[name] = element.value
             if_scalar_list.append(pd.api.types.is_scalar(element.value))
         else:
             ontology_labels.append("")
+            descriptions.append("")
             ontology_iris.append("")
             units.append("")
             data[name] = element
@@ -310,74 +337,68 @@ def _entities_to_csv(
         writer = csv.writer(
             csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator=os.linesep
         )
-        writer.writerow(["#mammos csv v2"])
-        if _description:
-            writer.writerow(["#" + "-" * 40])
-            for line in _description.split("\n"):
-                writer.writerow([f"# {line}"])
-            writer.writerow(["#" + "-" * 40])
+        csvfile.write(f"# mammos csv v3{os.linesep}")
+        if description:
+            csvfile.write("#" + "-" * 40 + os.linesep)
+            for line in description.split("\n"):
+                csvfile.write(f"# {line}{os.linesep}")
+            csvfile.write("#" + "-" * 40 + os.linesep)
         writer.writerows(
             [
-                _add_hash_to_first_element(row)
-                for row in [
-                    ontology_labels,
-                    ontology_iris,
-                    units,
-                ]
+                ontology_labels,
+                descriptions,
+                ontology_iris,
+                units,
             ]
         )
         dataframe.to_csv(csvfile, index=False)
 
 
-def _add_hash_to_first_element(row: list) -> list:
-    """Add hash symbol (#) to the first element of the input row.
-
-    This is a convenience function only used in :py:func:`_entities_to_csv`.
-    Each metadata line starts with the hash symbol. This function is used to add the
-    hash symbol to the first element of each line.
-    """
-    return [f"#{row[0]}", *row[1:]]
-
-
 def _entities_to_yaml(
     _filename: str | Path,
-    _description: str | None = None,
     /,
+    description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
 ) -> None:
     def _preprocess_entity_args(entities: dict[str, str]) -> Iterator[tuple]:
-        """Extract name, label, iri, unit and value for each item."""
+        """Extract name, label, description, iri, unit and value for each item."""
         for name, element in entities.items():
             if isinstance(element, Entity):
                 label = element.ontology_label
+                description = element.description
                 iri = element.ontology.iri
                 unit = str(element.unit)
                 value = element.value.tolist()
             elif isinstance(element, u.Quantity):
                 label = None
+                description = ""
                 iri = None
                 unit = str(element.unit)
                 value = element.value.tolist()
             else:
                 label = None
+                description = ""
                 iri = None
                 unit = None
                 value = np.asanyarray(element).tolist()
-            yield name, label, iri, unit, value
+            yield name, label, description, iri, unit, value
 
     entity_dict = {
         "metadata": {
-            "version": "v1",
-            "description": _description,
+            "version": "v2",
+            "description": description,
         },
         "data": {
             name: {
                 "ontology_label": label,
+                "description": descr,
                 "ontology_iri": iri,
                 "unit": unit,
                 "value": value,
             }
-            for name, label, iri, unit, value in _preprocess_entity_args(entities)
+            for name, label, descr, iri, unit, value in _preprocess_entity_args(
+                entities
+            )
         },
     }
 
@@ -469,45 +490,76 @@ def entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
 
 def _entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
     with open(filename, newline="") as csvfile:
-        reader = csv.reader(csvfile, delimiter=",", quoting=csv.QUOTE_MINIMAL)
+        file_version_information = csvfile.readline()
 
         try:
-            version = re.search(r"v\d+", next(reader)[0])
+            version = re.search(r"v\d+", file_version_information)
         except StopIteration:
             raise RuntimeError(f"Trying to read empty file: {filename}") from None
 
         if not version:
+            raise RuntimeError(
+                f"Cannot read version information from file {filename}. "
+                f"Content of the first line: '{file_version_information}'"
+            )
             raise RuntimeError("File does not have version information in line 1.")
-        if version.group() not in ["v1", "v2"]:
+        if version.group() not in [f"v{i}" for i in range(1, 4)]:
             raise RuntimeError(
                 f"Reading mammos csv {version.group()} is not supported."
             )
+        else:
+            version_number = int(version.group().lstrip("v"))
 
-        next_line = next(reader)
         collection_description = []
-        if "#--" in next_line[0]:
+
+        # read description
+        position = csvfile.tell()
+        if "#--" in next(csvfile):
             while True:
-                line = next(reader)[0]
+                line = next(csvfile)
                 if "#--" in line:
                     break
                 else:
-                    collection_description.append(line.removeprefix("# "))
-            next_line = next(reader)
-        ontology_labels = _remove_hash_from_first_element(next_line)
-        ontology_iris = _remove_hash_from_first_element(next(reader))
-        units = _remove_hash_from_first_element(next(reader))
+                    collection_description.append(line.strip().removeprefix("# "))
+        else:
+            # reset the file position
+            csvfile.seek(position)
+
+        # read ontology metadata
+        if version_number >= 3:
+            reader = csv.reader(
+                csvfile,
+                delimiter=",",
+                quoting=csv.QUOTE_MINIMAL,
+                lineterminator=os.linesep,
+            )
+            ontology_labels = next(reader)
+            descriptions = next(reader)
+            ontology_iris = next(reader)
+            units = next(reader)
+        else:
+            ontology_labels = csvfile.readline().strip().removeprefix("#").split(",")
+            descriptions = [""] * len(ontology_labels)
+            ontology_iris = csvfile.readline().strip().removeprefix("#").split(",")
+            units = csvfile.readline().strip().removeprefix("#").split(",")
+
         data = pd.read_csv(csvfile)
         names = data.keys()
         scalar_data = len(data) == 1
 
-    result = EntityCollection()
+    result = EntityCollection(description="\n".join(collection_description))
 
-    for name, ontology_label, iri, unit in zip(
-        names, ontology_labels, ontology_iris, units, strict=True
+    for name, ontology_label, description, iri, unit in zip(
+        names, ontology_labels, descriptions, ontology_iris, units, strict=True
     ):
         data_values = data[name].values if not scalar_data else data[name].values[0]
         if ontology_label:
-            entity = Entity(ontology_label, data_values, unit)
+            entity = Entity(
+                ontology_label=ontology_label,
+                value=data_values,
+                unit=unit,
+                description=description,
+            )
             _check_iri(entity, iri)
             setattr(result, name, entity)
         elif unit:
@@ -516,16 +568,6 @@ def _entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
             setattr(result, name, data_values)
 
     return result
-
-
-def _remove_hash_from_first_element(row: list) -> list:
-    """Remove hash symbol (#) from the first element of the input row.
-
-    This is a convenience function only used in :py:func:`_entities_from_csv`.
-    Each metadata line starts with the hash symbol. This function removes the hash
-    symbol to the first element of each line.
-    """
-    return [row[0].removeprefix("#"), *row[1:]]
 
 
 def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
@@ -540,16 +582,25 @@ def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     if not file_content["metadata"] or "version" not in file_content["metadata"]:
         raise RuntimeError("File does not have a key metadata:version.")
 
-    if (version := file_content["metadata"]["version"]) != "v1":
+    if (version := file_content["metadata"]["version"]) not in [
+        f"v{i}" for i in range(1, 3)
+    ]:
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
+    else:
+        version_number = int(version.lstrip("v"))
 
-    result = EntityCollection()
+    collection_description = file_content["metadata"]["description"] or ""
+    result = EntityCollection(description=collection_description)
 
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
 
-    for key, item in file_content["data"].items():
+    if version_number >= 2:
+        req_subkeys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
+    else:
         req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
+
+    for key, item in file_content["data"].items():
         if set(item) != req_subkeys:
             raise RuntimeError(
                 f"Element '{key}' does not have the required keys,"
@@ -560,6 +611,7 @@ def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
                 ontology_label=item["ontology_label"],
                 value=item["value"],
                 unit=item["unit"],
+                description=item.get("description", ""),
             )
             _check_iri(entity, item["ontology_iri"])
             setattr(result, key, entity)
