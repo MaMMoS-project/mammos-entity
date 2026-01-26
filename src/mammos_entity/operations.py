@@ -233,8 +233,8 @@ def merge(
     if "on" in kwargs and kwargs["on"]:
         matching_keys = set(kwargs["on"])
     else:
-        matching_keys = set(preferred_collection.__dict__.keys()) & set(
-            other_collection.__dict__.keys()
+        matching_keys = set(preferred_collection.entities.keys()) & set(
+            other_collection.entities.keys()
         )
     # check compatibility of entities and quantities and homogenize for merging:
     # - fail if the two entity_likes are not compatible

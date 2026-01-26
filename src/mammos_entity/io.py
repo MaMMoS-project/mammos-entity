@@ -547,8 +547,7 @@ def _entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
         names = data.keys()
         scalar_data = len(data) == 1
 
-    result = EntityCollection(description="\n".join(collection_description))
-
+    entities = {}
     for name, ontology_label, description, iri, unit in zip(
         names, ontology_labels, descriptions, ontology_iris, units, strict=True
     ):
@@ -561,13 +560,13 @@ def _entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
                 description=description,
             )
             _check_iri(entity, iri)
-            setattr(result, name, entity)
+            entities[name] = entity
         elif unit:
-            setattr(result, name, u.Quantity(data_values, unit))
+            entities[name] = u.Quantity(data_values, unit)
         else:
-            setattr(result, name, data_values)
+            entities[name] = data_values
 
-    return result
+    return EntityCollection(description="\n".join(collection_description), **entities)
 
 
 def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
@@ -590,7 +589,6 @@ def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
         version_number = int(version.lstrip("v"))
 
     collection_description = file_content["metadata"]["description"] or ""
-    result = EntityCollection(description=collection_description)
 
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
@@ -600,6 +598,7 @@ def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     else:
         req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
 
+    entities = {}
     for key, item in file_content["data"].items():
         if set(item) != req_subkeys:
             raise RuntimeError(
@@ -614,13 +613,13 @@ def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
                 description=item.get("description", ""),
             )
             _check_iri(entity, item["ontology_iri"])
-            setattr(result, key, entity)
+            entities[key] = entity
         elif item["unit"] is not None:
-            setattr(result, key, u.Quantity(item["value"], item["unit"]))
+            entities[key] = u.Quantity(item["value"], item["unit"])
         else:
-            setattr(result, key, item["value"])
+            entities[key] = item["value"]
 
-    return result
+    return EntityCollection(description=collection_description, **entities)
 
 
 def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
