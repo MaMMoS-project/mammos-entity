@@ -25,7 +25,7 @@ def concat_flat(
     unit: astropy.units.Unit | str | None = None,
     description: str | None = None,
 ) -> mammos_entity.Entity:
-    """Concatenate objects into a unique flat Entity.
+    r"""Concatenate objects into a unique flat Entity.
 
     At least one of the inputs must be an Entity with a `ontology_label`.
     The unit of the first Entity is accepted unless the optional argument `unit` is
@@ -38,7 +38,7 @@ def concat_flat(
         unit: If specified, all values are converted to this unit.
         description: If specified, this description string is assigned to the resulting
             entity. If not specified, all unique descriptions from the input entities
-            are collected and concatenated (separated by |). The order of the collected descriptions
+            are collected and concatenated (separated by \|). The order of the collected descriptions
             might change.
 
     Examples:
@@ -97,7 +97,7 @@ def merge(
     right: mammos_entity.EntityCollection,
     **kwargs,
 ) -> mammos_entity.EntityCollection:
-    """Merges two ``EntityCollection`` objects while preserving ontology and units.
+    """Merge two ``EntityCollection`` objects while preserving ontology and units.
 
     This function behaves similarly to ``pandas.merge``, but is aware of
     domain-specific metadata attached to each attribute in an ``EntityCollection``.
@@ -105,38 +105,53 @@ def merge(
 
     1. Deep-copy inputs so that neither ``left`` nor ``right`` is modified in-place.
     2. Determine a "preferred" collection based on the merge direction:
+
        - If ``how='right'`` is passed, ``right`` is treated as preferred.
        - Otherwise (including the default), ``left`` is preferred.
+
        The preferred collection defines the canonical ontology labels and units
        wherever there is a conflict.
-    3. Pre-process overlapping attributes (same attribute name present in
+    3. Pre-process the following overlapping attributes (same attribute name present in
        both collections) before calling ``pandas.merge``:
-       - For overlapping attributes that are:
-         * ``mammos_entity.Entity`` objects:
-           - Ensures ontology labels match; if not, raises ``ValueError``.
-           - Converts the non-preferred entity's unit to the preferred entity's unit.
-           - Ensures the ontology label is preserved.
-         * one ``mammos_entity.Entity`` and one ``mammos_units.Quantity``:
-           - Ensures units are compatible; if not, raises ``ValueError``.
-           - Wraps the quantity in an ``mammos_entity.Entity``, using the ontology label
-             of the entity and the unit of the preferred side.
-         * ``mammos_units.Quantity`` objects:
-           - Ensures units are compatible; if not, raises ``ValueError``.
-           - Converts the of quantity from the non-preferred unit to the preferred unit.
+
+       * ``mammos_entity.Entity`` objects:
+
+         - Ensures ontology labels match; if not, raises ``ValueError``.
+         - Converts the non-preferred entity's unit to the preferred entity's unit.
+         - Ensures the ontology label is preserved.
+
+       * one ``mammos_entity.Entity`` and one ``mammos_units.Quantity``:
+
+         - Ensures units are compatible; if not, raises ``ValueError``.
+         - Wraps the quantity in an ``mammos_entity.Entity``, using the ontology label
+           of the entity and the unit of the preferred side.
+
+       * ``mammos_units.Quantity`` objects:
+
+         - Ensures units are compatible; if not, raises ``ValueError``.
+         - Converts the of quantity from the non-preferred unit to the preferred unit.
+
     4. Harmonize join keys if ``left_on`` and ``right_on`` are provided:
+
        - For corresponding pairs of join keys, it attempts to convert units of the
          non-preferred key to match the preferred key where:
+
          * Both sides are ``mammos_entity.Entity`` with identical ontology labels.
          * One side is ``mammos_entity.Entity`` and the other is a
            ``mammos_units.Quantity`` with compatible units.
+
        - This ensures that joins on physical quantities behave as expected
          (e.g. length in m vs cm).
+
     5. Perform a pandas-style merge on the plain DataFrame representations:
-       - Uses ``EntityCollection.to_dataframe`` on both
-         collections.
+
+       - Uses ``EntityCollection.to_dataframe`` on both collections.
        - Calls ``pandas.merge`` with all remaining keyword arguments.
+
     6. Reconstruct a new ``EntityCollection`` from the merged DataFrame:
+
        - For each column in the merged DataFrame:
+
          * If the column corresponds to one of the original attributes
            (possibly with a suffix such as ``'_x'`` or ``'_y'``), the function
            restores the appropriate ontology label and unit using the original
@@ -145,16 +160,17 @@ def merge(
          * If the column does not originate from an ``mammos_entity.Entity`` or
            ``mammos_units.Quantity`` (e.g. an indicator column created by
            ``indicator=True``), it is stored as a plain NumPy array.
+
        - Any non-unit metadata (ontology labels) is preserved when possible.
 
     Args:
-        left : The left-hand ``EntityCollection`` to merge. Unless ``how='right'`` is
-               specified, this collection is treated as the preferred source of
-               ontology labels and units for overlapping attributes.
-        right : The right-hand ``EntityCollection`` to merge with. When ``how='right'``
-                is used, this becomes the preferred collection for resolving ontology
-                labels and units.
-        **kwargs : Additional keyword arguments forwarded directly to ``pandas.merge``.
+        left: The left-hand ``EntityCollection`` to merge. Unless ``how='right'`` is
+            specified, this collection is treated as the preferred source of
+            ontology labels and units for overlapping attributes.
+        right: The right-hand ``EntityCollection`` to merge with. When ``how='right'``
+            is used, this becomes the preferred collection for resolving ontology
+            labels and units.
+        **kwargs: Additional keyword arguments forwarded directly to ``pandas.merge``.
 
     Returns:
         mammos_entity.io.EntityCollection

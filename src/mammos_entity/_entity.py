@@ -16,7 +16,6 @@ from mammos_entity._ontology import mammos_ontology
 
 if TYPE_CHECKING:
     import astropy.units
-    import mammos_units
     import numpy.typing
     import owlready2
 
@@ -137,9 +136,9 @@ class Entity:
         self,
         ontology_label: str,
         value: numpy.typing.ArrayLike
-        | mammos_units.Quantity
+        | astropy.units.Quantity
         | mammos_entity.Entity = 0,
-        unit: str | None | mammos_units.UnitBase = None,
+        unit: str | astropy.units.UnitBase | None = None,
         description: str = "",
     ):
         self.description = description
@@ -248,10 +247,10 @@ class Entity:
 
     @property
     def quantity(self) -> astropy.units.Quantity:
-        """Return the entity as a `mammos_units.Quantity`.
+        """Return the entity as a Quantity.
 
-        Return a stand-alone `mammos_units.Quantity` object with the same value
-        and unit, detached from the ontology link.
+        Return a stand-alone :py:class:`~astropy.units.Quantity` object with the
+        same value and unit, detached from the ontology link.
 
         Returns:
             A copy of this entity as a pure physical quantity.
@@ -260,12 +259,12 @@ class Entity:
         return self._quantity
 
     @property
-    def q(self) -> mammos_units.Quantity:
+    def q(self) -> astropy.units.Quantity:
         """Quantity attribute, shorthand for `.quantity`."""
         return self.quantity
 
     @property
-    def value(self) -> numpy.scalar | numpy.ndarray:
+    def value(self) -> numpy.typing.ArrayLike:
         """Numerical data of the entity."""
         return self.quantity.value
 

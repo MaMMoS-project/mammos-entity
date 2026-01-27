@@ -7,11 +7,7 @@ import pandas as pd
 
 
 class EntityCollection:
-    """Container class storing entity-like objects.
-
-    Attributes:
-        description: String containing information about the ``EntityCollection``.
-    """
+    """Container class storing entity-like objects."""
 
     def __init__(self, description: str = "", **kwargs):
         """Initialize EntityCollection, keywords become attributes of the class.
