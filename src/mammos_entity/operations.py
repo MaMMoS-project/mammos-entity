@@ -92,7 +92,7 @@ def concat_flat(
     )
 
 
-def merge(
+def _merge(
     left: mammos_entity.EntityCollection,
     right: mammos_entity.EntityCollection,
     **kwargs,
@@ -202,7 +202,7 @@ def merge(
         ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
         ...     integral_abs_diff=[1.176, 1.174, 1.153],
         ... )
-        >>> merged_collection = me.operations.merge(A_collection, B_collection, how="inner")
+        >>> merged_collection = me.operations._merge(A_collection, B_collection, how="inner")
         >>> merged_collection
         EntityCollection(
             description='',

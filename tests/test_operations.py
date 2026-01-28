@@ -6,7 +6,8 @@ import pandas as pd
 import pytest
 
 import mammos_entity as me
-from mammos_entity.operations import concat_flat, merge
+from mammos_entity.operations import _merge as merge
+from mammos_entity.operations import concat_flat
 
 
 def test_concat_flat():
