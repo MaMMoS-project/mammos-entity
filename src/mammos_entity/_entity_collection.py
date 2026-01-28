@@ -8,8 +8,11 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
+import mammos_entity as me
+
 if TYPE_CHECKING:
     import collections.abc
+    import pathlib
 
     import astropy
     import numpy.typing
@@ -226,6 +229,19 @@ class EntityCollection:
         args = f"description={self.description!r},\n"
         args += "\n".join(f"{key}={val!r}," for key, val in self._entities.items())
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
+
+    def to_file(self, filename: str | pathlib.Path) -> None:
+        """Save entity collection to file.
+
+        Internally this method calls :py:func:`mammos_entity.io.entities_to_file`. For
+        details about the supported file formats refer to that function.
+
+        Args:
+            filename: Name of the file to generate, the file extension determines the
+                file type. An existing file with the same name will be overwritten
+                without warning.
+        """
+        me.io.entities_to_file(filename, description=self.description, **self._entities)
 
     def to_dataframe(self, include_units: bool = False) -> pd.DataFrame:
         """Convert values to dataframe.
