@@ -2,6 +2,7 @@ import pandas as pd
 import pytest
 
 import mammos_entity as me
+from mammos_entity import units as u
 
 
 def test_entity_collection_with_description():
@@ -117,3 +118,37 @@ def test_to_dataframe():
         }
     )
     assert df_with_units.equals(ec.to_dataframe(include_units=True))
+
+
+@pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])
+def test_write_read(tmp_path, extension):
+    Ms = me.Ms([1e6, 2e6, 3e6], description="evaluated\nexperimentally")
+    T = me.T([1, 2, 3], description="description, with comma")
+    theta_angle = [0, 0.5, 0.7] * u.rad
+    demag_factor = me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
+    comments = ["Some comment", "Some other comment", "A third comment"]
+
+    collection = me.EntityCollection(
+        description="Test file description.\nTest second line.",
+        Ms=Ms,
+        T=T,
+        angle=theta_angle,
+        demag_factor=demag_factor,
+        comment=comments,
+    )
+    collection.to_file(
+        tmp_path / f"example.{extension}",
+    )
+
+    read_data = me.io.entities_from_file(tmp_path / f"example.{extension}")
+
+    assert read_data.description == "Test file description.\nTest second line."
+    assert read_data.Ms == Ms
+    assert read_data.Ms.description == "evaluated\nexperimentally"
+    assert read_data.T == T
+    assert read_data.T.description == "description, with comma"
+    # Floating-point comparisons with == should ensure that we do not loose precision
+    # when writing the data to file.
+    assert all(read_data.angle == theta_angle)
+    assert read_data.demag_factor == demag_factor
+    assert list(read_data.comment) == comments
