@@ -223,6 +223,7 @@ from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 
 if TYPE_CHECKING:
+    import pathlib.Path
     from collections.abc import Iterator
 
     import astropy.units
@@ -232,7 +233,7 @@ if TYPE_CHECKING:
 
 
 def entities_to_file(
-    _filename: str | Path,
+    _filename: str | pathlib.Path,
     /,
     description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
@@ -276,7 +277,7 @@ def entities_to_file(
 
 
 def entities_to_csv(
-    _filename: str | Path,
+    _filename: str | pathlib.Path,
     /,
     description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
@@ -293,7 +294,7 @@ def entities_to_csv(
 
 
 def _entities_to_csv(
-    _filename: str | Path,
+    _filename: str | pathlib.Path,
     /,
     description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
@@ -355,7 +356,7 @@ def _entities_to_csv(
 
 
 def _entities_to_yaml(
-    _filename: str | Path,
+    _filename: str | pathlib.Path,
     /,
     description: str = "",
     **entities: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
@@ -456,7 +457,7 @@ def _entities_to_yaml(
         )
 
 
-def entities_from_file(filename: str | Path) -> mammos_entity.EntityCollection:
+def entities_from_file(filename: str | pathlib.Path) -> mammos_entity.EntityCollection:
     """Read files with ontology metadata.
 
     Reads a file as defined in the module description. The returned container provides
@@ -478,7 +479,7 @@ def entities_from_file(filename: str | Path) -> mammos_entity.EntityCollection:
             raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
 
-def entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
+def entities_from_csv(filename: str | pathlib.Path) -> mammos_entity.EntityCollection:
     """Deprecated: read CSV file with ontology metadata, use entities_from_file."""
     warnings.warn(
         "Use `entities_from_file`, the file type is inferred from the file extension.",
@@ -488,7 +489,7 @@ def entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
     return _entities_from_csv(filename)
 
 
-def _entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
+def _entities_from_csv(filename: str | pathlib.Path) -> mammos_entity.EntityCollection:
     with open(filename, newline="") as csvfile:
         file_version_information = csvfile.readline()
 
@@ -569,7 +570,7 @@ def _entities_from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
     return EntityCollection(description="\n".join(collection_description), **entities)
 
 
-def _entities_from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
+def _entities_from_yaml(filename: str | pathlib.Path) -> mammos_entity.EntityCollection:
     with open(filename) as f:
         file_content = yaml.safe_load(f)
 
