@@ -50,7 +50,7 @@ def test_add_remove_entities():
     assert [name for name, _entity in ec] == ["Ms", "A", "T center"]
 
     assert ec["Ms"] == me.Ms()
-    assert ec.A == me.A()  # noqa: SIM300  # ruff wants to swap left-right
+    assert me.A() == ec.A
     assert ec["T center"] == me.T()
 
     del ec.Ms
