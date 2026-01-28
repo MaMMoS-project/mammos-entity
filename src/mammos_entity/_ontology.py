@@ -47,3 +47,40 @@ def load_online_ontology() -> ontopy.ontology.Ontology:
 
 
 mammos_ontology = load_offline_ontology()
+
+
+def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
+    """Search entity labels by name.
+
+    The string ``text`` is searched into ``label``, ``prefLabel``, and ``altLabel`` of
+    all entities. The match is case sensitive. The returned label is always the
+    ``prefLabel``.
+
+    Args:
+        text: String to match.
+        auto_wildcard: If True, the wildcard ``*`` is added at the beginning
+            and at the end of the string ``text``. This allows partial matches, finding
+            labels containing ``text``. If False, only labels identical to ``text``
+            are returned.
+
+            Passing ``"text", auto_wildcard=True`` is identical to passing
+            ``"*text*", auto_wildcard=False``.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> me.search_labels("ShapeAnisotropy")
+        ['ShapeAnisotropy', 'ShapeAnisotropyConstant']
+
+        >>> me.search_labels("Magnetization")
+        ['MagneticMomementPerUnitMass', 'Magnetization', 'SpontaneousMagnetization']
+
+        ``'MagneticMomementPerUnitMass'`` appears because ``'MassMagnetization'`` is
+        in its ``altLabel``.
+
+        >>> me.search_labels("Magnetization", auto_wildcard=False)
+        ['Magnetization']
+    """
+    label = f"*{text}*" if auto_wildcard else text
+    thing_set = mammos_ontology.get_by_label_all(label)
+    list_of_labels = sorted(str(thing.prefLabel[0]) for thing in thing_set)
+    return list_of_labels
