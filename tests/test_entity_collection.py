@@ -94,6 +94,24 @@ def test_bad_description():
         me.EntityCollection(description=1)
 
 
+def test_metadata():
+    ec = me.EntityCollection(
+        "descr",
+        M=me.M(1, "A/m"),
+        Tc=me.Tc(1, "K", description="low"),
+        T_q=me.T(1, "K").q,
+        V=1,
+    )
+    reference = {
+        "description": "descr",
+        "M": {"ontology_label": "Magnetization", "unit": "A / m", "description": ""},
+        "Tc": {"ontology_label": "CurieTemperature", "unit": "K", "description": "low"},
+        "T_q": {"unit": "K"},
+        "V": {},
+    }
+    assert ec.metadata() == reference
+
+
 def test_to_dataframe():
     """Check that the conversion to DataFrame works as intended."""
     ec = me.EntityCollection(
@@ -118,6 +136,37 @@ def test_to_dataframe():
         }
     )
     assert df_with_units.equals(ec.to_dataframe(include_units=True))
+
+
+def test_from_dataframe():
+    data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
+    metadata = {
+        "description": "",
+        "M": {"ontology_label": "Magnetization", "unit": "kA/m", "description": "abc"},
+        "T": {"ontology_label": "ThermodynamicTemperature"},
+        "l_q": {"unit": "m"},
+        "x": {},
+    }
+    collection = me.EntityCollection.from_dataframe(data, metadata)
+    assert me.M([1, 2], "kA/m") == collection.M
+    assert collection.M.description == "abc"
+    assert me.T([3, 4], "K") == collection.T
+    assert all([5, 6] * u.m == collection.l_q)
+    assert all(collection.x == [7, 8])
+    assert [name for name, _entity in collection] == ["M", "T", "l_q", "x"]
+
+
+def test_dataframe_roundtrip():
+    M = me.M([1, 2])
+    Tq = me.T([3, 4]).q
+    V = [5, 6]
+    col = me.EntityCollection("descr", M=M, Tq=Tq, V=V)
+    col_new = me.EntityCollection.from_dataframe(col.to_dataframe(), col.metadata())
+    assert col_new.M == M
+    assert all(col_new.Tq == Tq)
+    assert all(col_new.V == V)
+    assert col_new.description == "descr"
+    assert [name for name, _entity in col_new] == ["M", "Tq", "V"]
 
 
 @pytest.mark.parametrize("extension", ["csv", "yaml", "yml"])

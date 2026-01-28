@@ -10,6 +10,8 @@ import pandas as pd
 
 import mammos_entity as me
 
+from . import units as u
+
 if TYPE_CHECKING:
     import collections.abc
     import pathlib
@@ -268,3 +270,97 @@ class EntityCollection:
                 for key, val in self._entities.items()
             }
         )
+
+    def metadata(self) -> dict[str, str | dict[str, str]]:
+        """Get entity metadata as dictionary.
+
+        This method creates a dictionary containing metadata for all entities in the
+        collection. Keys are names of the (entities) attributes of the collection,
+        values are dictionaries with:
+        - keys ``ontology_label``, ``unit`` and ``description`` if the attribute is an
+          entity
+        - key ``unit`` if the attribute is a quantity
+        - an empty dictionary otherwise
+
+        In addition there is one key-value pair ``description`` for the collection
+        description.
+
+        Example:
+        >>> import mammos_entity as me
+        >>> import mammos_units as u
+        >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
+        >>> col.metadata()
+        {'description': 'The description', 'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+        """  # noqa: E501
+        result = {"description": self.description}
+        for name, entity_like in self._entities.items():
+            element = {}
+            if isinstance(entity_like, me.Entity):
+                element["ontology_label"] = entity_like.ontology_label
+                element["unit"] = str(entity_like.unit)
+                element["description"] = entity_like.description
+            elif isinstance(entity_like, u.Quantity):
+                element["unit"] = str(entity_like.unit)
+            result[name] = element
+
+        return result
+
+    @classmethod
+    def from_dataframe(
+        cls, dataframe: pd.DataFrame, metadata: dict[str, dict]
+    ) -> mammos_entity.EntityCollection:
+        """Create EntityCollection from dataframe and metadata.
+
+        The EntityCollection is created by combining metadata with data from the
+        dataframe matching key/column names. The available metadata determines whether
+        an element becomes an :py:class:`~mammos_entity.Entity``, a
+        :py:class:`mammos_units.Quantity` or a numpy array.
+
+        All column names in the `dataframe` must also exist as keys in `metadata` and
+        vice versa.
+
+        In addition `metadata` can have a key ``description`` containing a description
+        for the collection.
+
+        Args:
+            dataframe: A dataframe containing the values for the individual entities.
+            metadata: A dictionary with the structure similar to the one defined in
+                :py:func:`~EntityCollection.metadata`. The keys ``unit`` and
+                ``description`` for an :py:class`~mammos_entity.Entity` are however
+                optional. If not present, default units from the ontology and an empty
+                description are used.
+        """
+        metadata = copy.deepcopy(metadata)  # do not modify the user's metadata dict
+        description = metadata.pop("description", "")
+        if missing_keys := set(dataframe.columns) - set(metadata):
+            raise ValueError(
+                f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}"
+            )
+        if missing_keys := set(metadata) - set(dataframe.columns):
+            raise ValueError(
+                f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}"
+            )
+
+        entities = {}
+        for name in metadata:
+            value = dataframe[name].to_numpy()
+            if len(value) == 1:
+                value = value[0]
+
+            if "ontology_label" in metadata[name]:
+                elem = me.Entity(
+                    ontology_label=metadata[name]["ontology_label"],
+                    value=value,
+                    unit=metadata[name].get("unit"),
+                    description=metadata[name].get("description", ""),
+                )
+            elif "unit" in metadata[name]:
+                elem = u.Quantity(
+                    value=value,
+                    unit=metadata[name]["unit"],
+                )
+            else:
+                elem = value
+            entities[name] = elem
+
+        return cls(description=description, **entities)
