@@ -10,4 +10,4 @@ mammos-entity
    entity
    entity-collection
    io
-   useful_operations
+   common-tasks
