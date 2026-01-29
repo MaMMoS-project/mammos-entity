@@ -7,4 +7,7 @@ mammos-entity
    :maxdepth: 1
 
    quickstart
+   entity
+   entity-collection
    io
+   useful_operations
