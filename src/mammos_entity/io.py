@@ -214,6 +214,7 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import h5py
 import mammos_units as u
 import numpy as np
 import pandas as pd
@@ -271,6 +272,8 @@ def entities_to_file(
             _entities_to_csv(_filename, description, **entities)
         case ".yml" | ".yaml":
             _entities_to_yaml(_filename, description, **entities)
+        case ".hdf5":
+            _entities_to_hdf5(_filename, description, **entities)
         case unknown_suffix:
             raise ValueError(f"File type '{unknown_suffix}' not supported.")
 
@@ -454,6 +457,45 @@ def _entities_to_yaml(
             default_flow_style=False,
             sort_keys=False,
         )
+
+
+def _entities_to_hdf5(
+    _filename: str | Path,
+    /,
+    _description: str = "",
+    **entities: dict
+    | EntityCollection
+    | mammos_entity.Entity
+    | astropy.units.Quantity
+    | numpy.typing.ArrayLike,
+) -> None:
+    def _recurse(entities, super_group):
+        for key, value in entities.items():
+            if isinstance(value, dict | EntityCollection):
+                sub_group = super_group.create_group(key)
+                _recurse(value, sub_group)
+
+            elif all(hasattr(value, attr) for attr in ["value", "unit"]):
+                super_group.create_dataset(name=key, data=value.value)
+                super_group[key].attrs.create(name="unit", data=str(value.unit))
+                if hasattr(value, "ontology"):
+                    prefLabel, iri = value.ontology_label_with_iri.split(" ")
+                    super_group[key].attrs["label"] = prefLabel
+                    super_group[key].attrs["iri"] = iri
+
+            else:
+                try:
+                    super_group.create_dataset(name=key, data=value)
+                except TypeError:
+                    raise TypeError(
+                        f'The element "{key}" with the type '
+                        f"{type(value)} could not be saved as a dataset."
+                    ) from None
+
+    with h5py.File(_filename, mode="a") as f:
+        _recurse(entities, f)
+        f.create_dataset(name="/metadata/version", data="v1")
+        f.create_dataset(name="/metadata/description", data=_description)
 
 
 def entities_from_file(filename: str | Path) -> mammos_entity.EntityCollection:
