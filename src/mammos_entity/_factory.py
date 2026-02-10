@@ -176,7 +176,7 @@ def K1(
     unit: None | str = None,
     **kwargs,
 ) -> mammos_entity.Entity:
-    """Create an Entity representing the constant K1.
+    """Create an Entity representing the magnetocrystalline anisotropy constant K1.
 
     This is the first magnetocrystalline anisotropy constant for tetragonal or
     hexagonal crystals. For cubic crystals, please use K1c.
@@ -201,7 +201,7 @@ def K1c(
     unit: None | str = None,
     **kwargs,
 ) -> mammos_entity.Entity:
-    """Create an Entity representing the constant K1c.
+    """Create an Entity representing the cubic magnetocrystalline anisotropy constant K1c.
 
     This is the first magnetocrystalline anisotropy constant for cubic crystals.
     For tetragonal or hexagonal crystals, please use K1.
@@ -226,7 +226,7 @@ def K2(
     unit: None | str = None,
     **kwargs,
 ) -> mammos_entity.Entity:
-    """Create an Entity representing the constant K2.
+    """Create an Entity representing the magnetocrystalline anisotropy constant K2.
 
     This is the second magnetocrystalline anisotropy constant for tetragonal or
     hexagonal crystals. For cubic crystals, please use K2c.
@@ -251,7 +251,7 @@ def K2c(
     unit: None | str = None,
     **kwargs,
 ) -> mammos_entity.Entity:
-    """Create an Entity representing the second magnetocrystalline anisotropy constant.
+    """Create an Entity representing the cubic magnetocrystalline anisotropy constant K2c.
 
     This is the second magnetocrystalline anisotropy constant for cubic crystals.
     For tetragonal or hexagonal crystals, please use K2.
