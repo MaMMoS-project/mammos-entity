@@ -32,6 +32,7 @@ dependencies = [
   "mammos-units>=0.2.1",
   "numpy<3",
   "pandas>=2",
+  "h5py",
 ]
 
 [project.urls]
