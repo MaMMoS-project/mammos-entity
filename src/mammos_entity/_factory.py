@@ -179,7 +179,8 @@ def K1(
     """Create an Entity representing the magnetocrystalline anisotropy constant K1.
 
     This is the first magnetocrystalline anisotropy constant for tetragonal or
-    hexagonal crystals. For cubic crystals, please use K1c.
+    hexagonal crystals. For cubic crystals, please use the label
+    ``MagnetocrystallineAnisotropyConstantK1c`` instead.
 
     Args:
         value: Numeric value corresponding to the magnetocrystalline anisotropy
@@ -196,31 +197,6 @@ def K1(
     return Entity("MagnetocrystallineAnisotropyConstantK1", value, unit, **kwargs)
 
 
-def K1c(
-    value: int | float | numpy.typing.ArrayLike = 0,
-    unit: None | str = None,
-    **kwargs,
-) -> mammos_entity.Entity:
-    """Create an Entity representing the cubic magnetocrystalline anisotropy constant K1c.
-
-    This is the first magnetocrystalline anisotropy constant for cubic crystals.
-    For tetragonal or hexagonal crystals, please use K1.
-
-    Args:
-        value: Numeric value corresponding to the magnetocrystalline anisotropy
-            constant. It can also be a Numpy array.
-        unit: Unit of measure for the value (e.g., 'J/m^3'). If omitted, the SI unit
-            from the ontology, i.e. J/m^3 will be inferred.
-        **kwargs : Additional keyword arguments passed to
-            :py:class:`~mammos_entity.Entity`.
-
-    Returns:
-        An `Entity` object labeled "MagnetocrystallineAnisotropyConstantK1c".
-
-    """
-    return Entity("MagnetocrystallineAnisotropyConstantK1c", value, unit, **kwargs)
-
-
 def K2(
     value: int | float | numpy.typing.ArrayLike = 0,
     unit: None | str = None,
@@ -229,7 +205,8 @@ def K2(
     """Create an Entity representing the magnetocrystalline anisotropy constant K2.
 
     This is the second magnetocrystalline anisotropy constant for tetragonal or
-    hexagonal crystals. For cubic crystals, please use K2c.
+    hexagonal crystals. For cubic crystals, please use the label
+    ``MagnetocrystallineAnisotropyConstantK2c`` instead.
 
     Args:
         value: Numeric value corresponding to the magnetocrystalline anisotropy
@@ -244,31 +221,6 @@ def K2(
 
     """
     return Entity("MagnetocrystallineAnisotropyConstantK2", value, unit, **kwargs)
-
-
-def K2c(
-    value: int | float | numpy.typing.ArrayLike = 0,
-    unit: None | str = None,
-    **kwargs,
-) -> mammos_entity.Entity:
-    """Create an Entity representing the cubic magnetocrystalline anisotropy constant K2c.
-
-    This is the second magnetocrystalline anisotropy constant for cubic crystals.
-    For tetragonal or hexagonal crystals, please use K2.
-
-    Args:
-        value: Numeric value corresponding to the magnetocrystalline anisotropy
-            constant. It can also be a Numpy array.
-        unit: Unit of measure for the value (e.g., 'J/m^3'). If omitted, the SI unit
-            from the ontology, i.e. J/m^3 will be inferred.
-        **kwargs : Additional keyword arguments passed to
-            :py:class:`~mammos_entity.Entity`.
-
-    Returns:
-        An `Entity` object labeled "MagnetocrystallineAnisotropyConstantK2c".
-
-    """
-    return Entity("MagnetocrystallineAnisotropyConstantK2c", value, unit, **kwargs)
 
 
 def Ku(
