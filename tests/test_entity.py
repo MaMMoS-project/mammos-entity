@@ -281,6 +281,8 @@ def test_equality():
         (me.Hc, "CoercivityHcExternal"),
         (me.J, "MagneticPolarisation"),
         (me.Js, "SpontaneousMagneticPolarisation"),
+        (me.K1, "MagnetocrystallineAnisotropyConstantK1"),
+        (me.K2, "MagnetocrystallineAnisotropyConstantK2"),
         (me.Ku, "UniaxialAnisotropyConstant"),
         (me.M, "Magnetization"),
         (me.Mr, "Remanence"),
