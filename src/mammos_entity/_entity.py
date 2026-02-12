@@ -12,10 +12,12 @@ from typing import TYPE_CHECKING
 
 import mammos_units as u
 
+import mammos_entity as me
 from mammos_entity._ontology import mammos_ontology
 
 if TYPE_CHECKING:
     import astropy.units
+    import h5py
     import mammos_units
     import numpy.typing
     import owlready2
@@ -344,3 +346,11 @@ class Entity:
     def _repr_html_(self) -> str:
         html_str = str(self).replace("\n", "<br>").replace(" ", "&nbsp;")
         return f"<samp>{html_str}</samp>"
+
+    def to_hdf5_dataset(self, base: h5py.File | h5py.Group, name: str) -> h5py.Dataset:
+        """Write an entity to an HDF5 dataset.
+
+        The value is added as data; ontology_label, iri, unit and description are
+        written to the dataset attributes.
+        """
+        return me.io.to_hdf5(self, base, name)

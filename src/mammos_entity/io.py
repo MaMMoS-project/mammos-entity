@@ -226,6 +226,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     import astropy.units
+    import h5py
     import numpy.typing
 
     import mammos_entity
@@ -635,5 +636,50 @@ def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
         )
 
 
+def to_hdf5(
+    data: mammos_entity.EntityLike | mammos_entity.EntityCollection,
+    base: h5py.File | h5py.Group,
+    name: str,
+) -> h5py.Dataset | h5py.Group:
+    """Write data into an open HDF5 file.
+
+    An :py:class:`~mammos_entity.EntityCollection` is written as HDF5 group. Elements
+    of the collection become HDF5 datasets of that group. The collection description
+    is added to the group attributes.
+
+    :py:class:`~mammos_entity.EntityLike` data is written as HDF5 dataset. Metadata is
+    added to the attributes depending on the precise type:
+    - :py:class:`~mammos_entity.Entity`: ontology_label, iri, unit and description
+    - :py:class:`~astropy.units.Quantity`: unit
+    - anything else: no metadata
+
+    Args:
+        data: Data written to the file.
+        base: An open HDF5 file or a group in an HDF5 file to which the data will be
+            added.
+        name: Name for the newly created group or dataset. If an element with that name
+            exists already in `base` the function will fail.
+
+    Returns:
+        The newly created group or dataset.
+    """
+    if isinstance(data, EntityCollection):
+        group = base.create_group(name)
+        group.attrs["description"] = data.description
+        for name, entity_like in data:
+            to_hdf5(entity_like, group, name)
+        return group
+    else:
+        dset = base.create_dataset(name, data)
+        if isinstance(data, Entity):
+            dset.attrs["ontology_label"] = data.ontology_label
+            dset.attrs["iri"] = data.ontology.iri
+            dset.attrs["unit"] = str(data.unit)
+            dset.attrs["description"] = str(data.description)
+        elif isinstance(data, u.Quantity):
+            dset.attrs["unit"] = str(data.unit)
+        return dset
+
+
 # hide deprecated functions in documentation
-__all__ = ["entities_to_file", "entities_from_file"]
+__all__ = ["entities_to_file", "entities_from_file", "to_hdf5"]
