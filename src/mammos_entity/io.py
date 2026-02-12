@@ -214,11 +214,13 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import h5py
 import mammos_units as u
 import numpy as np
 import pandas as pd
 import yaml
 
+import mammos_entity as me
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 
@@ -635,5 +637,149 @@ def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
         )
 
 
+def to_hdf5(
+    data: mammos_entity.EntityLike | mammos_entity.EntityCollection,
+    base: h5py.File | h5py.Group | str | os.PathLike,
+    name: str | None,
+) -> h5py.Dataset | h5py.Group | None:
+    """Write data to HDF5.
+
+    :py:class:`~mammos_entity.EntityLike` data is written as HDF5 dataset. Metadata is
+    added to the attributes depending on the precise type:
+
+    - :py:class:`~mammos_entity.Entity`: ontology_label, ontology_iri, unit and
+      description
+    - :py:class:`~astropy.units.Quantity`: unit
+    - anything else: no metadata
+
+    An :py:class:`~mammos_entity.EntityCollection` is written as HDF5 group. Entities
+    in the collection become HDF5 datasets of that group, collections in the collection
+    become subgroups. The collection description is added to the group attributes.
+
+    Group/dataset attributes can in addition have a key ``mammos_entity_version`` that
+    records the version of `mammos_entity` used to write that data. This key is only
+    added to the outermost object created when calling the function (excluding
+    intermediate groups that may be created when passing a longer path for `name`), i.e.
+    when writing a collection only the corresponding group has the attribute, elements
+    of the collection (entity-likes or nested collections) do not repeat that metadata.
+    When making use of this metadata the innermost occurence of the key is authorative.
+
+    Args:
+        data: Data written to the file.
+        base: If it is an open HDF5 file or a group in an HDF5 file, data will be
+            added to it, either as new group or as dataset(s). If it is a str or
+            PathLike a new HDF5 file with the given name will be created. If a file with
+            that name exists already, it will be overwritten without notice.
+        name: Name for the newly created group or dataset. If an element with that name
+            exists already in `base` the function will fail. When passing an
+            EntitityCollection as `data`, `name` is optional. If not provided the
+            entities of the collection will be added directly to `base` and the
+            collection description will be added to `base` attributes.
+
+    Returns:
+        If `base` is an open `File` or `Group` the newly created group or dataset. If
+        `base` is a file name nothing is returned (because the file created internally
+        will be closed before the function returns).
+
+    """
+    return _to_hdf5(data, base, name)
+
+
+def _to_hdf5(
+    data: mammos_entity.EntityLike | mammos_entity.EntityCollection,
+    base: h5py.File | h5py.Group | str | os.PathLike,
+    name: str | None,
+    record_mammos_entity_version: bool = True,
+) -> h5py.Dataset | h5py.Group | None:
+    """Internal implementation with additional options required for recursion.
+
+    Args:
+        data: <see public function>
+        base: <see public function>
+        name: <see public function>
+        record_mammos_entity_version: add mammos_entity version to group/dataset
+            attributes.
+    """
+    if isinstance(base, str | os.PathLike):
+        with h5py.File(base, "w") as f:
+            _to_hdf5(data, f, name)
+            return
+
+    if isinstance(data, EntityCollection):
+        group = base.create_group(name, track_order=True) if name is not None else base
+        group.attrs["description"] = data.description
+        if record_mammos_entity_version:
+            group.attrs["mammos_entity_version"] = me.__version__
+        for name, entity_like in data:
+            _to_hdf5(entity_like, group, name, record_mammos_entity_version=False)
+        return group
+    else:
+        if name is None:
+            raise ValueError("'name' must not be None when 'data' is entity-like.")
+        if isinstance(data, Entity):
+            dset = base.create_dataset(name, data=data.value)
+            dset.attrs["ontology_label"] = data.ontology_label
+            dset.attrs["ontology_iri"] = data.ontology.iri
+            dset.attrs["unit"] = str(data.unit)
+            dset.attrs["description"] = data.description
+        elif isinstance(data, u.Quantity):
+            dset = base.create_dataset(name, data=data.value)
+            dset.attrs["unit"] = str(data.unit)
+        else:
+            dset = base.create_dataset(name, data=data)
+        if record_mammos_entity_version:
+            dset.attrs["mammos_entity_version"] = me.__version__
+        return dset
+
+
+def from_hdf5(
+    element: h5py.File | h5py.Group | h5py.Dataset | str | os.PathLike,
+    decode_bytes: bool = True,
+) -> mammos_entity.EntityLike | mammos_entity.EntityCollection:
+    """Read HDF5 file, group or dataset and convert to Entity or EntityCollection.
+
+    Datasets are converted to :py:class:`~mammos_entity.Entity`,
+    :py:class:`~astropy.units.Quantity`, or a numpy array or other builtin datatype
+    depending on their associated metadata and shape.
+
+    Groups are converted to :py:class:`~mammos_entity.EntityCollection`. Arbitrary
+    nesting of groups is supported and produces nested collections.
+
+    Args:
+        element: If it is a `str` or `PathLike` the entire file is read from disk. If
+            it is an open HDF5 `File`, `Group` or `Dataset` only that part of the file
+            is read.
+        decode_bytes: If ``True`` data of all datasets of type object is converted to
+            strings (if scalar) or numpy arrays of strings (if vector). If ``False`` the
+            bytes object (or array of bytes objects) is returned.
+
+    Returns:
+        All data in the given HDF5 file/group/dataset as (nested) EntityCollection
+       and/or EntityLike object.
+    """
+    if isinstance(element, str | os.PathLike):
+        with h5py.File(element) as f:
+            return from_hdf5(f, decode_bytes)
+    elif isinstance(element, h5py.File | h5py.Group):
+        collection = EntityCollection(description=element.attrs.get("description", ""))
+        for name, sub in element.items():
+            collection[name] = from_hdf5(sub)
+        return collection
+    elif "ontology_label" in element.attrs:
+        return Entity(
+            ontology_label=element.attrs["ontology_label"],
+            value=element[()],
+            unit=element.attrs["unit"],
+            description=element.attrs["description"],
+        )
+    elif "unit" in element.attrs:
+        return u.Quantity(element[()], element.attrs["unit"])
+    else:
+        if element.dtype == "object" and decode_bytes:
+            element = element.asstr()
+        data = element[()]
+        return data
+
+
 # hide deprecated functions in documentation
-__all__ = ["entities_to_file", "entities_from_file"]
+__all__ = ["entities_to_file", "entities_from_file", "to_hdf5", "from_hdf5"]

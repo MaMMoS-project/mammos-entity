@@ -12,10 +12,14 @@ from typing import TYPE_CHECKING
 
 import mammos_units as u
 
+import mammos_entity as me
 from mammos_entity._ontology import mammos_ontology
 
 if TYPE_CHECKING:
+    import os
+
     import astropy.units
+    import h5py
     import mammos_units
     import numpy.typing
     import owlready2
@@ -344,3 +348,28 @@ class Entity:
     def _repr_html_(self) -> str:
         html_str = str(self).replace("\n", "<br>").replace(" ", "&nbsp;")
         return f"<samp>{html_str}</samp>"
+
+    def to_hdf5(
+        self, base: h5py.File | h5py.Group | str | os.PathLike, name: str
+    ) -> h5py.Dataset | None:
+        """Write an entity to an HDF5 dataset.
+
+        The value is added as data; ontology_label, iri, unit and description are
+        written to the dataset attributes.
+
+        Args:
+            base: If it is an open HDF5 file or a group in an HDF5 file, data will be
+                added to it as new dataset. If it is a str or PathLike a new HDF5 file
+                with the given name will be created. If a file with that name exists
+                already, it will be overwritten without notice.
+            name: Name for the newly created dataset. If an element with that name
+                exists already in `base` the function will fail.
+
+        Returns:
+            If `base` is an open `File` or `Group` the newly created dataset. If `base`
+            is a file name nothing is returned (because the file created internally will
+            be closed before the function returns).
+
+        .. seealso:: :py:func:`mammos_entity.io.to_hdf5`
+        """
+        return me.io.to_hdf5(self, base, name)
