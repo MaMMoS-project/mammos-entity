@@ -214,6 +214,7 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import h5py
 import mammos_units as u
 import numpy as np
 import pandas as pd
@@ -226,7 +227,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
     import astropy.units
-    import h5py
     import numpy.typing
 
     import mammos_entity
@@ -673,7 +673,7 @@ def to_hdf5(
         if isinstance(data, Entity):
             dset = base.create_dataset(name, data=data.value)
             dset.attrs["ontology_label"] = data.ontology_label
-            dset.attrs["iri"] = data.ontology.iri
+            dset.attrs["ontology_iri"] = data.ontology.iri
             dset.attrs["unit"] = str(data.unit)
             dset.attrs["description"] = str(data.description)
         elif isinstance(data, u.Quantity):
@@ -682,6 +682,31 @@ def to_hdf5(
         else:
             dset = base.create_dataset(name, data=data)
         return dset
+
+
+def from_hdf5(
+    element: h5py.File | h5py.Group | h5py.Dataset,
+    decode_bytes: bool = True,
+) -> mammos_entity.EntityLike | mammos_entity.EntityCollection:
+    if isinstance(element, h5py.File | h5py.Group):
+        collection = EntityCollection(description=element.attrs.get("description", ""))
+        for name, sub in element.items():
+            collection[name] = from_hdf5(sub)
+        return collection
+    elif "ontology_label" in element.attrs:
+        return Entity(
+            ontology_label=element.attrs["ontology_label"],
+            value=element[()],
+            unit=element.attrs["unit"],
+            description=element.attrs["description"],
+        )
+    elif "unit" in element.attrs:
+        return u.Quantity(element[()], element.attrs["unit"])
+    else:
+        if element.dtype == "object" and decode_bytes:
+            element = element.asstr()
+        data = element[()]
+        return data
 
 
 # hide deprecated functions in documentation
