@@ -29,10 +29,11 @@ classifiers = [
 requires-python = ">=3.11"
 dependencies = [
   "emmontopy>=0.8",
+  "h5glance>=0.9",  # required for the tutorial
+  "h5py>=3.13",  # TODO we would like >= 3.14 (improved string handling) but esys-escript conflicts with that
   "mammos-units>=0.2.1",
   "numpy<3",
   "pandas>=2",
-  "h5py>=3.13",  # TODO we would like >= 3.14 (improved string handling) but esys-escript conflicts with that
 ]
 
 [project.urls]
