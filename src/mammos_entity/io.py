@@ -670,14 +670,17 @@ def to_hdf5(
             to_hdf5(entity_like, group, name)
         return group
     else:
-        dset = base.create_dataset(name, data)
         if isinstance(data, Entity):
+            dset = base.create_dataset(name, data=data.value)
             dset.attrs["ontology_label"] = data.ontology_label
             dset.attrs["iri"] = data.ontology.iri
             dset.attrs["unit"] = str(data.unit)
             dset.attrs["description"] = str(data.description)
         elif isinstance(data, u.Quantity):
+            dset = base.create_dataset(name, data=data.value)
             dset.attrs["unit"] = str(data.unit)
+        else:
+            dset = base.create_dataset(name, data=data)
         return dset
 
 
