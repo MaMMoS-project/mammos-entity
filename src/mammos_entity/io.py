@@ -214,6 +214,7 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import h5py
 import mammos_units as u
 import numpy as np
 import pandas as pd
@@ -635,5 +636,97 @@ def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
         )
 
 
+def to_hdf5(
+    data: mammos_entity.EntityLike | mammos_entity.EntityCollection,
+    base: h5py.File | h5py.Group,
+    name: str,
+) -> h5py.Dataset | h5py.Group:
+    """Write data into an open HDF5 file.
+
+    An :py:class:`~mammos_entity.EntityCollection` is written as HDF5 group. Elements
+    of the collection become HDF5 datasets of that group. The collection description
+    is added to the group attributes.
+
+    :py:class:`~mammos_entity.EntityLike` data is written as HDF5 dataset. Metadata is
+    added to the attributes depending on the precise type:
+    - :py:class:`~mammos_entity.Entity`: ontology_label, iri, unit and description
+    - :py:class:`~astropy.units.Quantity`: unit
+    - anything else: no metadata
+
+    Args:
+        data: Data written to the file.
+        base: An open HDF5 file or a group in an HDF5 file to which the data will be
+            added.
+        name: Name for the newly created group or dataset. If an element with that name
+            exists already in `base` the function will fail.
+
+    Returns:
+        The newly created group or dataset.
+    """
+    if isinstance(data, EntityCollection):
+        group = base.create_group(name, track_order=True)
+        group.attrs["description"] = data.description
+        for name, entity_like in data:
+            to_hdf5(entity_like, group, name)
+        return group
+    else:
+        if isinstance(data, Entity):
+            dset = base.create_dataset(name, data=data.value)
+            dset.attrs["ontology_label"] = data.ontology_label
+            dset.attrs["ontology_iri"] = data.ontology.iri
+            dset.attrs["unit"] = str(data.unit)
+            dset.attrs["description"] = str(data.description)
+        elif isinstance(data, u.Quantity):
+            dset = base.create_dataset(name, data=data.value)
+            dset.attrs["unit"] = str(data.unit)
+        else:
+            dset = base.create_dataset(name, data=data)
+        return dset
+
+
+def from_hdf5(
+    element: h5py.File | h5py.Group | h5py.Dataset,
+    decode_bytes: bool = True,
+) -> mammos_entity.EntityLike | mammos_entity.EntityCollection:
+    """Read HDF5 group or dataset and convert to Entity or EntityCollection.
+
+    Datasets are converted to :py:class:`~mammos_entity.Entity`,
+    :py:class:`~astropy.units.Quantity` or a numpy array or other builtin datatype
+    depending on their associated metadata and shape.
+
+    Groups are converted to :py:class:`~mammos_entity.EntityCollection`. Arbitrary
+    nesting of groups is supported and produces nested collections.
+
+    Args:
+        element: The open HDF5 file or HDF5 group to read.
+        decode_bytes: If ``True`` data of all datasets of type object is converted to
+            strings (if scalar) or numpy arrays of strings (if vector). If ``False`` the
+            bytes object (array of bytes objects) is returned.
+
+    Returns:
+        All data in the given HDF5 file/group as nested EntityCollections and/or an
+        EntityLike object.
+    """
+    if isinstance(element, h5py.File | h5py.Group):
+        collection = EntityCollection(description=element.attrs.get("description", ""))
+        for name, sub in element.items():
+            collection[name] = from_hdf5(sub)
+        return collection
+    elif "ontology_label" in element.attrs:
+        return Entity(
+            ontology_label=element.attrs["ontology_label"],
+            value=element[()],
+            unit=element.attrs["unit"],
+            description=element.attrs["description"],
+        )
+    elif "unit" in element.attrs:
+        return u.Quantity(element[()], element.attrs["unit"])
+    else:
+        if element.dtype == "object" and decode_bytes:
+            element = element.asstr()
+        data = element[()]
+        return data
+
+
 # hide deprecated functions in documentation
-__all__ = ["entities_to_file", "entities_from_file"]
+__all__ = ["entities_to_file", "entities_from_file", "to_hdf5", "from_hdf5"]

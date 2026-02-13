@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     import pathlib
 
     import astropy
+    import h5py
     import numpy.typing
 
     import mammos_entity
@@ -364,3 +365,20 @@ class EntityCollection:
             entities[name] = elem
 
         return cls(description=description, **entities)
+
+    def to_hdf5(self, base: h5py.File | h5py.Group, name: str) -> h5py.Group:
+        """Write a collection to and HDF5 group.
+
+        Entities of the collection become datasets in the group. The collection
+        description is added to the group attributes.
+
+        Args:
+            base: An open HDF5 file or a group in an HDF5 file to which the data will be
+                added.
+            name: Name for the newly created group. If an element with that name
+                exists already in `base` the function will fail.
+
+        Returns:
+            The newly created group.
+        """
+        return me.io.to_hdf5(self, base, name)
