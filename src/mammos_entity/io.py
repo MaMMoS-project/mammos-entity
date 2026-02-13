@@ -664,7 +664,7 @@ def to_hdf5(
         The newly created group or dataset.
     """
     if isinstance(data, EntityCollection):
-        group = base.create_group(name)
+        group = base.create_group(name, track_order=True)
         group.attrs["description"] = data.description
         for name, entity_like in data:
             to_hdf5(entity_like, group, name)
@@ -688,6 +688,25 @@ def from_hdf5(
     element: h5py.File | h5py.Group | h5py.Dataset,
     decode_bytes: bool = True,
 ) -> mammos_entity.EntityLike | mammos_entity.EntityCollection:
+    """Read HDF5 group or dataset and convert to Entity or EntityCollection.
+
+    Datasets are converted to :py:class:`~mammos_entity.Entity`,
+    :py:class:`~astropy.units.Quantity` or a numpy array or other builtin datatype
+    depending on their associated metadata and shape.
+
+    Groups are converted to :py:class:`~mammos_entity.EntityCollection`. Arbitrary
+    nesting of groups is supported and produces nested collections.
+
+    Args:
+        element: The open HDF5 file or HDF5 group to read.
+        decode_bytes: If ``True`` data of all datasets of type object is converted to
+            strings (if scalar) or numpy arrays of strings (if vector). If ``False`` the
+            bytes object (array of bytes objects) is returned.
+
+    Returns:
+        All data in the given HDF5 file/group as nested EntityCollections and/or an
+        EntityLike object.
+    """
     if isinstance(element, h5py.File | h5py.Group):
         collection = EntityCollection(description=element.attrs.get("description", ""))
         for name, sub in element.items():
@@ -710,4 +729,4 @@ def from_hdf5(
 
 
 # hide deprecated functions in documentation
-__all__ = ["entities_to_file", "entities_from_file", "to_hdf5"]
+__all__ = ["entities_to_file", "entities_from_file", "to_hdf5", "from_hdf5"]

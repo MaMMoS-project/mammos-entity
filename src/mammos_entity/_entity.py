@@ -347,10 +347,19 @@ class Entity:
         html_str = str(self).replace("\n", "<br>").replace(" ", "&nbsp;")
         return f"<samp>{html_str}</samp>"
 
-    def to_hdf5_dataset(self, base: h5py.File | h5py.Group, name: str) -> h5py.Dataset:
+    def to_hdf5(self, base: h5py.File | h5py.Group, name: str) -> h5py.Dataset:
         """Write an entity to an HDF5 dataset.
 
         The value is added as data; ontology_label, iri, unit and description are
         written to the dataset attributes.
+
+        Args:
+            base: An open HDF5 file or a group in an HDF5 file to which the data will be
+                added.
+            name: Name for the newly created dataset. If an element with that name
+                exists already in `base` the function will fail.
+
+        Returns:
+            The newly created dataset.
         """
         return me.io.to_hdf5(self, base, name)
