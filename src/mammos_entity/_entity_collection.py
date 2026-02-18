@@ -257,8 +257,10 @@ class EntityCollection:
 
         return pd.DataFrame(
             {
-                f"{key}{unit(key) if include_units else ''}": getattr(val, "value", val)
-                for key, val in self._entities.items()
+                f"{key}{unit(key) if include_units else ''}": np.atleast_1d(
+                    getattr(val, "value", val)
+                )
+                for key, val in self
             }
         )
 

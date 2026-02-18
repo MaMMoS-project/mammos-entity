@@ -138,6 +138,12 @@ def test_to_dataframe():
     assert df_with_units.equals(ec.to_dataframe(include_units=True))
 
 
+def test_to_dataframe_scalar():
+    ec = me.EntityCollection(Ms=me.Ms(0), Tc=me.Tc(0))
+    df = pd.DataFrame({"Ms": 0.0, "Tc": 0.0}, index=[0])
+    assert df.equals(ec.to_dataframe())
+
+
 def test_from_dataframe():
     data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
     metadata = {
