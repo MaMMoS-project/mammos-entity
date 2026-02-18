@@ -242,6 +242,8 @@ class EntityCollection:
         Args:
             include_units: If true, include units in the dataframe column names.
         """
+        if any(isinstance(element, EntityCollection) for _name, element in self):
+            raise ValueError("Nested collections cannot be converted to dataframe.")
 
         def unit(key: str) -> str:
             """Get unit for element key.
@@ -469,7 +471,7 @@ class EntityCollection:
 
         """  # noqa: E501
         if any(isinstance(element, EntityCollection) for _name, element in self):
-            raise RuntimeError("Nested collections cannot be saved to CSV.")
+            raise ValueError("Nested collections cannot be saved to CSV.")
 
         ontology_labels = []
         descriptions = []
