@@ -478,62 +478,33 @@ class EntityCollection:
         if any(isinstance(element, EntityCollection) for _name, element in self):
             raise ValueError("Nested collections cannot be saved to CSV.")
 
-        ontology_labels = []
-        descriptions = []
-        ontology_iris = []
-        units = []
-        data = {}
-        if_scalar_list = []
-        for name, element in self:
-            if isinstance(element, me.Entity):
-                ontology_labels.append(element.ontology_label)
-                descriptions.append(element.description)
-                ontology_iris.append(element.ontology.iri)
-                units.append(str(element.unit))
-                data[name] = element.value
-                if_scalar_list.append(pd.api.types.is_scalar(element.value))
-            elif isinstance(element, u.Quantity):
-                ontology_labels.append("")
-                descriptions.append("")
-                ontology_iris.append("")
-                units.append(str(element.unit))
-                data[name] = element.value
-                if_scalar_list.append(pd.api.types.is_scalar(element.value))
-            else:
-                ontology_labels.append("")
-                descriptions.append("")
-                ontology_iris.append("")
-                units.append("")
-                data[name] = element
-                if_scalar_list.append(pd.api.types.is_scalar(element))
+        # convert data first because that will catch incompatible shape
+        dataframe = self.to_dataframe()
 
-        if any(if_scalar_list) and not all(if_scalar_list):
-            raise ValueError("All entities must have the same shape, either 0 or 1.")
+        # Header rows written in CSV format.
+        metadata_rows = [
+            [getattr(elem, "ontology_label", "") for _, elem in self],
+            [getattr(elem, "description", "") for _, elem in self],
+            [getattr(elem, "ontology_iri", "") for _, elem in self],
+            [str(getattr(elem, "unit", "")) for _, elem in self],
+        ]
 
-        dataframe = (
-            pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
-        )
         with open(filename, "w", newline="") as csvfile:
-            writer = csv.writer(
-                csvfile,
-                delimiter=",",
-                quoting=csv.QUOTE_MINIMAL,
-                lineterminator=os.linesep,
-            )
             csvfile.write(f"# mammos csv v3{os.linesep}")
             if self.description:
                 csvfile.write("#" + "-" * 40 + os.linesep)
                 for line in self.description.split("\n"):
                     csvfile.write(f"# {line}{os.linesep}")
                 csvfile.write("#" + "-" * 40 + os.linesep)
-            writer.writerows(
-                [
-                    ontology_labels,
-                    descriptions,
-                    ontology_iris,
-                    units,
-                ]
+
+            writer = csv.writer(
+                csvfile,
+                delimiter=",",
+                quoting=csv.QUOTE_MINIMAL,
+                lineterminator=os.linesep,
             )
+            writer.writerows(metadata_rows)
+
             dataframe.to_csv(csvfile, index=False)
 
     def to_yaml(self, filename: str | os.PathLike) -> None:
