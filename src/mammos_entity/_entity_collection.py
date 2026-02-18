@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import copy
+import csv
+import os
 import textwrap
 from typing import TYPE_CHECKING
 
+import h5py
+import numpy as np
 import pandas as pd
+import yaml
 
 import mammos_entity as me
 
@@ -14,11 +19,8 @@ from . import units as u
 
 if TYPE_CHECKING:
     import collections.abc
-    import os
-    import pathlib
 
     import astropy
-    import h5py
     import numpy.typing
 
     import mammos_entity
@@ -234,19 +236,6 @@ class EntityCollection:
         args += "\n".join(f"{key}={val!r}," for key, val in self._entities.items())
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
 
-    def to_file(self, filename: str | pathlib.Path) -> None:
-        """Save entity collection to file.
-
-        Internally this method calls :py:func:`mammos_entity.io.entities_to_file`. For
-        details about the supported file formats refer to that function.
-
-        Args:
-            filename: Name of the file to generate, the file extension determines the
-                file type. An existing file with the same name will be overwritten
-                without warning.
-        """
-        me.io.entities_to_file(filename, description=self.description, **self._entities)
-
     def to_dataframe(self, include_units: bool = False) -> pd.DataFrame:
         """Convert values to dataframe.
 
@@ -367,6 +356,396 @@ class EntityCollection:
 
         return cls(description=description, **entities)
 
+    def to_csv(self, filename: str | os.PathLike) -> None:
+        r"""Write collection to CSV file.
+
+        CSV files contain data in normal CSV format and additional metadata lines at the
+        top of the file. Some of the lines are commented with ``#``. This structure is
+        fixed and additional comment lines or inline comments in the data table are not
+        allowed.
+
+        The lines are, in order:
+
+        - (commented) the file version in the form ``mammos csv v<VERSION>`` (matching
+          regex v\d+)
+        - (commented, optional) a description of the file, appearing delimited by
+          dashed lines
+        - (optional, only for entities) the preferred ontology label
+        - (optional, only for entities) a description string
+        - (optional, only for entities) the ontology IRI
+        - (optional, for entities and quantities) units
+        - the short labels used to refer to individual columns when working with the
+          data,  e.g. in a :py:class:`pandas.DataFrame` (omitting spaces in this string
+          is advisable; ideally this string is the short ontology label)
+        - all remaining lines contain data.
+
+        Elements in a line are separated by a comma without any surrounding whitespace.
+        A trailing comma is not permitted. Line continuation is OS dependent (\r\n on
+        Windows, \n on Unix).
+
+        In columns without ontology the lines containing labels, IRIs, and description
+        are empty.
+
+        Similarly, columns without units (with or without ontology entry) have empty
+        units line.
+
+        For any column, the description line can be empty. Only entities can store
+        descriptions, i.e., if the ontology-related lines are empty, the description
+        string will not be read.
+
+        .. version-added:: v2
+           The optional description of the file.
+
+        .. version-added:: v3
+           Additional description metadata row containing a description for each column.
+
+        .. version-changed:: v3
+           Ontology labels, entity descriptions, IRIs, and units are no longer
+           commented.
+
+        Args:
+            filename: Name of the generated file. An existing file with the same name
+                is overwritten without notice.
+
+        Raises:
+            RuntimeError: If elements of the collection are of type `EntityCollection`.
+                Nested collections are not supported in CSV.
+            ValueError: If the entities are not tabular. CSV files can only be written
+                for collections in which all entities are either scalar or
+                one-dimenisional with the same length.
+
+        Example:
+            Here is an example with five columns:
+
+            - an index with no units or ontology label
+            - the entity spontaneous magnetization with an entry in the ontology and a
+              description
+            - a made-up quantity alpha with a unit but no ontology label
+            - demagnetizing factor with an ontology entry but no unit
+            - a column `comment` containing a string comment without units or ontology
+              label
+
+            The file has a description reading "Test data".
+
+            >>> from pathlib import Path
+            >>> import mammos_entity as me
+            >>> import mammos_units as u
+            >>> collection = me.EntityCollection(
+            ...     description="Test data",
+            ...     index=[0, 1, 2],
+            ...     Ms=me.Entity("SpontaneousMagnetization", [1e2, 1e2, 1e2], "kA/m", description="Magnetization at 0 Kelvin"),
+            ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
+            ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
+            ...     comment=[
+            ...         "Comment in the first row",
+            ...         "Comment in the second row",
+            ...         "Comment in the third row",
+            ...     ],
+            ... )
+            >>> collection.to_csv("example.csv")
+
+            The new file has the following content:
+
+            >>> print(Path("example.csv").read_text())
+            # mammos csv v3
+            #----------------------------------------
+            # Test data
+            #----------------------------------------
+            ,SpontaneousMagnetization,,DemagnetizingFactor,
+            ,Magnetization at 0 Kelvin,,,
+            ,https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+            ,kA / m,s2,,
+            index,Ms,alpha,DemagnetizingFactor,comment
+            0,100.0,1.2,1.0,Comment in the first row
+            1,100.0,3.4,0.5,Comment in the second row
+            2,100.0,5.6,0.5,Comment in the third row
+            <BLANKLINE>
+
+            Finally, remove the file.
+
+            >>> Path("example.csv").unlink()
+
+        """  # noqa: E501
+        if any(isinstance(element, EntityCollection) for _name, element in self):
+            raise RuntimeError("Nested collections cannot be saved to CSV.")
+
+        ontology_labels = []
+        descriptions = []
+        ontology_iris = []
+        units = []
+        data = {}
+        if_scalar_list = []
+        for name, element in self:
+            if isinstance(element, me.Entity):
+                ontology_labels.append(element.ontology_label)
+                descriptions.append(element.description)
+                ontology_iris.append(element.ontology.iri)
+                units.append(str(element.unit))
+                data[name] = element.value
+                if_scalar_list.append(pd.api.types.is_scalar(element.value))
+            elif isinstance(element, u.Quantity):
+                ontology_labels.append("")
+                descriptions.append("")
+                ontology_iris.append("")
+                units.append(str(element.unit))
+                data[name] = element.value
+                if_scalar_list.append(pd.api.types.is_scalar(element.value))
+            else:
+                ontology_labels.append("")
+                descriptions.append("")
+                ontology_iris.append("")
+                units.append("")
+                data[name] = element
+                if_scalar_list.append(pd.api.types.is_scalar(element))
+
+        if any(if_scalar_list) and not all(if_scalar_list):
+            raise ValueError("All entities must have the same shape, either 0 or 1.")
+
+        dataframe = (
+            pd.DataFrame(data, index=[0]) if all(if_scalar_list) else pd.DataFrame(data)
+        )
+        with open(filename, "w", newline="") as csvfile:
+            writer = csv.writer(
+                csvfile,
+                delimiter=",",
+                quoting=csv.QUOTE_MINIMAL,
+                lineterminator=os.linesep,
+            )
+            csvfile.write(f"# mammos csv v3{os.linesep}")
+            if self.description:
+                csvfile.write("#" + "-" * 40 + os.linesep)
+                for line in self.description.split("\n"):
+                    csvfile.write(f"# {line}{os.linesep}")
+                csvfile.write("#" + "-" * 40 + os.linesep)
+            writer.writerows(
+                [
+                    ontology_labels,
+                    descriptions,
+                    ontology_iris,
+                    units,
+                ]
+            )
+            dataframe.to_csv(csvfile, index=False)
+
+    def to_yaml(self, filename: str | os.PathLike) -> None:
+        r"""Write collection to YAML file.
+
+        YAML files have the following format:
+
+        - two top-level keys ``metadata`` and ``data``
+        - ``metadata`` contains keys
+
+          - ``version``: a string that matches the regex v\d+
+          - ``description``: a (multi-line) string with arbitrary content
+
+        - ``data`` contains one key per object saved in the file. Each object has the
+          keys:
+
+          - ``ontology_label``: label in the ontology, ``null`` if the element is no
+            Entity
+          - ``description`` a description string, ``""`` if the element is no Entity or
+            has no description
+          - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity
+          - ``unit``: unit of the entity or quantity, ``null`` if the element has no
+            unit, empty string for dimensionless quantities and entities
+          - ``value``: value of the data
+
+        .. version-added:: v2
+           The ``description`` key for each object.
+
+        .. version-changed:: v2
+           The value of ``metadata:description`` is now always a string,  ``""`` if no
+           description is provided (before, it was ``null``).
+
+        Args:
+            filename: Name of the generated file. An existing file with the same name
+                is overwritten without notice.
+
+        Example:
+            Here is an example with six entries:
+
+            - an index with no units or ontology label
+            - the entity spontaneous magnetization with an entry in the ontology and a
+              description
+            - a made-up quantity alpha with a unit but no ontology label
+            - demagnetizing factor with an ontology entry but no unit
+            - a column `comment` containing a string comment without units or ontology
+              label
+            - an element Tc with only a single value
+
+            The file has a description reading "Test data".
+
+            >>> from pathlib import Path
+            >>> import mammos_entity as me
+            >>> import mammos_units as u
+            >>> collection = me.EntityCollection(
+            ...     description="Test data",
+            ...     index=[0, 1, 2],
+            ...     Ms=me.Entity("SpontaneousMagnetization", [1e2, 1e2, 1e2], "kA/m", description="Magnetization at 0 Kelvin"),
+            ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
+            ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
+            ...     comment=[
+            ...         "Comment in the first row",
+            ...         "Comment in the second row",
+            ...         "Comment in the third row",
+            ...     ],
+            ...     Tc=me.Tc(300, "K"),
+            ... )
+            >>> collection.to_yaml("example.yaml")
+
+            The new file has the following content:
+
+            >>> print(Path("example.yaml").read_text())
+            metadata:
+              version: v2
+              description: Test data
+            data:
+              index:
+                ontology_label: null
+                description: ''
+                ontology_iri: null
+                unit: null
+                value: [0, 1, 2]
+              Ms:
+                ontology_label: SpontaneousMagnetization
+                description: Magnetization at 0 Kelvin
+                ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                unit: kA / m
+                value: [100.0, 100.0, 100.0]
+              alpha:
+                ontology_label: null
+                description: ''
+                ontology_iri: null
+                unit: s2
+                value: [1.2, 3.4, 5.6]
+              DemagnetizingFactor:
+                ontology_label: DemagnetizingFactor
+                description: ''
+                ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+                unit: ''
+                value: [1.0, 0.5, 0.5]
+              comment:
+                ontology_label: null
+                description: ''
+                ontology_iri: null
+                unit: null
+                value: [Comment in the first row, Comment in the second row, Comment in the third
+                    row]
+              Tc:
+                ontology_label: CurieTemperature
+                description: ''
+                ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+                unit: K
+                value: 300.0
+            <BLANKLINE>
+
+            Finally, remove the file.
+
+            >>> Path("example.yaml").unlink()
+
+
+        """  # noqa: E501
+        if any(isinstance(element, EntityCollection) for _name, element in self):
+            # TODO add support for nested collections
+            raise NotImplementedError("Nested collections cannot be saved to YAML.")
+
+        def _preprocess_entity_args(
+            entities: dict[str, str],
+        ) -> collections.abc.Iterator[tuple]:
+            """Extract name, label, description, iri, unit and value for each item."""
+            for name, element in entities.items():
+                if isinstance(element, me.Entity):
+                    label = element.ontology_label
+                    description = element.description
+                    iri = element.ontology.iri
+                    unit = str(element.unit)
+                    value = element.value.tolist()
+                elif isinstance(element, u.Quantity):
+                    label = None
+                    description = ""
+                    iri = None
+                    unit = str(element.unit)
+                    value = element.value.tolist()
+                else:
+                    label = None
+                    description = ""
+                    iri = None
+                    unit = None
+                    value = np.asanyarray(element).tolist()
+                yield name, label, description, iri, unit, value
+
+        entity_dict = {
+            "metadata": {
+                "version": "v2",
+                "description": self.description,
+            },
+            "data": {
+                name: {
+                    "ontology_label": label,
+                    "description": descr,
+                    "ontology_iri": iri,
+                    "unit": unit,
+                    "value": value,
+                }
+                for name, label, descr, iri, unit, value in _preprocess_entity_args(
+                    self._entities
+                )
+            },
+        }
+
+        # custom dumper to change style of lists, tuples and multi-line strings
+        class _Dumper(yaml.SafeDumper):
+            pass
+
+        def _represent_sequence(dumper, value):
+            """Display sequence with flow style.
+
+            A list [1, 2, 3] for key `value` is written to file as::
+
+            value: [1, 2, 3]
+
+            instead of::
+
+            value:
+                - 1
+                - 2
+                - 3
+
+            """
+            return dumper.represent_sequence(
+                "tag:yaml.org,2002:seq", value, flow_style=True
+            )
+
+        def _represent_string(dumper, value):
+            """Control style of single-line and multi-line strings.
+
+            Single-line strings are written as::
+
+            some_key: Hello
+
+            Multi-line strings are written as::
+
+            some_key: |-
+                I am multi-line,
+                without a trailing new line.
+
+            """
+            style = "|" if "\n" in value else ""
+            return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
+
+        _Dumper.add_representer(list, _represent_sequence)
+        _Dumper.add_representer(tuple, _represent_sequence)
+        _Dumper.add_representer(str, _represent_string)
+
+        with open(filename, "w") as f:
+            yaml.dump(
+                entity_dict,
+                stream=f,
+                Dumper=_Dumper,
+                default_flow_style=False,
+                sort_keys=False,
+            )
+
     def to_hdf5(
         self, base: h5py.File | h5py.Group | str | os.PathLike, name: str | None = None
     ) -> h5py.Group | None:
@@ -389,7 +768,50 @@ class EntityCollection:
             If `base` is an open `File` or `Group` the newly created group. If `base` is
             a file name nothing is returned (because the file created internally will be
             closed before the function returns).
-
-        .. seealso:: :py:func:`mammos_entity.io.to_hdf5`
         """
-        return me.io.to_hdf5(self, base, name)
+        return _to_hdf5(self, base, name)
+
+
+def _to_hdf5(
+    data: mammos_entity.EntityLike | mammos_entity.EntityCollection,
+    base: h5py.File | h5py.Group | str | os.PathLike,
+    name: str | None,
+    record_mammos_entity_version: bool = True,
+) -> h5py.Dataset | h5py.Group | None:
+    """Internal implementation with additional options required for recursion.
+
+    Args:
+        data: <see public method>
+        base: <see public method>
+        name: <see public method>
+        record_mammos_entity_version: add mammos_entity version to group/dataset
+            attributes.
+    """
+    if isinstance(base, str | os.PathLike):
+        with h5py.File(base, "w") as f:
+            _to_hdf5(data, f, name)
+            return
+
+    if isinstance(data, EntityCollection):
+        group = base.create_group(name, track_order=True) if name is not None else base
+        group.attrs["description"] = data.description
+        if record_mammos_entity_version:
+            group.attrs["mammos_entity_version"] = me.__version__
+        for name, entity_like in data:
+            _to_hdf5(entity_like, group, name, record_mammos_entity_version=False)
+        return group
+    else:
+        if name is None:
+            raise ValueError("'name' must not be None when 'data' is entity-like.")
+
+        if isinstance(data, me.Entity):
+            dset = data._to_hdf5(base, name, record_mammos_entity_version=False)
+        elif isinstance(data, u.Quantity):
+            dset = base.create_dataset(name, data=data.value)
+            dset.attrs["unit"] = str(data.unit)
+        else:
+            dset = base.create_dataset(name, data=data)
+
+        if record_mammos_entity_version:
+            dset.attrs["mammos_entity_version"] = me.__version__
+        return dset

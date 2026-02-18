@@ -182,7 +182,7 @@ def _merge(
 
     Example:
         >>> import mammos_entity as me
-        >>> A_collection = me.io.EntityCollection(
+        >>> A_collection = me.EntityCollection(
         ...     x_pos=me.Entity("Length", [-10.0, -10.0, -10.0], "mm"),
         ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
         ...     a=me.Entity("LocalLatticeConstantA", [8.783, 8.783, 8.783], "Angstrom"),
@@ -197,7 +197,7 @@ def _merge(
         ...         "A/m",
         ...     ),
         ... )
-        >>> B_collection = me.io.EntityCollection(
+        >>> B_collection = me.EntityCollection(
         ...     x_pos=me.Entity("Length", [-1, -1, -1], "cm"),
         ...     y_pos=me.Entity("Length", [-10.0, -15.0, -20.0], "mm"),
         ...     integral_abs_diff=[1.176, 1.174, 1.153],

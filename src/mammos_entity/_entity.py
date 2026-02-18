@@ -7,19 +7,18 @@ includes helper functions for inferring the correct SI units from the ontology.
 
 from __future__ import annotations
 
+import os
 import re
 from typing import TYPE_CHECKING
 
+import h5py
 import mammos_units as u
 
 import mammos_entity as me
 from mammos_entity._ontology import mammos_ontology
 
 if TYPE_CHECKING:
-    import os
-
     import astropy.units
-    import h5py
     import mammos_units
     import numpy.typing
     import owlready2
@@ -350,12 +349,14 @@ class Entity:
         return f"<samp>{html_str}</samp>"
 
     def to_hdf5(
-        self, base: h5py.File | h5py.Group | str | os.PathLike, name: str
+        self,
+        base: h5py.File | h5py.Group | str | os.PathLike,
+        name: str,
     ) -> h5py.Dataset | None:
         """Write an entity to an HDF5 dataset.
 
-        The value is added as data; ontology_label, iri, unit and description are
-        written to the dataset attributes.
+        The value is added as data of the dataset; ontology_label, iri, unit and
+        description are written to the dataset attributes.
 
         Args:
             base: If it is an open HDF5 file or a group in an HDF5 file, data will be
@@ -369,7 +370,34 @@ class Entity:
             If `base` is an open `File` or `Group` the newly created dataset. If `base`
             is a file name nothing is returned (because the file created internally will
             be closed before the function returns).
-
-        .. seealso:: :py:func:`mammos_entity.io.to_hdf5`
         """
-        return me.io.to_hdf5(self, base, name)
+        return self._to_hdf5(base, name)
+
+    def _to_hdf5(
+        self,
+        base: h5py.File | h5py.Group | str | os.PathLike,
+        name: str,
+        record_mammos_entity_version: bool = True,
+    ) -> h5py.Dataset | None:
+        """Internal implementation with additional options required for recursion.
+
+        Args:
+            base: <see public function>
+            name: <see public function>
+            record_mammos_entity_version: add mammos_entity version to dataset
+                attributes.
+        """
+        if isinstance(base, str | os.PathLike):
+            with h5py.File(base, "w") as f:
+                self._to_hdf5(f, name, record_mammos_entity_version)
+                return
+
+        dset = base.create_dataset(name, data=self.value)
+        dset.attrs["ontology_label"] = self.ontology_label
+        dset.attrs["ontology_iri"] = self.ontology.iri
+        dset.attrs["unit"] = str(self.unit)
+        dset.attrs["description"] = self.description
+
+        if record_mammos_entity_version:
+            dset.attrs["mammos_entity_version"] = me.__version__
+        return dset
