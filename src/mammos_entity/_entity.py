@@ -216,7 +216,7 @@ class Entity:
         given entity in ontology.
 
         Returns:
-            str: The ontology label corresponding to the right ThingClass.
+            The ontology label corresponding to the right ThingClass.
 
         """
         return self._ontology_label
@@ -243,11 +243,11 @@ class Entity:
         Internationalized Resource Identifier.
 
         Returns:
-            str: The ontology label corresponding to the right ThingClass,
-                 together with the IRI.
+            The ontology label corresponding to the right ThingClass, together with the
+            IRI.
 
         """
-        return f"{self.ontology_label} {self.ontology.iri}"
+        return f"{self.ontology_label} {self.ontology_iri}"
 
     # FIX: right not this will fail if no internet!
     @property
