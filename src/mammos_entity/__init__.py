@@ -30,9 +30,10 @@ from mammos_entity._factory import (
     Tc,
 )
 from mammos_entity._ontology import mammos_ontology, search_labels
+from mammos_entity._read_files import from_csv, from_hdf5, from_yaml
 from mammos_entity._typing import EntityLike
 
-from . import io, operations
+from . import operations
 
 __version__ = importlib.metadata.version(__package__)
 
@@ -56,9 +57,11 @@ __all__ = [
     "Ms",
     "T",
     "Tc",
-    "io",
     "mammos_ontology",
     "operations",
     "search_labels",
     "units",
+    "from_csv",
+    "from_hdf5",
+    "from_yaml",
 ]
