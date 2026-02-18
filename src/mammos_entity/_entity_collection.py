@@ -14,9 +14,11 @@ from . import units as u
 
 if TYPE_CHECKING:
     import collections.abc
+    import os
     import pathlib
 
     import astropy
+    import h5py
     import numpy.typing
 
     import mammos_entity
@@ -364,3 +366,30 @@ class EntityCollection:
             entities[name] = elem
 
         return cls(description=description, **entities)
+
+    def to_hdf5(
+        self, base: h5py.File | h5py.Group | str | os.PathLike, name: str | None = None
+    ) -> h5py.Group | None:
+        """Write a collection to an HDF5 group.
+
+        Entities of the collection become datasets in the group. The collection
+        description is added to the group attributes.
+
+        Args:
+            base: If it is an open HDF5 file or a group in an HDF5 file, data will be
+                added to it as new group. If it is a str or PathLike a new HDF5 file
+                with the given name will be created. If a file with that name exists
+                already, it will be overwritten without notice.
+            name: Name for the newly created group. If an element with that name
+                exists already in `base` the function will fail. If `name` is ``None``
+                entities of the collection will be added directly to `base` and the
+                collection description will be added to `base` attributes.
+
+        Returns:
+            If `base` is an open `File` or `Group` the newly created group. If `base` is
+            a file name nothing is returned (because the file created internally will be
+            closed before the function returns).
+
+        .. seealso:: :py:func:`mammos_entity.io.to_hdf5`
+        """
+        return me.io.to_hdf5(self, base, name)
