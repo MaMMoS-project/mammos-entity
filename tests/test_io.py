@@ -47,6 +47,7 @@ def test_write_read_csv(tmp_path):
         demag_factor=me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]),
         comments=["Some comment", "Some other comment", "A third comment"],
     )
+    collection["the length"] = me.Entity("Length", [1, 2, 3])
     collection.to_csv(tmp_path / "example.csv")
 
     read_data = me.from_csv(tmp_path / "example.csv")
@@ -62,6 +63,7 @@ def test_write_read_csv(tmp_path):
     assert all(read_data.theta_angle == collection.theta_angle)
     assert read_data.demag_factor == collection.demag_factor
     assert list(read_data.comments) == collection.comments
+    assert read_data["the length"] == collection["the length"]
 
     df_without_units = read_data.to_dataframe()
     assert list(df_without_units.columns) == [
@@ -70,6 +72,7 @@ def test_write_read_csv(tmp_path):
         "theta_angle",
         "demag_factor",
         "comments",
+        "the length",
     ]
 
     df_with_units = read_data.to_dataframe(include_units=True)
@@ -79,6 +82,7 @@ def test_write_read_csv(tmp_path):
         "theta_angle (rad)",
         "demag_factor",
         "comments",
+        "the length (m)",
     ]
 
     df = pd.read_csv(tmp_path / "example.csv", header=9)
@@ -94,9 +98,10 @@ def test_write_read_yaml(tmp_path):
         demag_factor=me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]),
         comments=["Some comment", "Some other comment", "A third comment"],
     )
-    collection.to_yaml(tmp_path / "example.csv")
+    collection["the length"] = me.Entity("Length", [1, 2, 3])
+    collection.to_yaml(tmp_path / "example.yaml")
 
-    read_data = me.from_yaml(tmp_path / "example.csv")
+    read_data = me.from_yaml(tmp_path / "example.yaml")
 
     assert isinstance(read_data, me.EntityCollection)
     assert read_data.description == collection.description
@@ -109,6 +114,7 @@ def test_write_read_yaml(tmp_path):
     assert all(read_data.theta_angle == collection.theta_angle)
     assert read_data.demag_factor == collection.demag_factor
     assert list(read_data.comments) == collection.comments
+    assert read_data["the length"] == collection["the length"]
 
 
 def test_read_csv_v1(tmp_path):
