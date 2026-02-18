@@ -382,7 +382,6 @@ class Entity:
         """Internal implementation with additional options required for recursion.
 
         Args:
-            data: <see public function>
             base: <see public function>
             name: <see public function>
             record_mammos_entity_version: add mammos_entity version to dataset

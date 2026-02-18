@@ -19,7 +19,17 @@ if TYPE_CHECKING:
 
 
 def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
-    """Read mammos CSV file.
+    """Read MaMMoS CSV file.
+
+    The required file format is described in
+    :py:func:`~mammos_entity.EntityCollection.to_csv`.
+
+    Args:
+        filename: Name of the file to read. The file is read as CSV no matter the file
+            extension.
+
+    Returns:
+        A collection object providing access to all entities saved in the file.
 
     .. seealso:: :py:func:`mammos_entity.EntityCollection.to_csv`
     """
@@ -104,7 +114,17 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
 
 
 def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
-    """Read mammos YAML file.
+    """Read MaMMoS YAML file.
+
+    The required file format is described in
+    :py:func:`~mammos_entity.EntityCollection.to_yaml`.
+
+    Args:
+        filename: Name of the file to read. The file is read as YAML no matter the file
+            extension.
+
+    Returns:
+        A collection object providing access to all entities saved in the file.
 
     .. seealso:: :py:func:`mammos_entity.EntityCollection.to_yaml`
     """

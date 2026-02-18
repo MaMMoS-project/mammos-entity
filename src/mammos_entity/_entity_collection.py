@@ -410,19 +410,20 @@ class EntityCollection:
         Raises:
             RuntimeError: If elements of the collection are of type `EntityCollection`.
                 Nested collections are not supported in CSV.
-            ValueError: If the entities are not tabular, i.e. all entities are either
-                scalar or one-dimenisional with the same length.
+            ValueError: If the entities are not tabular. CSV files can only be written
+                for collections in which all entities are either scalar or
+                one-dimenisional with the same length.
 
         Example:
             Here is an example with five columns:
 
             - an index with no units or ontology label
             - the entity spontaneous magnetization with an entry in the ontology and a
-            description
+              description
             - a made-up quantity alpha with a unit but no ontology label
             - demagnetizing factor with an ontology entry but no unit
             - a column `comment` containing a string comment without units or ontology
-            label
+              label
 
             The file has a description reading "Test data".
 
@@ -538,7 +539,7 @@ class EntityCollection:
           - ``description``: a (multi-line) string with arbitrary content
 
         - ``data`` contains one key per object saved in the file. Each object has the
-           keys:
+          keys:
 
           - ``ontology_label``: label in the ontology, ``null`` if the element is no
             Entity
