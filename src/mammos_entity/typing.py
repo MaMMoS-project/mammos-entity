@@ -1,3 +1,5 @@
+"""Type aliases for static type annotations."""
+
 from typing import TypeAlias
 
 import astropy.units

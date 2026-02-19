@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     import numpy.typing
 
     import mammos_entity
+    import mammos_entity.typing
 
 
 class EntityCollection:
@@ -777,7 +778,7 @@ class EntityCollection:
 
 
 def _to_hdf5(
-    data: mammos_entity.EntityLike | mammos_entity.EntityCollection,
+    data: mammos_entity.typing.EntityLike | mammos_entity.EntityCollection,
     base: h5py.File | h5py.Group | str | os.PathLike,
     name: str | None,
     record_mammos_entity_version: bool = True,

@@ -16,6 +16,7 @@ from mammos_entity._entity_collection import EntityCollection
 
 if TYPE_CHECKING:
     import mammos_entity
+    import mammos_entity.typing
 
 
 def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
@@ -196,7 +197,7 @@ def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
 def from_hdf5(
     element: h5py.File | h5py.Group | h5py.Dataset | str | os.PathLike,
     decode_bytes: bool = True,
-) -> mammos_entity.EntityLike | mammos_entity.EntityCollection:
+) -> mammos_entity.typing.EntityLike | mammos_entity.EntityCollection:
     """Read HDF5 file, group or dataset and convert to Entity or EntityCollection.
 
     Datasets are converted to :py:class:`~mammos_entity.Entity`,
