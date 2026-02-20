@@ -144,6 +144,16 @@ def test_to_dataframe_scalar():
     assert df.equals(ec.to_dataframe())
 
 
+def test_to_dataframe_unsupported():
+    col1 = me.EntityCollection(Ms=me.Ms([[1, 2], [3, 4]]))
+    with pytest.raises(ValueError):
+        col1.to_dataframe()
+
+    col2 = me.EntityCollection(Ms=me.Ms(), sub=me.EntityCollection())
+    with pytest.raises(ValueError, match="Nested collection"):
+        col2.to_dataframe()
+
+
 def test_from_dataframe():
     data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
     metadata = {
