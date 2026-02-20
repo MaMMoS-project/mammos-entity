@@ -216,10 +216,23 @@ class Entity:
         given entity in ontology.
 
         Returns:
-            str: The ontology label corresponding to the right ThingClass.
+            The ontology label corresponding to the right ThingClass.
 
         """
         return self._ontology_label
+
+    @property
+    def ontology_iri(self) -> str:
+        """The ontology IRI that links the entity to the EMMO ontology.
+
+        Retrieve the ontology IRI (Internationalized Resource Identifier) corresponding
+        to the `ThingClass` that defines the given entity in ontology.
+
+        Returns:
+            The ontology IRI corresponding to the right ThingClass.
+
+        """
+        return self.ontology.iri
 
     @property
     def ontology_label_with_iri(self) -> str:
@@ -229,14 +242,12 @@ class Entity:
         points to the definition of this entity.) IRI stands for
         Internationalized Resource Identifier.
 
-        If only the IRI is desired, one can use `self.ontology.iri`.
-
         Returns:
-            str: The ontology label corresponding to the right ThingClass,
-                 together with the IRI.
+            The ontology label corresponding to the right ThingClass, together with the
+            IRI.
 
         """
-        return f"{self.ontology_label} {self.ontology.iri}"
+        return f"{self.ontology_label} {self.ontology_iri}"
 
     # FIX: right not this will fail if no internet!
     @property

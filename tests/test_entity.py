@@ -208,10 +208,14 @@ def test_all_labels_ontology(ontology_element):
     me.Entity(ontology_element.prefLabel[0], 42)
 
 
-def test_ontology_label_mammos():
-    """Test ontology label for an Entity in the MaMMoS ontology."""
+def test_ontology_information_mammos():
+    """Test ontology label and IRI for an Entity in the MaMMoS ontology."""
     e = me.Entity("ExternalMagneticField")
     assert e.ontology_label == "ExternalMagneticField"
+    assert (
+        e.ontology_iri
+        == "https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+    )
     assert (
         e.ontology_label_with_iri
         == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
@@ -222,10 +226,14 @@ def test_ontology_label_mammos():
     assert e.ontology_label_with_iri == f"{H.prefLabel[0]} {H.iri}"
 
 
-def test_ontology_label_EMMO():
-    """Test ontology label for an Entity in the EMMO."""
+def test_ontology_information_EMMO():
+    """Test ontology label and IRI for an Entity in the EMMO."""
     e = me.Entity("AngularVelocity")
     assert e.ontology_label == "AngularVelocity"
+    assert (
+        e.ontology_iri
+        == "https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
+    )
     assert (
         e.ontology_label_with_iri
         == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
