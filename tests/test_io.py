@@ -471,7 +471,7 @@ def test_entity_to_hdf5_group():
         assert me.from_hdf5(f["/base/Ms"]) == Ms
 
 
-def test_entity_to_hdf5_subgroup():
+def test_entity_to_hdf5_existing_and_nested_groups():
     with h5py.File.in_memory() as f:
         Ms = me.Ms([[10, 20], [30, 40.0]], description="test")
         Ms.to_hdf5(f, "/base/Ms")
@@ -661,13 +661,22 @@ def test_to_new_hdf5_file_entity(tmp_path: Path):
 
 
 def test_to_new_hdf5_file_overwrite_collection(tmp_path: Path):
-    filename = tmp_path / "test_overwrite.h5"
+    # First write an entity to the file
+    filename = tmp_path / "test.h5"
+    T = me.T()
+    T.to_hdf5(filename, "entity")
+
+    # Then overwrite the same file with a collection
     c = me.EntityCollection(Tc=me.Tc(), Ms=me.Ms(), description="abc")
     c.to_hdf5(str(filename))
 
     content = me.from_hdf5(str(filename))
     assert isinstance(content, me.EntityCollection)
     assert content.description == "abc"
+    # We do not create a new group here; h5py's default behavior does not track
+    # insertion order, so the names appear as ["Ms", "Tc"] even though the
+    # EntityCollection was created with Tc before Ms. This changes when we create
+    # a group manually (see the next test), where insertion order is tracked.
     assert [name for name, _ in content] == ["Ms", "Tc"]
     assert content.Ms == me.Ms()
     assert content.Tc == me.Tc()
