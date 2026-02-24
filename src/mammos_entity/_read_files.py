@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import os
 import re
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -131,12 +132,18 @@ def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     with open(filename) as f:
         file_content = yaml.safe_load(f)
 
-    if not file_content or list(file_content.keys()) != ["metadata", "data"]:
+    if not isinstance(file_content, Mapping) or set(file_content.keys()) != {
+        "metadata",
+        "data",
+    }:
         raise RuntimeError(
             "YAML files must have exactly two top-level keys, 'metadata' and 'data'."
         )
 
-    if not file_content["metadata"] or "version" not in file_content["metadata"]:
+    if (
+        not isinstance(file_content["metadata"], Mapping)
+        or "version" not in file_content["metadata"]
+    ):
         raise RuntimeError("File does not have a key metadata:version.")
 
     if (version := file_content["metadata"]["version"]) not in [
@@ -146,38 +153,98 @@ def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     else:
         version_number = int(version.lstrip("v"))
 
-    collection_description = file_content["metadata"]["description"] or ""
+    if not isinstance(file_content["data"], Mapping):
+        raise RuntimeError("'data' must be a mapping.")
 
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
 
-    if version_number >= 2:
-        req_subkeys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
-    else:
-        req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
+    if version_number == 1:
+        return _from_yaml_v1(file_content)
+    return _from_yaml_v2(file_content)
+
+
+def _parse_yaml_leaf(item: dict, req_subkeys: set[str], key: str):
+    if not isinstance(item, Mapping):
+        raise RuntimeError(
+            f"Element '{key}' must be a mapping, found {type(item).__name__}."
+        )
+
+    if set(item.keys()) != req_subkeys:
+        raise RuntimeError(
+            f"Element '{key}' does not have the required keys,"
+            f" expected {req_subkeys}, found {list(item.keys())}."
+        )
+
+    if item["ontology_label"] is not None:
+        entity = Entity(
+            ontology_label=item["ontology_label"],
+            value=item["value"],
+            unit=item["unit"],
+            description=item.get("description", ""),
+        )
+        _check_iri(entity, item["ontology_iri"])
+        return entity
+    if item["unit"] is not None:
+        return u.Quantity(item["value"], item["unit"])
+    return item["value"]
+
+
+def _from_yaml_v1(file_content: dict) -> mammos_entity.EntityCollection:
+    leaf_subkeys_v1 = {"ontology_label", "ontology_iri", "unit", "value"}
+    collection_description = file_content["metadata"].get("description") or ""
 
     entities = {}
     for key, item in file_content["data"].items():
-        if set(item) != req_subkeys:
-            raise RuntimeError(
-                f"Element '{key}' does not have the required keys,"
-                f" expected {req_subkeys}, found {list(item)}."
-            )
-        if item["ontology_label"] is not None:
-            entity = Entity(
-                ontology_label=item["ontology_label"],
-                value=item["value"],
-                unit=item["unit"],
-                description=item.get("description", ""),
-            )
-            _check_iri(entity, item["ontology_iri"])
-            entities[key] = entity
-        elif item["unit"] is not None:
-            entities[key] = u.Quantity(item["value"], item["unit"])
-        else:
-            entities[key] = item["value"]
+        entities[key] = _parse_yaml_leaf(item, leaf_subkeys_v1, key)
 
     return EntityCollection(description=collection_description, **entities)
+
+
+def _from_yaml_v2(file_content: dict) -> mammos_entity.EntityCollection:
+    leaf_subkeys_v2 = {"ontology_label", "description", "ontology_iri", "unit", "value"}
+
+    def _is_leaf_v2(item: dict) -> bool:
+        if set(item) != leaf_subkeys_v2:
+            return False
+
+        # Nested collections can legally have child names that collide with leaf keys.
+        # Disambiguate by requiring all metadata fields of a leaf to be scalar-like.
+        metadata_like_keys = ("ontology_label", "description", "ontology_iri", "unit")
+        return all(not isinstance(item[k], dict) for k in metadata_like_keys)
+
+    def _parse_collection_node(node: dict, key: str) -> EntityCollection:
+        if not isinstance(node, dict):
+            raise RuntimeError(
+                f"Element '{key}' must be a mapping for mammos yaml v2, "
+                f"found {type(node).__name__}."
+            )
+        if "description" not in node:
+            raise RuntimeError(
+                f"Element '{key}' must contain a 'description' key in mammos yaml v2."
+            )
+
+        description = node["description"] or ""
+        entities = {}
+        for name, item in node.items():
+            if name == "description":
+                continue
+            if not isinstance(item, dict):
+                raise RuntimeError(
+                    f"Element '{name}' must be a mapping, found {type(item).__name__}."
+                )
+            if _is_leaf_v2(item):
+                entities[name] = _parse_yaml_leaf(item, leaf_subkeys_v2, name)
+            elif "description" in item:
+                entities[name] = _parse_collection_node(item, name)
+            else:
+                raise RuntimeError(
+                    f"Element '{name}' is neither a valid entity-like entry nor a "
+                    f"valid nested collection."
+                )
+        return EntityCollection(description=description, **entities)
+
+    return _parse_collection_node(file_content["data"], "data")
 
 
 def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:

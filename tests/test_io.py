@@ -6,6 +6,7 @@ import h5py
 import mammos_units as u
 import pandas as pd
 import pytest
+import yaml
 
 import mammos_entity as me
 
@@ -274,9 +275,9 @@ def test_read_yaml_v2(tmp_path):
         """\
         metadata:
           version: v2
+        data:
           description: |-
             File description.
-        data:
           Ms:
             ontology_label: SpontaneousMagnetization
             ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
@@ -327,6 +328,28 @@ def test_read_yaml_v2(tmp_path):
     ]
 
 
+def test_read_yaml_v2_top_level_key_order_irrelevant(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        data:
+          description: File description.
+          x:
+            ontology_label: null
+            description: null
+            ontology_iri: null
+            unit: null
+            value: 1
+        metadata:
+          version: v2
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    read_data = me.from_yaml(tmp_path / "data.yaml")
+
+    assert read_data.description == "File description."
+    assert read_data.x == 1
+
+
 def test_write_read_yaml_multi_shape(tmp_path):
     T = me.T([1, 2, 3])
     Tc = me.Tc(100)
@@ -346,6 +369,113 @@ def test_write_read_yaml_multi_shape(tmp_path):
 
     with pytest.raises(ValueError):
         read_data.to_dataframe()
+
+
+def test_write_read_yaml_nested(tmp_path):
+    inner = me.EntityCollection(
+        description="inner description",
+        Tc=me.Tc(600, "K"),
+        Ms=me.Ms(1.2e6, "A / m"),
+        A=me.A(1e-11, "J / m"),
+    )
+    outer = me.EntityCollection(
+        description="outer description",
+        properties=inner,
+        Lenght=me.Entity("Length", 42, "m"),
+    )
+
+    outer.to_yaml(tmp_path / "nested.yaml")
+    read_data = me.from_yaml(tmp_path / "nested.yaml")
+
+    assert isinstance(read_data, me.EntityCollection)
+    assert read_data.description == "outer description"
+    assert isinstance(read_data.properties, me.EntityCollection)
+    assert read_data.properties.description == "inner description"
+    assert read_data.properties.Tc == inner.Tc
+    assert read_data.properties.Ms == inner.Ms
+    assert read_data.properties.A == inner.A
+    assert read_data.Lenght == outer.Lenght
+
+
+def test_write_yaml_v2_description_types(tmp_path):
+    inner = me.EntityCollection(description="inner", T=me.T(300), idx=1)
+    outer = me.EntityCollection(
+        description="outer",
+        nested=inner,
+        Ms=me.Ms(1.2e6),
+        angle=0.5 * u.rad,
+        comment="text",
+    )
+    filename = tmp_path / "types.yaml"
+    outer.to_yaml(filename)
+
+    with open(filename) as f:
+        data = yaml.safe_load(f)
+
+    assert isinstance(data["data"]["description"], str)
+    assert isinstance(data["data"]["Ms"]["description"], str)
+    assert data["data"]["angle"]["description"] is None
+    assert data["data"]["comment"]["description"] is None
+    assert isinstance(data["data"]["nested"]["description"], str)
+    assert isinstance(data["data"]["nested"]["T"]["description"], str)
+    assert data["data"]["nested"]["idx"]["description"] is None
+
+
+def test_read_yaml_v2_invalid_nested_structure(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        data:
+          description: outer
+          broken:
+            not_description: inner
+            value: 1
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+
+    with pytest.raises(
+        RuntimeError,
+        match="neither a valid entity-like entry nor a valid nested collection",
+    ):
+        me.from_yaml(tmp_path / "data.yaml")
+
+
+def test_read_yaml_v2_nested_with_leaf_key_names(tmp_path):
+    # Nested collections may use keys like "ontology_label" or "unit" as regular
+    # entity names. The reader must not misclassify these as entity-like metadata rows.
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        data:
+          description: outer
+          nested:
+            description: inner
+            ontology_label:
+              description: deepest
+              value:
+                ontology_label: null
+                description: null
+                ontology_iri: null
+                unit: null
+                value: 7
+            unit:
+              description: deepest-2
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+
+    read_data = me.from_yaml(tmp_path / "data.yaml")
+
+    assert isinstance(read_data.nested, me.EntityCollection)
+    assert read_data.nested.description == "inner"
+    assert isinstance(read_data.nested.ontology_label, me.EntityCollection)
+    assert read_data.nested.ontology_label.description == "deepest"
+    assert read_data.nested.ontology_label.value == 7
+    assert isinstance(read_data.nested.unit, me.EntityCollection)
+    assert read_data.nested.unit.description == "deepest-2"
 
 
 def test_wrong_file_version_csv(tmp_path):
@@ -411,6 +541,23 @@ def test_empty_yaml(tmp_path):
         me.from_yaml(tmp_path / "data.yaml")
 
 
+def test_yaml_root_must_be_mapping(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        - metadata:
+            version: v2
+        - data:
+            description: ''
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    with pytest.raises(
+        RuntimeError,
+        match="must have exactly two top-level keys, 'metadata' and 'data'",
+    ):
+        me.from_yaml(tmp_path / "data.yaml")
+
+
 def test_no_data_yaml(tmp_path):
     file_content = textwrap.dedent(
         """
@@ -422,6 +569,21 @@ def test_no_data_yaml(tmp_path):
     )
     (tmp_path / "data.yaml").write_text(file_content)
     with pytest.raises(RuntimeError):
+        me.from_yaml(tmp_path / "data.yaml")
+
+
+def test_yaml_v1_leaf_must_be_mapping(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v1
+          description: null
+        data:
+          bad: 1
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    with pytest.raises(RuntimeError, match="Element 'bad' must be a mapping"):
         me.from_yaml(tmp_path / "data.yaml")
 
 
