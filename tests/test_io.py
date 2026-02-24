@@ -291,11 +291,8 @@ def test_read_yaml_v2(tmp_path):
             value: [1.0, 2.0, 3.0]
             description: from experiment 1
           angle:
-            ontology_label: null
-            ontology_iri: null
             unit: rad
             value: [0.0, 0.5, 0.7]
-            description: null
           demag_factor:
             ontology_label: DemagnetizingFactor
             ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
@@ -303,11 +300,7 @@ def test_read_yaml_v2(tmp_path):
             value: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
             description: ''
           comment:
-            ontology_label: null
-            ontology_iri: null
-            unit: null
             value: [Some comment, Some other comment, A third comment]
-            description: null
         """
     )
     (tmp_path / "data.yaml").write_text(file_content)
@@ -334,10 +327,6 @@ def test_read_yaml_v2_top_level_key_order_irrelevant(tmp_path):
         data:
           description: File description.
           x:
-            ontology_label: null
-            description: null
-            ontology_iri: null
-            unit: null
             value: 1
         metadata:
           version: v2
@@ -413,12 +402,51 @@ def test_write_yaml_v2_description_types(tmp_path):
         data = yaml.safe_load(f)
 
     assert isinstance(data["data"]["description"], str)
+    assert set(data["data"]["Ms"]) == {
+        "ontology_label",
+        "description",
+        "ontology_iri",
+        "unit",
+        "value",
+    }
     assert isinstance(data["data"]["Ms"]["description"], str)
-    assert data["data"]["angle"]["description"] is None
-    assert data["data"]["comment"]["description"] is None
+    assert isinstance(data["data"]["Ms"]["ontology_iri"], str)
+    assert isinstance(data["data"]["Ms"]["unit"], str)
+    assert set(data["data"]["angle"]) == {"unit", "value"}
+    assert isinstance(data["data"]["angle"]["unit"], str)
+    assert set(data["data"]["comment"]) == {"value"}
     assert isinstance(data["data"]["nested"]["description"], str)
+    assert set(data["data"]["nested"]["T"]) == {
+        "ontology_label",
+        "description",
+        "ontology_iri",
+        "unit",
+        "value",
+    }
     assert isinstance(data["data"]["nested"]["T"]["description"], str)
-    assert data["data"]["nested"]["idx"]["description"] is None
+    assert isinstance(data["data"]["nested"]["T"]["ontology_iri"], str)
+    assert isinstance(data["data"]["nested"]["T"]["unit"], str)
+    assert set(data["data"]["nested"]["idx"]) == {"value"}
+
+
+def test_read_yaml_v2_entity_requires_ontology_iri(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        data:
+          description: outer
+          Ms:
+            ontology_label: SpontaneousMagnetization
+            unit: A / m
+            value: 1.0
+            description: ''
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+
+    with pytest.raises(RuntimeError, match="ontology_iri"):
+        me.from_yaml(tmp_path / "data.yaml")
 
 
 def test_read_yaml_v2_invalid_nested_structure(tmp_path):
@@ -456,10 +484,6 @@ def test_read_yaml_v2_nested_with_leaf_key_names(tmp_path):
             ontology_label:
               description: deepest
               value:
-                ontology_label: null
-                description: null
-                ontology_iri: null
-                unit: null
                 value: 7
             unit:
               description: deepest-2

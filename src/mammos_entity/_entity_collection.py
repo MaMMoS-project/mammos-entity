@@ -542,31 +542,40 @@ class EntityCollection:
         - ``data`` stores one collection node. Collection nodes are recursive and have:
 
           - ``description``: a (multi-line) string with arbitrary content
+            describing the collection node
           - zero or more additional keys, each representing either
 
-            - an entity-like entry with keys
+            - an Entity entry with keys
 
-              - ``ontology_label``: label in the ontology, ``null`` if the element is
-                no Entity
-              - ``description``: a description string, ``""`` for entities with no
-                description and ``null`` if the element is no Entity
-              - ``ontology_iri``: IRI of the entity, ``null`` if the element is no
-                Entity
-              - ``unit``: unit of the entity or quantity, ``null`` if the element has
-                no unit, empty string for dimensionless quantities and entities
+              - ``ontology_label``: label in the ontology
+              - ``description``: description string, ``""`` if no description
+              - ``ontology_iri``: IRI of the entity
+              - ``unit``: unit of the entity (``""`` if dimensionless)
+              - ``value``: value of the data
+
+            - a quantity entry with keys
+
+              - ``unit``: unit of the quantity (``""`` if dimensionless)
+              - ``value``: value of the data
+
+            - another value entry (any non-entity, non-quantity leaf) with key
+
               - ``value``: value of the data
 
             - another collection node (nested EntityCollection)
 
         .. version-added:: v2
 
-           - The ``description`` key for each entity-like entry.
+           - The ``description`` key for each Entity entry.
            - Nested collections are supported.
 
         .. version-changed:: v2
 
            - The collection ``description`` is stored in ``data:description``.
            - Nested collections are supported.
+           - Non-entity leaves are written in compact form:
+             quantities have only ``unit`` and ``value``;
+             other leaves have only ``value``.
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -612,10 +621,6 @@ class EntityCollection:
             data:
               description: Test data
               index:
-                ontology_label: null
-                description: null
-                ontology_iri: null
-                unit: null
                 value: [0, 1, 2]
               Ms:
                 ontology_label: SpontaneousMagnetization
@@ -624,9 +629,6 @@ class EntityCollection:
                 unit: kA / m
                 value: [100.0, 100.0, 100.0]
               alpha:
-                ontology_label: null
-                description: null
-                ontology_iri: null
                 unit: s2
                 value: [1.2, 3.4, 5.6]
               DemagnetizingFactor:
@@ -636,10 +638,6 @@ class EntityCollection:
                 unit: ''
                 value: [1.0, 0.5, 0.5]
               comment:
-                ontology_label: null
-                description: null
-                ontology_iri: null
-                unit: null
                 value: [Comment in the first row, Comment in the second row, Comment in the third
                     row]
               Tc:
@@ -668,17 +666,10 @@ class EntityCollection:
                 }
             if isinstance(element, u.Quantity):
                 return {
-                    "ontology_label": None,
-                    "description": None,
-                    "ontology_iri": None,
                     "unit": str(element.unit),
                     "value": element.value.tolist(),
                 }
             return {
-                "ontology_label": None,
-                "description": None,
-                "ontology_iri": None,
-                "unit": None,
                 "value": np.asanyarray(element).tolist(),
             }
 
