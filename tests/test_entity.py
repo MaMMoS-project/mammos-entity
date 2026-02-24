@@ -136,16 +136,16 @@ def test_check_units():
     assert e.unit == u.A / u.m
     e.quantity.to("kA/m", copy=False)
     assert e.unit == u.A / u.m
-    with pytest.raises(u.UnitConversionError):
+    with pytest.raises(ValueError):
         me.Entity("SpontaneousMagnetization", value=1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(u.UnitConversionError),
+        pytest.raises(ValueError),
     ):
         me.Entity("SpontaneousMagnetization", value=1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(u.UnitConversionError),
+        pytest.raises(ValueError),
     ):
         me.Entity("SpontaneousMagnetization", value=1 * u.T, unit="A/m")
 
@@ -204,8 +204,44 @@ def test_all_labels_ontology(ontology_element):
     """Test all labels in the ontology.
 
     This test creates one Entity instance for each label in the ontology.
+
+    Entities `Person` and `Organization` do not have a `prefLabel`.
+    These are extreme, unfixable cases and we ignore them.
     """
-    me.Entity(ontology_element.prefLabel[0], 42)
+    if ontology_element.prefLabel:
+        me.Entity(ontology_element.prefLabel[0], 42)
+
+
+def test_default_unit():
+    """Test default unit for different entities."""
+    assert me.Entity("MaximumEnergyProduct").unit == u.J / u.m**3
+    assert me.Entity("SpontaneousMagneticPolarisation").unit == u.T
+
+
+def test_label_without_concrete_units():
+    """Test the ontology entries without concrete units.
+
+    This test checks that entries with an abstract unit but no concrete units (i.e. the
+    subclasses of abstract units) are initialized with units given from their dimension
+    strings.
+
+    For example, ``MagneticMoment`` has the abstract unit ``ElectricCurrentAreaUnit``.
+    This abstract unit is not tied to any concrete unit, i.e. it has no subclasses.
+    However, it has the attribute ``hasDimensionString`` is equal to
+    ``'T0 L+2 M0 I+1 Θ0 N0 J0'`` and we read this instead.
+    """
+    assert me.Entity("MagneticMoment").unit == u.A * u.m**2
+    assert me.Entity("DiffusionCoefficient").unit == u.m**2 / u.s
+    assert (
+        me.Entity("DiffusionCoefficientForParticleNumberDensity").unit == u.m**2 / u.s
+    )
+    assert me.Entity("EffectiveDiffusionCoefficient").unit == u.m**2 / u.s
+    assert me.Entity("ElectricDipoleMoment").unit == u.A * u.m * u.s
+    assert me.Entity("EnergyDensityOfStates").unit == u.s**2 / u.m**5 / u.kg
+    assert me.Entity("JouleThomsonCoefficient").unit == u.K * u.s**2 * u.m / u.kg
+    assert me.Entity("LorenzCoefficient").unit == u.m**4 * u.kg**2 / u.A**2 / u.s**6
+    assert me.Entity("MagneticMomentPerUnitMass").unit == u.m**2 * u.A / u.kg
+    assert me.Entity("Mobility").unit == u.A * u.s**2 / u.kg
 
 
 def test_switch_to_pref_label():
