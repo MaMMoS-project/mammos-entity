@@ -534,16 +534,19 @@ class EntityCollection:
 
         YAML files have the following format:
 
-        - two top-level keys ``metadata`` and ``data``
+        - three top-level keys ``metadata``, ``description`` and ``data``
         - ``metadata`` contains one key:
 
           - ``version``: a string that matches the regex v\d+
+        - ``description``: a (multi-line) string with arbitrary content
+          describing the top-level collection
+        - ``data``: mapping from names to either leaves or nested collection nodes
 
-        - ``data`` stores one collection node. Collection nodes are recursive and have:
+        Collection nodes are recursive and have two keys ``description`` and ``data``:
 
           - ``description``: a (multi-line) string with arbitrary content
             describing the collection node
-          - zero or more additional keys, each representing either
+          - ``data``: mapping from names to entries, where each entry is either
 
             - an Entity entry with keys
 
@@ -571,7 +574,8 @@ class EntityCollection:
 
         .. version-changed:: v2
 
-           - The collection ``description`` is stored in ``data:description``.
+           - Collection descriptions are stored as ``description`` next to ``data``
+             for top-level and nested collections.
            - Nested collections are supported.
            - Non-entity leaves are written in compact form:
              quantities have only ``unit`` and ``value``;
@@ -618,8 +622,8 @@ class EntityCollection:
             >>> print(Path("example.yaml").read_text())
             metadata:
               version: v2
+            description: Test data
             data:
-              description: Test data
               index:
                 value: [0, 1, 2]
               Ms:
@@ -674,18 +678,15 @@ class EntityCollection:
             }
 
         def _serialize_collection(collection: EntityCollection) -> dict:
-            result = {"description": collection.description}
+            result = {"description": collection.description, "data": {}}
             for name, element in collection:
                 if isinstance(element, EntityCollection):
-                    result[name] = _serialize_collection(element)
+                    result["data"][name] = _serialize_collection(element)
                 else:
-                    result[name] = _serialize_leaf(element)
+                    result["data"][name] = _serialize_leaf(element)
             return result
 
-        entity_dict = {
-            "metadata": {"version": "v2"},
-            "data": _serialize_collection(self),
-        }
+        entity_dict = {"metadata": {"version": "v2"}, **_serialize_collection(self)}
 
         # custom dumper to change style of lists, tuples and multi-line strings
         class _Dumper(yaml.SafeDumper):

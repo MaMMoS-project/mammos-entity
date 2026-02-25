@@ -19,6 +19,78 @@ if TYPE_CHECKING:
     import mammos_entity
 
 
+_YAML_V1_LEAF_KEYS = {"ontology_label", "ontology_iri", "unit", "value"}
+_YAML_V2_ENTITY_KEYS = {
+    "ontology_label",
+    "description",
+    "ontology_iri",
+    "unit",
+    "value",
+}
+_YAML_V2_QUANTITY_KEYS = {"unit", "value"}
+_YAML_V2_VALUE_KEYS = {"value"}
+
+
+def _format_yaml_path_segment(name: str) -> str:
+    r"""Format one key name for a dotted YAML error path.
+
+    Names containing ``.`` or ``"`` are wrapped in double quotes and escaped so
+    the logical path stays unambiguous.
+
+    Examples:
+        ``dotted.key`` -> ``"dotted.key"``
+        ``a"b`` -> ``"a\"b"``
+    """
+    if "." in name or '"' in name:
+        escaped = name.replace("\\", "\\\\").replace('"', '\\"')
+        return f'"{escaped}"'
+    return name
+
+
+def _join_yaml_path(parent_path: str, name: str) -> str:
+    """Append one key name to a logical YAML path used in error messages.
+
+    The appended segment is first normalized with :func:`_format_yaml_path_segment`.
+
+    Examples:
+        ``("", "Ms")`` -> ``"Ms"``
+        ``("outer", "dotted.key")`` -> ``outer."dotted.key"``
+    """
+    segment = _format_yaml_path_segment(name)
+    if not parent_path:
+        return segment
+    return f"{parent_path}.{segment}"
+
+
+def _display_collection_path(path: str) -> str:
+    """Return a user-facing collection label for error messages.
+
+    An empty path is rendered as ``top-level collection``.
+    """
+    return path if path else "top-level collection"
+
+
+def _validate_yaml_entity_name(name: object, collection_path: str) -> str:
+    """Validate one entry name within a YAML collection.
+
+    The name must be a string and must not be ``description`` because that key
+    is reserved for collection metadata.
+    """
+    displayed_collection_path = _display_collection_path(collection_path)
+    if not isinstance(name, str):
+        raise RuntimeError(
+            f'Entry names in collection "{displayed_collection_path}" must be '
+            "strings in mammos yaml, "
+            f"found {name!r} ({type(name).__name__})."
+        )
+    if name == "description":
+        raise RuntimeError(
+            'Entry name "description" is reserved in mammos yaml and cannot '
+            f'be used inside collection "{displayed_collection_path}".'
+        )
+    return name
+
+
 def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
     """Read MaMMoS CSV file.
 
@@ -117,8 +189,8 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
 def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     """Read MaMMoS YAML file.
 
-    The required file format is described in
-    :py:func:`~mammos_entity.EntityCollection.to_yaml`.
+    This function can read mammos yaml v1 and v2. The required file format is described
+    in :py:func:`~mammos_entity.EntityCollection.to_yaml`.
 
     Args:
         filename: Name of the file to read. The file is read as YAML no matter the file
@@ -132,48 +204,55 @@ def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     with open(filename) as f:
         file_content = yaml.safe_load(f)
 
-    if not isinstance(file_content, Mapping) or set(file_content.keys()) != {
-        "metadata",
-        "data",
-    }:
-        raise RuntimeError(
-            "YAML files must have exactly two top-level keys, 'metadata' and 'data'."
-        )
+    if not isinstance(file_content, Mapping):
+        raise RuntimeError("YAML files must contain a top-level mapping.")
 
     if (
-        not isinstance(file_content["metadata"], Mapping)
+        "metadata" not in file_content
+        or not isinstance(file_content["metadata"], Mapping)
         or "version" not in file_content["metadata"]
     ):
         raise RuntimeError("File does not have a key metadata:version.")
 
-    if (version := file_content["metadata"]["version"]) not in [
-        f"v{i}" for i in range(1, 3)
-    ]:
-        raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
-    else:
-        version_number = int(version.lstrip("v"))
+    version = file_content["metadata"]["version"]
 
-    if not isinstance(file_content["data"], Mapping):
-        raise RuntimeError("'data' must be a mapping.")
-
-    if not file_content["data"]:
-        raise RuntimeError("'data' does not contain anything.")
-
-    if version_number == 1:
+    if version == "v1":
+        if set(file_content.keys()) != {"metadata", "data"}:
+            raise RuntimeError(
+                "mammos yaml v1 files must have exactly two top-level keys, "
+                "'metadata' and 'data'."
+            )
+        if not isinstance(file_content["data"], Mapping):
+            raise RuntimeError("'data' must be a mapping.")
         return _from_yaml_v1(file_content)
-    return _from_yaml_v2(file_content)
+    elif version == "v2":
+        if set(file_content.keys()) != {"metadata", "description", "data"}:
+            raise RuntimeError(
+                "mammos yaml v2 files must have exactly three top-level keys, "
+                "'metadata', 'description' and 'data'."
+            )
+        if not isinstance(file_content["data"], Mapping):
+            raise RuntimeError("'data' must be a mapping.")
+        root = {
+            "description": file_content["description"],
+            "data": file_content["data"],
+        }
+        return _parse_yaml_collection_v2(root, "")
+    else:
+        raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
 
 
-def _parse_yaml_leaf(item: dict, req_subkeys: set[str], key: str):
+def _parse_yaml_leaf_v1(item: Mapping, key: str):
+    """Parse one v1 leaf node into Entity/Quantity/plain value."""
     if not isinstance(item, Mapping):
         raise RuntimeError(
             f"Element '{key}' must be a mapping, found {type(item).__name__}."
         )
 
-    if set(item.keys()) != req_subkeys:
+    if set(item.keys()) != _YAML_V1_LEAF_KEYS:
         raise RuntimeError(
             f"Element '{key}' does not have the required keys,"
-            f" expected {req_subkeys}, found {list(item.keys())}."
+            f" expected {_YAML_V1_LEAF_KEYS}, found {list(item.keys())}."
         )
 
     if item["ontology_label"] is not None:
@@ -181,7 +260,7 @@ def _parse_yaml_leaf(item: dict, req_subkeys: set[str], key: str):
             ontology_label=item["ontology_label"],
             value=item["value"],
             unit=item["unit"],
-            description=item.get("description", ""),
+            description="",
         )
         _check_iri(entity, item["ontology_iri"])
         return entity
@@ -191,60 +270,110 @@ def _parse_yaml_leaf(item: dict, req_subkeys: set[str], key: str):
 
 
 def _from_yaml_v1(file_content: dict) -> mammos_entity.EntityCollection:
-    leaf_subkeys_v1 = {"ontology_label", "ontology_iri", "unit", "value"}
-    collection_description = file_content["metadata"].get("description") or ""
+    """Parse a full mammos yaml v1 document."""
+    collection_description = file_content["metadata"].get("description", "")
+    if collection_description is None:
+        collection_description = ""
+    elif not isinstance(collection_description, str):
+        raise RuntimeError(
+            "Element 'metadata:description' must be a string or null in "
+            "mammos yaml v1, "
+            f"found {type(collection_description).__name__}."
+        )
 
-    entities = {}
+    collection = EntityCollection(description=collection_description)
     for key, item in file_content["data"].items():
-        entities[key] = _parse_yaml_leaf(item, leaf_subkeys_v1, key)
+        key = _validate_yaml_entity_name(key, "")
+        collection[key] = _parse_yaml_leaf_v1(item, key)
+    return collection
 
-    return EntityCollection(description=collection_description, **entities)
 
+def _parse_yaml_leaf_v2(item: Mapping, entry_path: str):
+    """Parse one v2 entity-like node into an Entity/Quantity/vale object."""
+    if not isinstance(item, Mapping):
+        raise RuntimeError(
+            f'Entry "{entry_path}" in a collection must be a mapping, found '
+            f"{type(item).__name__}."
+        )
 
-def _from_yaml_v2(file_content: dict) -> mammos_entity.EntityCollection:
-    leaf_subkeys_v2 = {"ontology_label", "description", "ontology_iri", "unit", "value"}
+    keys = set(item)
 
-    def _is_leaf_v2(item: dict) -> bool:
-        if set(item) != leaf_subkeys_v2:
-            return False
+    if "value" not in keys:
+        raise RuntimeError(
+            f'Entry "{entry_path}" is an entity-like entry in a collection and '
+            "must contain key 'value' for mammos yaml v2."
+        )
 
-        # Nested collections can legally have child names that collide with leaf keys.
-        # Disambiguate by requiring all metadata fields of a leaf to be scalar-like.
-        metadata_like_keys = ("ontology_label", "description", "ontology_iri", "unit")
-        return all(not isinstance(item[k], dict) for k in metadata_like_keys)
+    unknown_keys = keys - _YAML_V2_ENTITY_KEYS
+    if unknown_keys:
+        raise RuntimeError(
+            f'Entry "{entry_path}" is an entity-like entry in a collection and '
+            "contains unknown keys for mammos yaml v2: "
+            f"{sorted(unknown_keys)}."
+        )
 
-    def _parse_collection_node(node: dict, key: str) -> EntityCollection:
-        if not isinstance(node, dict):
+    if "ontology_label" in keys:
+        missing = _YAML_V2_ENTITY_KEYS - keys
+        if missing:
             raise RuntimeError(
-                f"Element '{key}' must be a mapping for mammos yaml v2, "
-                f"found {type(node).__name__}."
+                f'Entry "{entry_path}" is an Entity entry in a collection and '
+                "is missing required keys for mammos yaml v2: "
+                f"{sorted(missing)}."
             )
-        if "description" not in node:
-            raise RuntimeError(
-                f"Element '{key}' must contain a 'description' key in mammos yaml v2."
-            )
+        entity = Entity(
+            ontology_label=item["ontology_label"],
+            value=item["value"],
+            unit=item["unit"],
+            description=item["description"],
+        )
+        _check_iri(entity, item["ontology_iri"])
+        return entity
 
-        description = node["description"] or ""
-        entities = {}
-        for name, item in node.items():
-            if name == "description":
-                continue
-            if not isinstance(item, dict):
-                raise RuntimeError(
-                    f"Element '{name}' must be a mapping, found {type(item).__name__}."
-                )
-            if _is_leaf_v2(item):
-                entities[name] = _parse_yaml_leaf(item, leaf_subkeys_v2, name)
-            elif "description" in item:
-                entities[name] = _parse_collection_node(item, name)
-            else:
-                raise RuntimeError(
-                    f"Element '{name}' is neither a valid entity-like entry nor a "
-                    f"valid nested collection."
-                )
-        return EntityCollection(description=description, **entities)
+    if keys == _YAML_V2_QUANTITY_KEYS:
+        return u.Quantity(item["value"], item["unit"])
 
-    return _parse_collection_node(file_content["data"], "data")
+    if keys == _YAML_V2_VALUE_KEYS:
+        return item["value"]
+
+    raise RuntimeError(
+        f'Entry "{entry_path}" is an entity-like entry in a collection and has '
+        f"invalid keys for mammos yaml v2: {sorted(keys)}."
+    )
+
+
+def _parse_yaml_collection_v2(node: Mapping, collection_path: str) -> EntityCollection:
+    """Parse one v2 collection node recursively."""
+    if set(node.keys()) != {"description", "data"}:
+        raise RuntimeError(
+            f'Collection "{_display_collection_path(collection_path)}" must have '
+            'exactly keys "description" and "data" in mammos yaml v2.'
+        )
+
+    description = node["description"]
+    if not isinstance(description, str):
+        raise RuntimeError(
+            f'Collection "{_display_collection_path(collection_path)}" must have '
+            "a string 'description' in "
+            f"mammos yaml v2, found {type(description).__name__}."
+        )
+
+    if not isinstance(node["data"], Mapping):
+        raise RuntimeError(
+            f'Collection "{_display_collection_path(collection_path)}" must have '
+            "a mapping 'data' in mammos yaml v2, "
+            f"found {type(node['data']).__name__}."
+        )
+
+    collection = EntityCollection(description=description)
+    for name, item in node["data"].items():
+        name = _validate_yaml_entity_name(name, collection_path)
+        entry_path = _join_yaml_path(collection_path, name)
+
+        if isinstance(item, Mapping) and set(item.keys()) == {"description", "data"}:
+            collection[name] = _parse_yaml_collection_v2(item, entry_path)
+        else:
+            collection[name] = _parse_yaml_leaf_v2(item, entry_path)
+    return collection
 
 
 def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
