@@ -417,11 +417,12 @@ class EntityCollection:
                 is overwritten without notice.
 
         Raises:
-            RuntimeError: If elements of the collection are of type `EntityCollection`.
-                Nested collections are not supported in CSV.
             ValueError: If the entities are not tabular. CSV files can only be written
                 for collections in which all entities are either scalar or
                 one-dimenisional with the same length.
+            ValueError: If elements of the collection are of type
+                :py:class:`~mammos_entity.EntityCollection` (nested collections are not
+                supported in CSV) or if the collection is empty.
 
         Example:
             Here is an example with five columns:
@@ -477,6 +478,8 @@ class EntityCollection:
         """  # noqa: E501
         if any(isinstance(element, EntityCollection) for _name, element in self):
             raise ValueError("Nested collections cannot be saved to CSV.")
+        if len(self) == 0:
+            raise ValueError("Empty collections cannot be saved to CSV.")
 
         # convert data first because that will catch incompatible shape
         dataframe = self.to_dataframe()
@@ -493,7 +496,7 @@ class EntityCollection:
             csvfile.write(f"# mammos csv v3{os.linesep}")
             if self.description:
                 csvfile.write("#" + "-" * 40 + os.linesep)
-                for line in self.description.split("\n"):
+                for line in self.description.splitlines():
                     csvfile.write(f"# {line}{os.linesep}")
                 csvfile.write("#" + "-" * 40 + os.linesep)
 

@@ -264,6 +264,13 @@ def test_csv_nested_collection_not_supported(tmp_path):
         collection.to_csv(tmp_path / "data.csv")
 
 
+def test_csv_empty_collection_not_supported(tmp_path):
+    collection = me.EntityCollection(description="only metadata")
+
+    with pytest.raises(ValueError, match="Empty collections cannot be saved to CSV."):
+        collection.to_csv(tmp_path / "data.csv")
+
+
 def test_no_mixed_shape_in_csv():
     with pytest.raises(ValueError):
         me.EntityCollection(
