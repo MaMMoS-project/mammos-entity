@@ -39,6 +39,12 @@ def test_entity_name_clash():
         ec["description"] = me.T()
 
 
+def test_entity_name_must_be_string():
+    ec = me.EntityCollection()
+    with pytest.raises(TypeError, match="Name must be a string"):
+        ec[1] = me.Ms()
+
+
 def test_add_remove_entities():
     ec = me.EntityCollection()
     assert [name for name, _entity in ec] == []
