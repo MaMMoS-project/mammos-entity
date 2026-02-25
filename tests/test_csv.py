@@ -219,7 +219,7 @@ def test_read_csv_error_for_unterminated_description_block(tmp_path):
     )
     (tmp_path / "data.csv").write_text(file_content)
 
-    with pytest.raises(StopIteration):
+    with pytest.raises(RuntimeError, match="description block is not terminated"):
         me.from_csv(tmp_path / "data.csv")
 
 
@@ -233,7 +233,7 @@ def test_read_csv_error_for_truncated_v3_metadata_rows(tmp_path):
     )
     (tmp_path / "data.csv").write_text(file_content)
 
-    with pytest.raises(StopIteration):
+    with pytest.raises(RuntimeError, match="CSV metadata is incomplete"):
         me.from_csv(tmp_path / "data.csv")
 
 
@@ -251,7 +251,9 @@ def test_read_csv_error_for_metadata_data_column_mismatch(tmp_path):
     )
     (tmp_path / "data.csv").write_text(file_content)
 
-    with pytest.raises(ValueError, match="zip\\(\\) argument"):
+    with pytest.raises(
+        RuntimeError, match="CSV metadata columns and data columns do not match."
+    ):
         me.from_csv(tmp_path / "data.csv")
 
 
