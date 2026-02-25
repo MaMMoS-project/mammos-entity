@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import os
 import re
+from collections.abc import Mapping
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -132,53 +133,79 @@ def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     with open(filename) as f:
         file_content = yaml.safe_load(f)
 
-    if not file_content or list(file_content.keys()) != ["metadata", "data"]:
-        raise RuntimeError(
-            "YAML files must have exactly two top-level keys, 'metadata' and 'data'."
-        )
+    if not isinstance(file_content, Mapping):
+        raise RuntimeError("YAML files must contain a top-level mapping.")
 
-    if not file_content["metadata"] or "version" not in file_content["metadata"]:
+    if (
+        "metadata" not in file_content
+        or not isinstance(file_content["metadata"], Mapping)
+        or "version" not in file_content["metadata"]
+    ):
         raise RuntimeError("File does not have a key metadata:version.")
 
-    if (version := file_content["metadata"]["version"]) not in [
-        f"v{i}" for i in range(1, 3)
-    ]:
+    version = file_content["metadata"]["version"]
+    if version not in {"v1", "v2"}:
         raise RuntimeError(f"Reading mammos yaml {version} is not supported.")
+
+    if version == "v1":
+        if set(file_content.keys()) != {"metadata", "data"}:
+            raise RuntimeError(
+                "mammos yaml v1 files must have exactly two top-level keys, "
+                "'metadata' and 'data'."
+            )
+        collection_description = file_content["metadata"].get("description") or ""
     else:
-        version_number = int(version.lstrip("v"))
+        if set(file_content.keys()) != {"metadata", "description", "data"}:
+            raise RuntimeError(
+                "mammos yaml v2 files must have exactly three top-level keys, "
+                "'metadata', 'description' and 'data'."
+            )
+        collection_description = file_content["description"] or ""
 
-    collection_description = file_content["metadata"]["description"] or ""
-
+    if not isinstance(file_content.get("data"), Mapping):
+        raise RuntimeError("'data' must be a mapping.")
     if not file_content["data"]:
         raise RuntimeError("'data' does not contain anything.")
 
-    if version_number >= 2:
-        req_subkeys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
-    else:
-        req_subkeys = {"ontology_label", "ontology_iri", "unit", "value"}
-
-    entities = {}
+    collection = EntityCollection(description=collection_description)
     for key, item in file_content["data"].items():
-        if set(item) != req_subkeys:
+        if not isinstance(item, Mapping):
             raise RuntimeError(
-                f"Element '{key}' does not have the required keys,"
-                f" expected {req_subkeys}, found {list(item)}."
+                f"Element '{key}' must be a mapping, found {type(item).__name__}."
             )
-        if item["ontology_label"] is not None:
-            entity = Entity(
-                ontology_label=item["ontology_label"],
-                value=item["value"],
-                unit=item["unit"],
-                description=item.get("description", ""),
-            )
-            _check_iri(entity, item["ontology_iri"])
-            entities[key] = entity
-        elif item["unit"] is not None:
-            entities[key] = u.Quantity(item["value"], item["unit"])
-        else:
-            entities[key] = item["value"]
 
-    return EntityCollection(description=collection_description, **entities)
+        keys = set(item)
+        entity_keys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
+        quantity_keys = {"unit", "value"}
+        value_keys = {"value"}
+        legacy_v1_keys = {"ontology_label", "ontology_iri", "unit", "value"}
+
+        if keys in (entity_keys, legacy_v1_keys):
+            if item["ontology_label"] is not None:
+                entity = Entity(
+                    ontology_label=item["ontology_label"],
+                    value=item["value"],
+                    unit=item["unit"],
+                    description=item.get("description", ""),
+                )
+                _check_iri(entity, item["ontology_iri"])
+                collection[key] = entity
+            elif item["unit"] is not None:
+                collection[key] = u.Quantity(item["value"], item["unit"])
+            else:
+                collection[key] = item["value"]
+        elif keys == quantity_keys:
+            collection[key] = u.Quantity(item["value"], item["unit"])
+        elif keys == value_keys:
+            collection[key] = item["value"]
+        else:
+            expected = [sorted(entity_keys), sorted(quantity_keys), sorted(value_keys)]
+            raise RuntimeError(
+                f"Element '{key}' has invalid keys: {sorted(keys)}. "
+                f"Expected one of {expected}."
+            )
+
+    return collection
 
 
 def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
