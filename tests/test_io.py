@@ -6,6 +6,7 @@ import h5py
 import mammos_units as u
 import pandas as pd
 import pytest
+import yaml
 
 import mammos_entity as me
 
@@ -274,8 +275,8 @@ def test_read_yaml_v2(tmp_path):
         """\
         metadata:
           version: v2
-          description: |-
-            File description.
+        description: |-
+          File description.
         data:
           Ms:
             ontology_label: SpontaneousMagnetization
@@ -290,11 +291,8 @@ def test_read_yaml_v2(tmp_path):
             value: [1.0, 2.0, 3.0]
             description: from experiment 1
           angle:
-            ontology_label: null
-            ontology_iri: null
             unit: rad
             value: [0.0, 0.5, 0.7]
-            description: null
           demag_factor:
             ontology_label: DemagnetizingFactor
             ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
@@ -302,11 +300,7 @@ def test_read_yaml_v2(tmp_path):
             value: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
             description: ''
           comment:
-            ontology_label: null
-            ontology_iri: null
-            unit: null
             value: [Some comment, Some other comment, A third comment]
-            description: null
         """
     )
     (tmp_path / "data.yaml").write_text(file_content)
@@ -325,6 +319,38 @@ def test_read_yaml_v2(tmp_path):
         "Some other comment",
         "A third comment",
     ]
+
+
+def test_write_yaml_v2_key_types(tmp_path):
+    outer = me.EntityCollection(
+        description="outer",
+        Ms=me.Ms(1.2e6),
+        angle=0.5 * u.rad,
+        comment="text",
+    )
+    filename = tmp_path / "types.yaml"
+    outer.to_yaml(filename)
+
+    with open(filename) as f:
+        file_content = yaml.safe_load(f)
+
+    assert isinstance(file_content["description"], str)
+
+    assert set(file_content["data"]["Ms"]) == {
+        "ontology_label",
+        "description",
+        "ontology_iri",
+        "unit",
+        "value",
+    }
+    assert isinstance(file_content["data"]["Ms"]["description"], str)
+    assert isinstance(file_content["data"]["Ms"]["ontology_iri"], str)
+    assert isinstance(file_content["data"]["Ms"]["unit"], str)
+
+    assert set(file_content["data"]["angle"]) == {"unit", "value"}
+    assert isinstance(file_content["data"]["angle"]["unit"], str)
+
+    assert set(file_content["data"]["comment"]) == {"value"}
 
 
 def test_write_read_yaml_multi_shape(tmp_path):

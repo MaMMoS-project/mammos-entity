@@ -541,30 +541,43 @@ class EntityCollection:
 
         YAML files have the following format:
 
-        - two top-level keys ``metadata`` and ``data``
-        - ``metadata`` contains keys
+        - three top-level keys ``metadata``, ``description`` and ``data``
+        - ``metadata`` contains one key:
 
           - ``version``: a string that matches the regex v\d+
-          - ``description``: a (multi-line) string with arbitrary content
 
-        - ``data`` contains one key per object saved in the file. Each object has the
+        - ``description``: a (multi-line) string with arbitrary content
+          describing the top-level collection
+
+        - ``data`` contains one key per element in the collection. Each object has the
           keys:
 
-          - ``ontology_label``: label in the ontology, ``null`` if the element is no
-            Entity
-          - ``description`` a description string, ``""`` if the element is no Entity or
-            has no description
-          - ``ontology_iri``: IRI of the entity, ``null`` if the element is no Entity
-          - ``unit``: unit of the entity or quantity, ``null`` if the element has no
-            unit, empty string for dimensionless quantities and entities
-          - ``value``: value of the data
+          - For :py:class:`~mammos_entity.Entity`:
+
+            - ``ontology_label``: label in the ontology
+            - ``description``: description string
+            - ``ontology_iri``: IRI of the entity
+            - ``unit``: unit of the entity (``""`` for dimensionless)
+            - ``value``: value of the data
+
+          - For :py:class:`~astropy.units.Quantity`:
+
+            - ``unit``: unit of the quantity
+            - ``value``: value of the data
+
+          - For any other value:
+
+            - ``value``: value of the data
 
         .. version-added:: v2
            The ``description`` key for each object.
 
         .. version-changed:: v2
-           The value of ``metadata:description`` is now always a string,  ``""`` if no
-           description is provided (before, it was ``null``).
+
+           - The top-level collection description is stored under ``description``
+             (next to ``metadata`` and ``data``). Previously it was stored in
+             ``metadata:description``.
+           - Non-entity entries no longer store null-valued ontology keys.
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -607,13 +620,9 @@ class EntityCollection:
             >>> print(Path("example.yaml").read_text())
             metadata:
               version: v2
-              description: Test data
+            description: Test data
             data:
               index:
-                ontology_label: null
-                description: ''
-                ontology_iri: null
-                unit: null
                 value: [0, 1, 2]
               Ms:
                 ontology_label: SpontaneousMagnetization
@@ -622,9 +631,6 @@ class EntityCollection:
                 unit: kA / m
                 value: [100.0, 100.0, 100.0]
               alpha:
-                ontology_label: null
-                description: ''
-                ontology_iri: null
                 unit: s2
                 value: [1.2, 3.4, 5.6]
               DemagnetizingFactor:
@@ -634,10 +640,6 @@ class EntityCollection:
                 unit: ''
                 value: [1.0, 0.5, 0.5]
               comment:
-                ontology_label: null
-                description: ''
-                ontology_iri: null
-                unit: null
                 value: [Comment in the first row, Comment in the second row, Comment in the third
                     row]
               Tc:
@@ -658,47 +660,28 @@ class EntityCollection:
             # TODO add support for nested collections
             raise NotImplementedError("Nested collections cannot be saved to YAML.")
 
-        def _preprocess_entity_args(
-            entities: dict[str, str],
-        ) -> collections.abc.Iterator[tuple]:
-            """Extract name, label, description, iri, unit and value for each item."""
-            for name, element in entities.items():
-                if isinstance(element, me.Entity):
-                    label = element.ontology_label
-                    description = element.description
-                    iri = element.ontology.iri
-                    unit = str(element.unit)
-                    value = element.value.tolist()
-                elif isinstance(element, u.Quantity):
-                    label = None
-                    description = ""
-                    iri = None
-                    unit = str(element.unit)
-                    value = element.value.tolist()
-                else:
-                    label = None
-                    description = ""
-                    iri = None
-                    unit = None
-                    value = np.asanyarray(element).tolist()
-                yield name, label, description, iri, unit, value
+        def _serialize_leaf(element):
+            if isinstance(element, me.Entity):
+                return {
+                    "ontology_label": element.ontology_label,
+                    "description": element.description,
+                    "ontology_iri": element.ontology_iri,
+                    "unit": str(element.unit),
+                    "value": element.value.tolist(),
+                }
+            if isinstance(element, u.Quantity):
+                return {
+                    "unit": str(element.unit),
+                    "value": element.value.tolist(),
+                }
+            return {"value": np.asanyarray(element).tolist()}
 
         entity_dict = {
-            "metadata": {
-                "version": "v2",
-                "description": self.description,
-            },
+            "metadata": {"version": "v2"},
+            "description": self.description,
             "data": {
-                name: {
-                    "ontology_label": label,
-                    "description": descr,
-                    "ontology_iri": iri,
-                    "unit": unit,
-                    "value": value,
-                }
-                for name, label, descr, iri, unit, value in _preprocess_entity_args(
-                    self._entities
-                )
+                name: _serialize_leaf(element)
+                for name, element in self._entities.items()
             },
         }
 
