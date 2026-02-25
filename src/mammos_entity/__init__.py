@@ -10,6 +10,7 @@ import importlib.metadata
 
 import mammos_units as units
 
+from mammos_entity._decorators import convert_entity_likes
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 from mammos_entity._factory import (
@@ -32,7 +33,7 @@ from mammos_entity._factory import (
 from mammos_entity._ontology import mammos_ontology, search_labels
 from mammos_entity._read_files import from_csv, from_hdf5, from_yaml
 
-from . import operations
+from . import operations, typing
 
 __version__ = importlib.metadata.version(__package__)
 
@@ -40,6 +41,7 @@ __version__ = importlib.metadata.version(__package__)
 __all__ = [
     "Entity",
     "EntityCollection",
+    "convert_entity_likes",
     "A",
     "B",
     "BHmax",
@@ -57,6 +59,7 @@ __all__ = [
     "Tc",
     "mammos_ontology",
     "operations",
+    "typing",
     "search_labels",
     "units",
     "from_csv",

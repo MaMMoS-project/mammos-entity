@@ -9,13 +9,14 @@ from __future__ import annotations
 
 import os
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic
 
 import h5py
 import mammos_units as u
 
 import mammos_entity as me
 from mammos_entity._ontology import mammos_ontology
+from mammos_entity._typevars import OntologyLabelT
 
 if TYPE_CHECKING:
     import astropy.units
@@ -113,7 +114,7 @@ def _extract_SI_units(ontology_label: str) -> str:
     return si_unit
 
 
-class Entity:
+class Entity(Generic[OntologyLabelT]):
     """Create a quantity (a value and a unit) linked to the EMMO ontology.
 
     Represents a physical property or quantity that is linked to an ontology
