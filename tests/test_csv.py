@@ -257,6 +257,22 @@ def test_read_csv_error_for_metadata_data_column_mismatch(tmp_path):
         me.from_csv(tmp_path / "data.csv")
 
 
+def test_read_csv_error_for_empty_data_table(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos csv v3
+        SpontaneousMagnetization
+        first line
+        https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+        kA / m
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+
+    with pytest.raises(RuntimeError, match="CSV data table is empty."):
+        me.from_csv(tmp_path / "data.csv")
+
+
 def test_csv_nested_collection_not_supported(tmp_path):
     collection = me.EntityCollection(
         inner=me.EntityCollection(description="nested", value=1),

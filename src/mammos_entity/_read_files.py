@@ -67,7 +67,9 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
                 if line.startswith("#--"):
                     break
                 else:
-                    collection_description.append(line.removeprefix("# ").rstrip())
+                    collection_description.append(
+                        line.removeprefix("# ").rstrip("\r\n")
+                    )
         else:
             # reset the file position
             csvfile.seek(position)
