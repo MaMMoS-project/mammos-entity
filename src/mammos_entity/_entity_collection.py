@@ -43,9 +43,9 @@ class EntityCollection:
     is a valid Python name and no property/method of EntityCollection shadows the
     entity. The dictionary interface does not have these limitations.
 
-    Entities can have arbitrary names, with the exception that ``description`` is not
-    allowed. Entities passed as keyword arguments when creating the collection must have
-    valid Python names.
+    Entities can have arbitrary string names, with the exception that
+    ``description`` is not allowed. Entities passed as keyword arguments when creating
+    the collection must have valid Python names.
 
     Examples:
         >>> import mammos_entity as me
@@ -120,6 +120,10 @@ class EntityCollection:
         key: str,
         value: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
     ):
+        if not isinstance(key, str):
+            raise TypeError(
+                f"Name must be a string, received {key!r} ({type(key).__name__})."
+            )
         if key == "description":
             raise KeyError("'description' is not allowed as entity name.")
         self._entities[key] = value
