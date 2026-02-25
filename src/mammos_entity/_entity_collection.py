@@ -592,6 +592,9 @@ class EntityCollection:
             filename: Name of the generated file. An existing file with the same name
                 is overwritten without notice.
 
+        Raises:
+            ValueError: If the top-level collection is empty.
+
         Example:
             Here is an example with six entries:
 
@@ -737,6 +740,9 @@ class EntityCollection:
                 }
             else:
                 return {"value": np.asanyarray(element).tolist()}
+
+        if len(self) == 0:
+            raise ValueError("Empty collections cannot be saved to YAML.")
 
         def _serialize_collection(collection: EntityCollection) -> dict:
             result = {"description": collection.description, "data": {}}
