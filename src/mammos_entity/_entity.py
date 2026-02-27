@@ -570,3 +570,124 @@ class Entity:
         if record_mammos_entity_version:
             dset.attrs["mammos_entity_version"] = me.__version__
         return dset
+
+
+def from_compatible(
+    ontology_label: str,
+    fallback_unit: str | mammos_units.Unit,
+    *,
+    compatible_entities: tuple[str] = (),
+    enforce_unit: bool = False,
+    **kwargs: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+) -> mammos_entity.Entity:
+    """Convert an entity-like passed as keyword argument to an Entity.
+
+    This function converts an entity-like into an Entity with given `ontology_label`. It
+    is intended for input validation of public functions (see example).
+
+    Args:
+        ontology_label: The ontology label of the returned entity.
+        fallback_unit: The unit used when a raw number is passed in. If `enforce_unit`
+            is true, this unit is also used when an entity or quantity is passed in.
+        compatible_entities: Other ontology_labels that are considered equivalent to the
+            required `ontology_label` for the given use-case. Conversion is done on the
+            quantity level. That means that all compatible entities must have the same
+            units. It is the developers' responsibility to ensure that units of the
+            alternative entities are actually compatible with the returned entity.
+        enforce_unit: If true `fallback_unit` will also be used as return unit if an
+            Entity or Quantity is passed in.
+        kwargs: Exactly one additional keyword argument, the entity-like to convert.
+            The key is used in error messages and should be the name of the argument
+            used in the user-facing function.
+
+    Returns:
+        An entity with the given `ontology_label`, and the value and optionally unit
+        extracted from the keyword argument.
+
+    Example:
+        Suppose we have a user-facing function that expects a temperature as single
+        argument:
+
+        >>> import mammos_entity as me
+        >>> def f(temperature):
+        ...     temperature = me._entity.from_compatible(
+        ...         "ThermodynamicTemperature",
+        ...         "deg_C",
+        ...         compatible_entities=("CurieTemperature", "NeelTemperature"),
+        ...         temperature=temperature,
+        ...     )
+        ...     print(temperature)
+
+        Users can pass the correct entity:
+
+        >>> f(me.Entity("ThermodynamicTemperature"))
+        ThermodynamicTemperature(value=0.0, unit=K)
+
+        a compatible entity:
+
+        >>> f(me.Entity("CurieTemperature"))
+        ThermodynamicTemperature(value=0.0, unit=K)
+
+        a quantity with compatible units:
+
+        >>> import mammos_units as u
+        >>> f(0 * u.K)
+        ThermodynamicTemperature(value=0.0, unit=K)
+
+        or a value:
+
+        >>> f(0)
+        ThermodynamicTemperature(value=0.0, unit=deg_C)
+
+        Incompatible entity or unit lead to errors:
+
+        >>> f(me.Entity("Length"))  # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        ValueError: Argument temperature ...
+
+        >>> f(0 * u.m)  # doctest: +IGNORE_EXCEPTION_DETAIL
+        Traceback (most recent call last):
+        ValueError: Argument temperature ...
+    """
+    if len(kwargs) != 1:
+        raise RuntimeError(
+            "Exactly one entity-like must be passed as keyword argument,"
+            f" got {len(kwargs)}."
+        )
+    arg_name, value = kwargs.popitem()
+
+    if isinstance(value, Entity):
+        if value.ontology_label == ontology_label:
+            return _to_entity(ontology_label, value, fallback_unit, enforce_unit)
+        elif value.ontology_label in compatible_entities:
+            return _to_entity(ontology_label, value.q, fallback_unit, enforce_unit)
+        else:
+            raise ValueError(
+                f"Argument {arg_name}, an entity of type {value.ontology_label}, is "
+                f"not compatible with {ontology_label}."
+            )
+    elif isinstance(value, u.Quantity):
+        try:
+            return _to_entity(ontology_label, value, fallback_unit, enforce_unit)
+        except (
+            ValueError
+        ) as exc:  # TODO a custom error only for wrong unit could be useful
+            raise ValueError(
+                f"Argument {arg_name} = {value!r} cannot be interpreted as entity "
+                f"{ontology_label}."
+            ) from exc
+    else:
+        return Entity(ontology_label, value, fallback_unit)
+
+
+def _to_entity(
+    ontology_label: str,
+    value: mammos_entity.Entity | mammos_units.Quantity,
+    unit: str | mammos_units.Unit,
+    enforce_unit: bool,
+) -> me.Entity:
+    """Convert an Entity or Quantity to an Entity, optionall with fixed unit."""
+    if enforce_unit:
+        return me.Entity(ontology_label, value, unit)
+    else:
+        return me.Entity(ontology_label, value)
