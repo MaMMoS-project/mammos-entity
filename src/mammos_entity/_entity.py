@@ -83,7 +83,7 @@ def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
 
     Examples:
         >>> import mammos_entity as me
-        >>> me._entity._get_all_possible_units('T0 L+2 M0 I+1 Θ0 N0 J0')
+        >>> me._entity._convert_dimension_string('T0 L+2 M0 I+1 Θ0 N0 J0')
         Unit("m2 A")
 
     """
@@ -129,7 +129,7 @@ def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]
     Examples:
         >>> import mammos_entity as me
         >>> me._entity._get_all_possible_units("ThermodynamicTemperature")
-        [Unit("0.001 deg_C"), Unit("K"), Unit("deg_C")]
+        [Unit("K"), Unit("deg_C")]
 
     """
     thing = mammos_ontology.get_by_label(ontology_label)

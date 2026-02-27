@@ -463,7 +463,7 @@ class EntityCollection:
             #----------------------------------------
             ,SpontaneousMagnetization,,DemagnetizingFactor,
             ,Magnetization at 0 Kelvin,,,
-            ,https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+            ,https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
             ,kA / m,s2,,
             index,Ms,alpha,DemagnetizingFactor,comment
             0,100.0,1.2,1.0,Comment in the first row
@@ -613,7 +613,7 @@ class EntityCollection:
               Ms:
                 ontology_label: SpontaneousMagnetization
                 description: Magnetization at 0 Kelvin
-                ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                 unit: kA / m
                 value: [100.0, 100.0, 100.0]
               alpha:
@@ -622,7 +622,7 @@ class EntityCollection:
               DemagnetizingFactor:
                 ontology_label: DemagnetizingFactor
                 description: ''
-                ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
                 unit: ''
                 value: [1.0, 0.5, 0.5]
               comment:
@@ -664,7 +664,7 @@ class EntityCollection:
                   Ms:
                     ontology_label: SpontaneousMagnetization
                     description: ''
-                    ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                     unit: kA / m
                     value: 1300.0
                   Tc:
@@ -682,7 +682,7 @@ class EntityCollection:
               H:
                 ontology_label: ExternalMagneticField
                 description: ''
-                ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
                 unit: kA / m
                 value: [0.0, 50.0, 100.0]
               M:
