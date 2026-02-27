@@ -353,6 +353,144 @@ def test_write_yaml_v2_key_types(tmp_path):
     assert set(file_content["data"]["comment"]) == {"value"}
 
 
+def test_read_yaml_v2_nested_collection(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: Top-level description.
+        data:
+          sample:
+            description: Sample 1
+            data:
+              properties:
+                description: Intrinsic properties
+                data:
+                  Ms:
+                    ontology_label: SpontaneousMagnetization
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                    unit: kA / m
+                    value: [600.0, 650.0, 700.0]
+                    description: ''
+                  angle:
+                    unit: rad
+                    value: [0.0, 0.5, 0.7]
+              notes:
+                value: measured in setup A
+          T:
+            ontology_label: ThermodynamicTemperature
+            ontology_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
+            unit: K
+            value: [300.0, 350.0, 400.0]
+            description: measurement conditions
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    read_data = me.from_yaml(tmp_path / "data.yaml")
+
+    assert isinstance(read_data, me.EntityCollection)
+    assert read_data.description == "Top-level description."
+    assert isinstance(read_data.sample, me.EntityCollection)
+    assert read_data.sample.description == "Sample 1"
+    assert isinstance(read_data.sample.properties, me.EntityCollection)
+    assert read_data.sample.properties.description == "Intrinsic properties"
+    assert read_data.sample.properties.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert all(read_data.sample.properties.angle == [0, 0.5, 0.7] * u.rad)
+    assert read_data.sample.notes == "measured in setup A"
+    assert me.T([300, 350, 400], "K") == read_data.T
+    assert read_data.T.description == "measurement conditions"
+
+
+def test_write_yaml_v2_nested_collection_key_types(tmp_path):
+    sample = me.EntityCollection(
+        description="Sample 1",
+        properties=me.EntityCollection(
+            description="Intrinsic properties",
+            Ms=me.Ms([600, 650, 700], "kA/m"),
+            angle=[0, 0.5, 0.7] * u.rad,
+        ),
+        notes="measured in setup A",
+    )
+
+    filename = tmp_path / "nested.yaml"
+    sample.to_yaml(filename)
+
+    with open(filename) as f:
+        file_content = yaml.safe_load(f)
+
+    properties = file_content["data"]["properties"]
+    assert set(properties) == {"description", "data"}
+    assert isinstance(properties["description"], str)
+    assert set(properties["data"]["Ms"]) == {
+        "ontology_label",
+        "description",
+        "ontology_iri",
+        "unit",
+        "value",
+    }
+    assert set(properties["data"]["angle"]) == {"unit", "value"}
+    assert set(file_content["data"]["notes"]) == {"value"}
+
+    read_data = me.from_yaml(filename)
+    assert read_data.description == sample.description
+    assert read_data.properties.description == sample.properties.description
+    assert read_data.properties.Ms == sample.properties.Ms
+    assert all(read_data.properties.angle == sample.properties.angle)
+    assert read_data.notes == sample.notes
+
+
+def test_read_yaml_v2_error_includes_full_collection_path(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: Top-level description.
+        data:
+          outer:
+            description: Outer collection
+            data:
+              inner:
+                description: Inner collection
+                invalid: {}
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+
+    assert "outer.inner" in str(exc_info.value)
+
+
+def test_read_yaml_v2_error_includes_full_entity_path_with_dotted_key(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: Top-level description.
+        data:
+          outer:
+            description: Outer collection
+            data:
+              dotted.inner:
+                description: Inner collection
+                data:
+                  Ms:
+                    unit: A / m
+                    value: [600.0, 650.0, 700.0]
+                    wrong: true
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+
+    assert "outer.dotted.inner.Ms" in str(exc_info.value)
+
+
 def test_write_read_yaml_multi_shape(tmp_path):
     T = me.T([1, 2, 3])
     Tc = me.Tc(100)

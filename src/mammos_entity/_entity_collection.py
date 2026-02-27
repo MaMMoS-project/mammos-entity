@@ -549,8 +549,16 @@ class EntityCollection:
         - ``description``: a (multi-line) string with arbitrary content
           describing the top-level collection
 
-        - ``data`` contains one key per element in the collection. Each object has the
-          keys:
+        - ``data`` contains one key per element in the collection. Each entry is either
+          an entity-like entry or a nested collection node.
+
+        Collection nodes are recursive and have two keys ``description`` and ``data``:
+
+          - ``description``: a (multi-line) string with arbitrary content
+          - ``data``: mapping from entry names to entity-like entries or nested
+            collection nodes
+
+        Entity-like entries have the following keys:
 
           - For :py:class:`~mammos_entity.Entity`:
 
@@ -578,6 +586,7 @@ class EntityCollection:
              (next to ``metadata`` and ``data``). Previously it was stored in
              ``metadata:description``.
            - Non-entity entries no longer store null-valued ontology keys.
+           - Nested collections are supported recursively.
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -650,17 +659,69 @@ class EntityCollection:
                 value: 300.0
             <BLANKLINE>
 
-            Finally, remove the file.
-
             >>> Path("example.yaml").unlink()
+
+            Here is a second example with one outer and one inner collection:
+
+            >>> properties = me.EntityCollection(
+            ...     description="material properties",
+            ...     Ms=me.Ms(1.3e3, "kA/m"),
+            ...     Tc=me.Tc(1043, "K"),
+            ... )
+            >>> measurement = me.EntityCollection(
+            ...     description="measurement with device X",
+            ...     sample=properties,
+            ...     T=me.T(300, "K", description="Measurement conditions"),
+            ...     H=me.H([0, 50, 100], "kA/m"),
+            ...     M=me.M([100, 300, 500], "kA/m"),
+            ... )
+            >>> measurement.to_yaml("nested_example.yaml")
+            >>> print(Path("nested_example.yaml").read_text())
+            metadata:
+              version: v2
+            description: measurement with device X
+            data:
+              sample:
+                description: material properties
+                data:
+                  Ms:
+                    ontology_label: SpontaneousMagnetization
+                    description: ''
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                    unit: kA / m
+                    value: 1300.0
+                  Tc:
+                    ontology_label: CurieTemperature
+                    description: ''
+                    ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+                    unit: K
+                    value: 1043.0
+              T:
+                ontology_label: ThermodynamicTemperature
+                description: Measurement conditions
+                ontology_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
+                unit: K
+                value: 300.0
+              H:
+                ontology_label: ExternalMagneticField
+                description: ''
+                ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
+                unit: kA / m
+                value: [0.0, 50.0, 100.0]
+              M:
+                ontology_label: Magnetization
+                description: ''
+                ontology_iri: https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37
+                unit: kA / m
+                value: [100.0, 300.0, 500.0]
+            <BLANKLINE>
+
+            >>> Path("nested_example.yaml").unlink()
 
 
         """  # noqa: E501
-        if any(isinstance(element, EntityCollection) for _name, element in self):
-            # TODO add support for nested collections
-            raise NotImplementedError("Nested collections cannot be saved to YAML.")
 
-        def _serialize_leaf(element):
+        def _serialize_entity_like(element: mammos_entity.typing.EntityLike) -> dict:
             if isinstance(element, me.Entity):
                 return {
                     "ontology_label": element.ontology_label,
@@ -669,21 +730,24 @@ class EntityCollection:
                     "unit": str(element.unit),
                     "value": element.value.tolist(),
                 }
-            if isinstance(element, u.Quantity):
+            elif isinstance(element, u.Quantity):
                 return {
                     "unit": str(element.unit),
                     "value": element.value.tolist(),
                 }
-            return {"value": np.asanyarray(element).tolist()}
+            else:
+                return {"value": np.asanyarray(element).tolist()}
 
-        entity_dict = {
-            "metadata": {"version": "v2"},
-            "description": self.description,
-            "data": {
-                name: _serialize_leaf(element)
-                for name, element in self._entities.items()
-            },
-        }
+        def _serialize_collection(collection: EntityCollection) -> dict:
+            result = {"description": collection.description, "data": {}}
+            for name, element in collection:
+                if isinstance(element, EntityCollection):
+                    result["data"][name] = _serialize_collection(element)
+                else:
+                    result["data"][name] = _serialize_entity_like(element)
+            return result
+
+        entity_dict = {"metadata": {"version": "v2"}, **_serialize_collection(self)}
 
         # custom dumper to change style of lists, tuples and multi-line strings
         class _Dumper(yaml.SafeDumper):
