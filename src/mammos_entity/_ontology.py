@@ -75,14 +75,15 @@ def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
         ['ShapeAnisotropy', 'ShapeAnisotropyConstant']
 
         >>> me.search_labels("Magnetization")
-        ['MagneticMomementPerUnitMass', 'Magnetization', 'SpontaneousMagnetization']
+        ['MagneticMomentPerUnitMass', 'Magnetization', 'MassMagnetizationUnit', 'Remanence', 'SaturationMagnetization', 'SpontaneousMagnetization']
 
-        ``'MagneticMomementPerUnitMass'`` appears because ``'MassMagnetization'`` is
+        ``'MagneticMomentPerUnitMass'`` appears because ``'MassMagnetization'`` is
         in its ``altLabel``.
 
         >>> me.search_labels("Magnetization", auto_wildcard=False)
         ['Magnetization']
-    """
+
+    """  # noqa:E501
     label = f"*{text}*" if auto_wildcard else text
     match_by_label = set(mammos_ontology.search(label=label))
     match_by_prefLabel = set(mammos_ontology.search(prefLabel=label))

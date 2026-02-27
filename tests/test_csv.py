@@ -81,7 +81,7 @@ def test_read_csv_v1(tmp_path):
         """\
         #mammos csv v1
         #SpontaneousMagnetization,ThermodynamicTemperature,,DemagnetizingFactor,
-        #https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+        #https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
         #kA / m,K,rad,,
         Ms,T,angle,demag_factor,comment
         600.0,1.0,0.0,0.3333333333333333,Some comment
@@ -113,7 +113,7 @@ def test_read_csv_v2(tmp_path):
         # File description.
         #----------------------------------------
         #SpontaneousMagnetization,ThermodynamicTemperature,,DemagnetizingFactor,
-        #https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+        #https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
         #kA / m,K,rad,,
         Ms,T,angle,demag_factor,comment
         600.0,1.0,0.0,0.3333333333333333,Some comment
@@ -150,7 +150,7 @@ def test_read_csv_v3(tmp_path):
         #----------------------------------------
         SpontaneousMagnetization,ThermodynamicTemperature,,
         "first line{description_newline}second line","description, with a comma",,
-        https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
+        https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
         kA / m,K,rad,
         Ms,T,angle,comment
         600.0,1.0,0.0,Some comment
