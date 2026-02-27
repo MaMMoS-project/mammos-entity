@@ -26,3 +26,13 @@ def test_search_labels_whole_match():
     assert search_labels("*Polarization*", auto_wildcard=False) == search_labels(
         "*Polarization*"
     )
+
+
+def test_problematic_labels():
+    """Test problematic labels.
+
+    On Windows the function `get_by_label_all` with input label "Status" would return
+    the object `bibo.status`, but the string "Status" is not included in `label`,
+    `altLabel`, `prefLabel`. The function `search_labels` should fix this behaviour.
+    """
+    assert search_labels("Status") == ["Status", "hasStatus"]

@@ -56,6 +56,9 @@ def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
     all entities. The match is case sensitive. The returned label is always the
     ``prefLabel``.
 
+    This function uses internally the method `.search()` of
+    `mammos_entity.mammos_ontology`.
+
     Args:
         text: String to match.
         auto_wildcard: If True, the wildcard ``*`` is added at the beginning
@@ -81,6 +84,8 @@ def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
         ['Magnetization']
     """
     label = f"*{text}*" if auto_wildcard else text
-    thing_set = mammos_ontology.get_by_label_all(label)
-    list_of_labels = sorted(str(thing.prefLabel[0]) for thing in thing_set)
-    return list_of_labels
+    match_by_label = set(mammos_ontology.search(label=label))
+    match_by_prefLabel = set(mammos_ontology.search(prefLabel=label))
+    match_by_altLabel = set(mammos_ontology.search(altLabel=label))
+    possible_things = match_by_label | match_by_prefLabel | match_by_altLabel
+    return sorted(str(thing.prefLabel[0]) for thing in possible_things)
