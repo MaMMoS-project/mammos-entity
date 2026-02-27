@@ -97,7 +97,7 @@ def test_read_yaml_v1(tmp_path):
     ]
 
 
-def test_read_yaml_v2(tmp_path):
+def test_read_yaml_v2_flat(tmp_path):
     file_content = textwrap.dedent(
         """\
         metadata:
@@ -148,39 +148,7 @@ def test_read_yaml_v2(tmp_path):
     ]
 
 
-def test_write_yaml_v2_key_types(tmp_path):
-    outer = me.EntityCollection(
-        description="outer",
-        Ms=me.Ms(1.2e6),
-        angle=0.5 * u.rad,
-        comment="text",
-    )
-    filename = tmp_path / "types.yaml"
-    outer.to_yaml(filename)
-
-    with open(filename) as f:
-        file_content = yaml.safe_load(f)
-
-    assert isinstance(file_content["description"], str)
-
-    assert set(file_content["data"]["Ms"]) == {
-        "ontology_label",
-        "description",
-        "ontology_iri",
-        "unit",
-        "value",
-    }
-    assert isinstance(file_content["data"]["Ms"]["description"], str)
-    assert isinstance(file_content["data"]["Ms"]["ontology_iri"], str)
-    assert isinstance(file_content["data"]["Ms"]["unit"], str)
-
-    assert set(file_content["data"]["angle"]) == {"unit", "value"}
-    assert isinstance(file_content["data"]["angle"]["unit"], str)
-
-    assert set(file_content["data"]["comment"]) == {"value"}
-
-
-def test_read_yaml_v2_nested_collection(tmp_path):
+def test_read_yaml_v2_nested(tmp_path):
     file_content = textwrap.dedent(
         """\
         metadata:
@@ -228,9 +196,10 @@ def test_read_yaml_v2_nested_collection(tmp_path):
     assert read_data.T.description == "measurement conditions"
 
 
-def test_write_yaml_v2_nested_collection_key_types(tmp_path):
+def test_write_yaml_key_types(tmp_path):
     sample = me.EntityCollection(
         description="Sample 1",
+        Tc=me.Tc(600, "K"),
         properties=me.EntityCollection(
             description="Intrinsic properties",
             Ms=me.Ms([600, 650, 700], "kA/m"),
@@ -245,6 +214,18 @@ def test_write_yaml_v2_nested_collection_key_types(tmp_path):
     with open(filename) as f:
         file_content = yaml.safe_load(f)
 
+    assert set(file_content["data"]["Tc"]) == {
+        "ontology_label",
+        "description",
+        "ontology_iri",
+        "unit",
+        "value",
+    }
+    assert isinstance(file_content["data"]["Tc"]["description"], str)
+    assert isinstance(file_content["data"]["Tc"]["ontology_iri"], str)
+    assert isinstance(file_content["data"]["Tc"]["unit"], str)
+    assert set(file_content["data"]["notes"]) == {"value"}
+
     properties = file_content["data"]["properties"]
     assert set(properties) == {"description", "data"}
     assert isinstance(properties["description"], str)
@@ -256,7 +237,6 @@ def test_write_yaml_v2_nested_collection_key_types(tmp_path):
         "value",
     }
     assert set(properties["data"]["angle"]) == {"unit", "value"}
-    assert set(file_content["data"]["notes"]) == {"value"}
 
     read_data = me.from_yaml(filename)
     assert read_data.description == sample.description
@@ -266,7 +246,28 @@ def test_write_yaml_v2_nested_collection_key_types(tmp_path):
     assert read_data.notes == sample.notes
 
 
-def test_read_yaml_v2_error_includes_full_collection_path(tmp_path):
+def test_write_yaml_error_for_empty_collection(tmp_path):
+    collection = me.EntityCollection(description="empty")
+
+    with pytest.raises(ValueError, match="Empty collections cannot be saved to YAML."):
+        collection.to_yaml(tmp_path / "data.yaml")
+
+
+def test_write_read_yaml_with_empty_nested_collection(tmp_path):
+    collection = me.EntityCollection(
+        description="outer",
+        inner=me.EntityCollection(description="empty"),
+    )
+
+    filename = tmp_path / "data.yaml"
+    collection.to_yaml(filename)
+    read_data = me.from_yaml(filename)
+    assert isinstance(read_data.inner, me.EntityCollection)
+    assert read_data.inner.description == "empty"
+    assert len(read_data.inner) == 0
+
+
+def test_read_yaml_error_includes_full_collection_path(tmp_path):
     file_content = textwrap.dedent(
         """\
         metadata:
@@ -287,10 +288,11 @@ def test_read_yaml_v2_error_includes_full_collection_path(tmp_path):
     with pytest.raises(RuntimeError) as exc_info:
         me.from_yaml(filename)
 
-    assert "outer.inner" in str(exc_info.value)
+    message = str(exc_info.value)
+    assert 'Entry "outer.inner" is an invalid collection in mammos yaml v2' in message
 
 
-def test_read_yaml_v2_error_includes_full_entity_path_with_dotted_key(tmp_path):
+def test_read_yaml_error_includes_full_entity_path_with_dotted_key(tmp_path):
     file_content = textwrap.dedent(
         """\
         metadata:
@@ -315,7 +317,276 @@ def test_read_yaml_v2_error_includes_full_entity_path_with_dotted_key(tmp_path):
     with pytest.raises(RuntimeError) as exc_info:
         me.from_yaml(filename)
 
-    assert "outer.dotted.inner.Ms" in str(exc_info.value)
+    message = str(exc_info.value)
+    assert (
+        'Entry "outer.dotted.inner.Ms" is an invalid entity-like in mammos yaml v2'
+        in message
+    )
+
+
+def test_read_yaml_error_for_null_ontology_label(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: Top-level description.
+        data:
+          Ms:
+            ontology_label: null
+            description: ''
+            ontology_iri: null
+            unit: kA / m
+            value: [600.0, 650.0, 700.0]
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+
+    message = str(exc_info.value)
+    assert (
+        'Entry "Ms" is an invalid entity-like in mammos yaml v2: key '
+        '"ontology_label" must be a string'
+    ) in message
+
+
+def test_read_yaml_error_for_invalid_top_level_description_type(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: null
+        data:
+          value:
+            value: 1
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+
+    message = str(exc_info.value)
+    assert (
+        'Entry "top-level collection" is an invalid collection in mammos yaml v2'
+        in message
+    )
+    assert 'key "description" must be a string' in message
+
+
+def test_read_yaml_error_for_non_string_entity_description(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: Top-level description.
+        data:
+          Ms:
+            ontology_label: SpontaneousMagnetization
+            description: [not, a, string]
+            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+            unit: kA / m
+            value: [600.0, 650.0, 700.0]
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+
+    message = str(exc_info.value)
+    assert (
+        'Entry "Ms" is an invalid entity-like in mammos yaml v2: key '
+        '"description" must be a string'
+    ) in message
+
+
+@pytest.mark.parametrize(
+    "file_content",
+    [
+        "description: x\ndata: {}\n",
+        "metadata: []\ndescription: x\ndata: {}\n",
+        "metadata: {}\ndescription: x\ndata: {}\n",
+    ],
+)
+def test_read_yaml_error_for_missing_metadata_version(tmp_path, file_content):
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(
+        RuntimeError, match="File does not have a key metadata:version."
+    ):
+        me.from_yaml(filename)
+
+
+def test_read_yaml_error_for_invalid_v2_top_level_keys(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: ok
+        data: {}
+        extra: 1
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError, match="must have exactly three top-level keys"):
+        me.from_yaml(filename)
+
+
+def test_read_yaml_error_for_non_mapping_v2_data(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: ok
+        data: 1
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+    assert 'key "data" must be a mapping' in str(exc_info.value)
+
+
+def test_read_yaml_error_for_empty_v2_top_level_data(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: ok
+        data: {}
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+    assert (
+        'Entry "top-level collection" is an invalid collection in mammos yaml v2'
+        in str(exc_info.value)
+    )
+    assert 'key "data" does not contain anything.' in str(exc_info.value)
+
+
+def test_read_yaml_with_empty_v2_nested_collection_data(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: ok
+        data:
+          inner:
+            description: inner
+            data: {}
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    read_data = me.from_yaml(filename)
+    assert isinstance(read_data.inner, me.EntityCollection)
+    assert read_data.inner.description == "inner"
+    assert len(read_data.inner) == 0
+
+
+def test_read_yaml_error_for_non_string_ontology_iri(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: ok
+        data:
+          Ms:
+            ontology_label: SpontaneousMagnetization
+            description: ''
+            ontology_iri: null
+            unit: A / m
+            value: 1
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+    assert 'key "ontology_iri" must be a string' in str(exc_info.value)
+
+
+def test_read_yaml_error_for_mapping_without_collection_or_leaf_keys(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: ok
+        data:
+          item:
+            wrong: 1
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+    assert 'Entry "item" is an invalid entity-like in mammos yaml v2' in str(
+        exc_info.value
+    )
+
+
+def test_read_yaml_error_prefers_entity_like_when_leaf_hints_are_present(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: ok
+        data:
+          item:
+            description: maybe a collection
+            data: {}
+            unit: A / m
+            value: 1
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+    assert 'Entry "item" is an invalid entity-like in mammos yaml v2' in str(
+        exc_info.value
+    )
+
+
+def test_read_yaml_error_for_incompatible_iri(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata:
+          version: v2
+        description: ok
+        data:
+          Ms:
+            ontology_label: SpontaneousMagnetization
+            description: ''
+            ontology_iri: https://example.com/wrong
+            unit: A / m
+            value: 1
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError, match='Entity "Ms" has an incompatible IRI'):
+        me.from_yaml(filename)
 
 
 def test_write_read_yaml_multi_shape(tmp_path):
@@ -393,5 +664,5 @@ def test_wrong_iri(tmp_path, extension: str):
         f.seek(0)
         f.write(data)
 
-    with pytest.raises(RuntimeError, match="Incompatible IRI for Entity"):
+    with pytest.raises(RuntimeError, match="incompatible IRI"):
         me.io.entities_from_file(filename)

@@ -231,5 +231,5 @@ def test_wrong_iri(tmp_path):
         f.seek(0)
         f.write(data)
 
-    with pytest.raises(RuntimeError, match="Incompatible IRI for Entity"):
+    with pytest.raises(RuntimeError, match="incompatible IRI"):
         me.io.entities_from_file(filename)

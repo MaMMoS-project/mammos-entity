@@ -105,7 +105,7 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
                 unit=unit,
                 description=description,
             )
-            _check_iri(entity, iri)
+            _check_iri(entity, iri, name)
             entities[name] = entity
         elif unit:
             entities[name] = u.Quantity(data_values, unit)
@@ -196,7 +196,7 @@ def _parse_yaml_leaf_v1(item: Mapping, key: str):
             value=item["value"],
             unit=item["unit"],
         )
-        _check_iri(entity, item["ontology_iri"])
+        _check_iri(entity, item["ontology_iri"], key)
         return entity
     elif item["unit"] is not None:
         return u.Quantity(item["value"], item["unit"])
@@ -205,9 +205,11 @@ def _parse_yaml_leaf_v1(item: Mapping, key: str):
 
 
 def _parse_yaml_leaf_v2(item: Mapping, key: str):
+    key_display = key or "top-level collection"
     if not isinstance(item, Mapping):
         raise RuntimeError(
-            f"Element '{key}' must be a mapping, found {type(item).__name__}."
+            f'Entry "{key_display}" is an invalid entity-like in mammos yaml v2: '
+            f"expected a mapping, found {type(item).__name__}."
         )
 
     keys = set(item)
@@ -216,13 +218,31 @@ def _parse_yaml_leaf_v2(item: Mapping, key: str):
     value_keys = {"value"}
 
     if keys == entity_keys:
+        if not isinstance(item["ontology_label"], str):
+            raise RuntimeError(
+                f'Entry "{key_display}" is an invalid entity-like in mammos yaml v2: '
+                f'key "ontology_label" must be a string, found '
+                f"{type(item['ontology_label']).__name__}."
+            )
+        if not isinstance(item["description"], str):
+            raise RuntimeError(
+                f'Entry "{key_display}" is an invalid entity-like in mammos yaml v2: '
+                f'key "description" must be a string, found '
+                f"{type(item['description']).__name__}."
+            )
+        if not isinstance(item["ontology_iri"], str):
+            raise RuntimeError(
+                f'Entry "{key_display}" is an invalid entity-like in mammos yaml v2: '
+                f'key "ontology_iri" must be a string, found '
+                f"{type(item['ontology_iri']).__name__}."
+            )
         entity = Entity(
             ontology_label=item["ontology_label"],
             value=item["value"],
             unit=item["unit"],
             description=item["description"],
         )
-        _check_iri(entity, item["ontology_iri"])
+        _check_iri(entity, item["ontology_iri"], key_display)
         return entity
     elif keys == quantity_keys:
         return u.Quantity(item["value"], item["unit"])
@@ -231,8 +251,8 @@ def _parse_yaml_leaf_v2(item: Mapping, key: str):
     else:
         expected = [sorted(entity_keys), sorted(quantity_keys), sorted(value_keys)]
         raise RuntimeError(
-            f"Element '{key}' has invalid keys: {sorted(keys)}."
-            f" Expected one of {expected}."
+            f'Entry "{key_display}" is an invalid entity-like in mammos yaml v2: '
+            f"invalid keys {sorted(keys)}; expected one of {expected}."
         )
 
 
@@ -240,29 +260,42 @@ def _parse_yaml_collection_v2(node: Mapping, key: str) -> EntityCollection:
     key_display = key or "top-level collection"
     if set(node.keys()) != {"description", "data"}:
         raise RuntimeError(
-            f"Element '{key_display}' must have exactly keys 'description' and 'data' "
-            "in mammos yaml v2."
+            f'Entry "{key_display}" is an invalid collection in mammos yaml v2: '
+            f"invalid keys {sorted(node.keys())}; expected ['data', 'description']."
         )
 
     description = node["description"]
     if not isinstance(description, str):
         raise RuntimeError(
-            f"Element '{key_display}' must have a string 'description' "
-            "in mammos yaml v2, "
-            f"found {type(description).__name__}."
+            f'Entry "{key_display}" is an invalid collection in mammos yaml v2: '
+            f'key "description" must be a string, found {type(description).__name__}.'
         )
 
     if not isinstance(node["data"], Mapping):
         raise RuntimeError(
-            f"Element '{key_display}:data' must be a mapping in mammos yaml v2, "
-            f"found {type(node['data']).__name__}."
+            f'Entry "{key_display}" is an invalid collection in mammos yaml v2: '
+            f'key "data" must be a mapping, found {type(node["data"]).__name__}.'
+        )
+    if key == "" and not node["data"]:
+        raise RuntimeError(
+            f'Entry "{key_display}" is an invalid collection in mammos yaml v2: '
+            'key "data" does not contain anything.'
         )
 
     collection = EntityCollection(description=description)
     for name, item in node["data"].items():
         child_path = _join_path(key, name)
-        if isinstance(item, Mapping) and set(item.keys()) == {"description", "data"}:
-            collection[name] = _parse_yaml_collection_v2(item, child_path)
+        if isinstance(item, Mapping):
+            item_keys = set(item.keys())
+            leaf_hint_keys = {"ontology_label", "ontology_iri", "unit", "value"}
+            # Route ambiguous mappings with collection keys to collection parsing,
+            # unless they clearly belong to an entity-like schema.
+            if item_keys & leaf_hint_keys:
+                collection[name] = _parse_yaml_leaf_v2(item, child_path)
+            elif "description" in item_keys or "data" in item_keys:
+                collection[name] = _parse_yaml_collection_v2(item, child_path)
+            else:
+                collection[name] = _parse_yaml_leaf_v2(item, child_path)
         else:
             collection[name] = _parse_yaml_leaf_v2(item, child_path)
     return collection
@@ -278,7 +311,7 @@ def _join_path(parent_path: str, segment: str) -> str:
     return segment
 
 
-def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
+def _check_iri(entity: mammos_entity.Entity, iri: str, key: str) -> None:
     """Check that iri points to entity.
 
     Raises:
@@ -286,8 +319,8 @@ def _check_iri(entity: mammos_entity.Entity, iri: str) -> None:
     """
     if entity.ontology.iri != iri:
         raise RuntimeError(
-            f"Incompatible IRI for {entity!r}, expected: '{entity.ontology.iri}',"
-            f" got '{iri}'."
+            f'Entity "{key}" has an incompatible IRI for {entity!r}, '
+            f"expected: '{entity.ontology.iri}', got '{iri}'."
         )
 
 
