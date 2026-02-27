@@ -6,6 +6,7 @@ import copy
 import csv
 import os
 import textwrap
+from dataclasses import FrozenInstanceError
 from typing import TYPE_CHECKING
 
 import h5py
@@ -858,3 +859,16 @@ def _to_hdf5(
         if record_mammos_entity_version:
             dset.attrs["mammos_entity_version"] = me.__version__
         return dset
+
+
+def frozen_collection(cls):
+    """Decorator to freeze EntityCollection subclasses."""
+
+    def frozen(*args, **kwargs):
+        raise FrozenInstanceError(
+            f"EntityCollection '{cls.__name__}' cannot be modified."
+        )
+
+    cls.__setitem__ = frozen
+    cls.__delitem__ = frozen
+    return cls
