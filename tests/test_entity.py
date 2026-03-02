@@ -1,5 +1,6 @@
 import math
 
+import astropy
 import mammos_units as u
 import numpy as np
 import pytest
@@ -145,7 +146,7 @@ def test_check_units():
         me.Entity("SpontaneousMagnetization", value=1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(ValueError, match="incompatible with ontology. Allowed units"),
+        pytest.raises(astropy.units.UnitConversionError),
     ):
         me.Entity("SpontaneousMagnetization", value=1 * u.T, unit="A/m")
 
