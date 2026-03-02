@@ -724,7 +724,11 @@ class EntityCollection:
 
         """  # noqa: E501
 
-        def _serialize_entity_like(element: mammos_entity.typing.EntityLike) -> dict:
+        def _serialize_entity_like(
+            element: mammos_entity.Entity
+            | astropy.units.Quantity
+            | numpy.typing.ArrayLike,
+        ) -> dict:
             if isinstance(element, me.Entity):
                 return {
                     "ontology_label": element.ontology_label,
@@ -835,7 +839,10 @@ class EntityCollection:
 
 
 def _to_hdf5(
-    data: mammos_entity.typing.EntityLike | mammos_entity.EntityCollection,
+    data: mammos_entity.Entity
+    | astropy.units.Quantity
+    | numpy.typing.ArrayLike
+    | mammos_entity.EntityCollection,
     base: h5py.File | h5py.Group | str | os.PathLike,
     name: str | None,
     record_mammos_entity_version: bool = True,
