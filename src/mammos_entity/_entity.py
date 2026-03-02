@@ -108,10 +108,12 @@ def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
     return astropy_unit
 
 
-def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]:
-    """Get list of accepted units given an ontology label found in the ontology.
+def _get_all_possible_units(
+    ontology_thing: owlready2.entity.ThingClass,
+) -> list[astropy.units.UnitBase]:
+    """Get list of accepted units given an ontology entry.
 
-    Given a label for an ontology entry, this function finds all SI base units,
+    Given an entry from the ontology, this function finds all SI base units,
     SI-coherent units, and some selected special units (classified as
     `SISpecialUnit` in the EMMO ontology), navigating the class hierarchy.
 
@@ -121,21 +123,21 @@ def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]
     unit.
 
     Args:
-        ontology_label: The label of an ontology concept
-            (e.g., 'SpontaneousMagnetization').
+        ontology_thing: An ontology concept as a
+            :py:class:`~owlready2.entity.ThingClass`.
 
     Returns:
         A list of all compatible astropy units.
 
     Examples:
         >>> import mammos_entity as me
-        >>> me._entity._get_all_possible_units("ThermodynamicTemperature")
+        >>> thing = me.mammos_ontology.ThermodynamicsTemperature
+        >>> me._entity._get_all_possible_units(thing)
         [Unit("K"), Unit("deg_C")]
 
     """
-    thing = mammos_ontology.get_by_label(ontology_label)
     possible_units = []
-    for ancestor in thing.ancestors():
+    for ancestor in ontology_thing.ancestors():
         # we find the ancestor with the attribute `hasMeasurementUnit`
         if hasattr(ancestor, "hasMeasurementUnit") and ancestor.hasMeasurementUnit:
             measurement_unit = ancestor.hasMeasurementUnit[0]
@@ -274,6 +276,8 @@ class Entity:
         label_matches = search_labels(ontology_label, auto_wildcard=False)
         if len(label_matches) == 0:
             raise ValueError(f"No entity found with label {ontology_label}")
+        elif len(label_matches) > 1:
+            raise ValueError(f"Label {ontology_label} is ambiguous.")
         else:
             pref_label = label_matches[0]
         ontology_units = _get_all_possible_units(pref_label)
