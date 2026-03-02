@@ -86,7 +86,7 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
         else:
             ontology_labels = csvfile.readline().strip().removeprefix("#").split(",")
             descriptions = [""] * len(ontology_labels)
-            csv.readline()  # ignore IRIs
+            csvfile.readline()  # ignore IRIs
             units = csvfile.readline().strip().removeprefix("#").split(",")
 
         data = pd.read_csv(csvfile)
