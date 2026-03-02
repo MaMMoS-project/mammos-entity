@@ -46,7 +46,8 @@ def _convert_unit(
 
     Returns:
         Astropy unit associated with the ontology entry, if found.
-        This function can return `None` if the entity gives no UCUM code.
+        This function can return `None` if the entity gives no UCUM code,
+        or the UCUM code cannot be processed by astropy.
 
     Examples:
         >>> import mammos_entity as me
