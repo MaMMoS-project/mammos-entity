@@ -15,7 +15,7 @@ import h5py
 import mammos_units as u
 
 import mammos_entity as me
-from mammos_entity._ontology import mammos_ontology
+from mammos_entity._ontology import mammos_ontology, search_labels
 
 if TYPE_CHECKING:
     import astropy.units
@@ -158,11 +158,18 @@ class Entity:
         if unit is None and isinstance(value, u.Quantity):
             unit = value.unit
 
+        # extract prefLabel
+        label_matches = search_labels(ontology_label, auto_wildcard=False)
+        if len(label_matches) == 0:
+            raise ValueError(f"No entity found with label {ontology_label}")
+        else:
+            pref_label = label_matches[0]
+
         with u.set_enabled_aliases(
             # filtering units we do not want as default
             {"Cel": "K", "mCel": "K", "har": "m2"}
         ):
-            si_unit = u.Unit(_extract_SI_units(ontology_label))
+            si_unit = u.Unit(_extract_SI_units(pref_label))
 
         if unit is None:
             # the user does not specify a unit:
@@ -178,14 +185,14 @@ class Entity:
                 if not si_unit.is_equivalent(unit):
                     raise u.UnitConversionError(
                         f"The unit '{unit}' is not equivalent to the unit of"
-                        f" {ontology_label} '{si_unit}'"
+                        f" {pref_label} '{si_unit}'"
                     )
 
         comp_unit = u.Unit(unit if unit else "")
 
         with u.set_enabled_equivalencies(mammos_equivalencies):
             self._quantity = u.Quantity(value=value, unit=comp_unit)
-        self._ontology_label = ontology_label
+        self._ontology_label = pref_label
 
     @property
     def description(self) -> str:

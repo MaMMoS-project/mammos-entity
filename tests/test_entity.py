@@ -208,6 +208,14 @@ def test_all_labels_ontology(ontology_element):
     me.Entity(ontology_element.prefLabel[0], 42)
 
 
+def test_switch_to_pref_label():
+    """Test the switch to prefLabel instead of given one."""
+    assert me.Entity("Ms").ontology_label == "SpontaneousMagnetization"
+    assert me.Entity("K1").ontology_label == "MagnetocrystallineAnisotropyConstantK1"
+    assert me.Entity("A").ontology_label == "ExchangeStiffnessConstant"
+    assert me.Entity("Js").ontology_label == "SpontaneousMagneticPolarisation"
+
+
 def test_ontology_information_mammos():
     """Test ontology label and IRI for an Entity in the MaMMoS ontology."""
     e = me.Entity("ExternalMagneticField")
