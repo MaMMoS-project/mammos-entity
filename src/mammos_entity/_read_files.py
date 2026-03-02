@@ -16,8 +16,10 @@ from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 
 if TYPE_CHECKING:
+    import mammos_units
+    import numpy
+
     import mammos_entity
-    import mammos_entity.typing
 
 
 def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
@@ -311,7 +313,12 @@ def _join_path(parent_path: str, segment: str) -> str:
 def from_hdf5(
     element: h5py.File | h5py.Group | h5py.Dataset | str | os.PathLike,
     decode_bytes: bool = True,
-) -> mammos_entity.typing.EntityLike | mammos_entity.EntityCollection:
+) -> (
+    mammos_entity.Entity
+    | mammos_units.Quantity
+    | numpy.typing.ArrayLike
+    | mammos_entity.EntityCollection
+):
     """Read HDF5 file, group or dataset and convert to Entity or EntityCollection.
 
     Datasets are converted to :py:class:`~mammos_entity.Entity`,
@@ -331,7 +338,7 @@ def from_hdf5(
 
     Returns:
         All data in the given HDF5 file/group/dataset as (nested) EntityCollection
-        and/or EntityLike object.
+        and/or entity-like object.
 
 
     .. seealso::
