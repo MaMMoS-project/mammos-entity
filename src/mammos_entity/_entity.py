@@ -66,8 +66,6 @@ def _convert_unit(
             ):
                 unit = u.Unit(code)
                 return unit
-    else:
-        return  # if `ucumCode` list is empty returns None
 
 
 def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
