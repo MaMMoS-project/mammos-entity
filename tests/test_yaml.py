@@ -567,28 +567,6 @@ def test_read_yaml_error_prefers_entity_like_when_leaf_hints_are_present(tmp_pat
     )
 
 
-def test_read_yaml_error_for_incompatible_iri(tmp_path):
-    file_content = textwrap.dedent(
-        """\
-        metadata:
-          version: v2
-        description: ok
-        data:
-          Ms:
-            ontology_label: SpontaneousMagnetization
-            description: ''
-            ontology_iri: https://example.com/wrong
-            unit: A / m
-            value: 1
-        """
-    )
-    filename = tmp_path / "data.yaml"
-    filename.write_text(file_content)
-
-    with pytest.raises(RuntimeError, match='Entity "Ms" has an incompatible IRI'):
-        me.from_yaml(filename)
-
-
 def test_write_read_yaml_multi_shape(tmp_path):
     T = me.T([1, 2, 3])
     Tc = me.Tc(100)
@@ -646,23 +624,3 @@ def test_no_data_yaml(tmp_path):
     (tmp_path / "data.yaml").write_text(file_content)
     with pytest.raises(RuntimeError):
         me.from_yaml(tmp_path / "data.yaml")
-
-
-@pytest.mark.skip(reason="Does it make sense to check IRIs when reading a file?")
-@pytest.mark.parametrize("extension", ["yaml", "yml"])
-def test_wrong_iri(tmp_path, extension: str):
-    filename = tmp_path / f"example.{extension}"
-    me.io.entities_to_file(filename, Ms=me.Ms())
-
-    # check that the file is correct
-    assert me.io.entities_from_file(filename).Ms == me.Ms()
-
-    # break IRI in file
-    with open(filename, "r+") as f:
-        data = f.read()
-        data = data.replace("w3id.org/emmo", "example.com/my_ontology")
-        f.seek(0)
-        f.write(data)
-
-    with pytest.raises(RuntimeError, match="incompatible IRI"):
-        me.io.entities_from_file(filename)

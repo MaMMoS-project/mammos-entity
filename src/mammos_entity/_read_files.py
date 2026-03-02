@@ -81,12 +81,12 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
             )
             ontology_labels = next(reader)
             descriptions = next(reader)
-            ontology_iris = next(reader)
+            next(reader)  # ignore IRIs
             units = next(reader)
         else:
             ontology_labels = csvfile.readline().strip().removeprefix("#").split(",")
             descriptions = [""] * len(ontology_labels)
-            ontology_iris = csvfile.readline().strip().removeprefix("#").split(",")
+            csvfile.readline()  # ignore IRIs
             units = csvfile.readline().strip().removeprefix("#").split(",")
 
         data = pd.read_csv(csvfile)
@@ -94,8 +94,8 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
         scalar_data = len(data) == 1
 
     entities = {}
-    for name, ontology_label, description, iri, unit in zip(
-        names, ontology_labels, descriptions, ontology_iris, units, strict=True
+    for name, ontology_label, description, unit in zip(
+        names, ontology_labels, descriptions, units, strict=True
     ):
         data_values = data[name].values if not scalar_data else data[name].values[0]
         if ontology_label:
@@ -105,7 +105,6 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
                 unit=unit,
                 description=description,
             )
-            _check_iri(entity, iri, name)
             entities[name] = entity
         elif unit:
             entities[name] = u.Quantity(data_values, unit)
@@ -196,7 +195,6 @@ def _parse_yaml_leaf_v1(item: Mapping, key: str):
             value=item["value"],
             unit=item["unit"],
         )
-        _check_iri(entity, item["ontology_iri"], key)
         return entity
     elif item["unit"] is not None:
         return u.Quantity(item["value"], item["unit"])
@@ -242,7 +240,6 @@ def _parse_yaml_leaf_v2(item: Mapping, key: str):
             unit=item["unit"],
             description=item["description"],
         )
-        _check_iri(entity, item["ontology_iri"], key_display)
         return entity
     elif keys == quantity_keys:
         return u.Quantity(item["value"], item["unit"])
@@ -309,19 +306,6 @@ def _join_path(parent_path: str, segment: str) -> str:
     if parent_path:
         return f"{parent_path}.{segment}"
     return segment
-
-
-def _check_iri(entity: mammos_entity.Entity, iri: str, key: str) -> None:
-    """Check that iri points to entity.
-
-    Raises:
-        RuntimeError: if the given iri and the entity iri are different.
-    """
-    if entity.ontology.iri != iri:
-        raise RuntimeError(
-            f'Entity "{key}" has an incompatible IRI for {entity!r}, '
-            f"expected: '{entity.ontology.iri}', got '{iri}'."
-        )
 
 
 def from_hdf5(
