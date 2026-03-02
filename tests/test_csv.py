@@ -214,22 +214,3 @@ def test_empty_csv(tmp_path):
     (tmp_path / "data.csv").touch()
     with pytest.raises(RuntimeError):
         me.from_csv(tmp_path / "data.csv")
-
-
-@pytest.mark.skip(reason="Does it make sense to check IRIs when reading a file?")
-def test_wrong_iri(tmp_path):
-    filename = tmp_path / "example.csv"
-    me.io.entities_to_file(filename, Ms=me.Ms())
-
-    # check that the file is correct
-    assert me.io.entities_from_file(filename).Ms == me.Ms()
-
-    # break IRI in file
-    with open(filename, "r+") as f:
-        data = f.read()
-        data = data.replace("w3id.org/emmo", "example.com/my_ontology")
-        f.seek(0)
-        f.write(data)
-
-    with pytest.raises(RuntimeError, match="incompatible IRI"):
-        me.io.entities_from_file(filename)
