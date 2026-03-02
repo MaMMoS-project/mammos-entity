@@ -55,7 +55,7 @@ def test_read_yaml_v1(tmp_path):
         data:
           Ms:
             ontology_label: SpontaneousMagnetization
-            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
             unit: kA / m
             value: [600.0, 650.0, 700.0]
           T:
@@ -70,7 +70,7 @@ def test_read_yaml_v1(tmp_path):
             value: [0.0, 0.5, 0.7]
           demag_factor:
             ontology_label: DemagnetizingFactor
-            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
             unit: ''
             value: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
           comment:
