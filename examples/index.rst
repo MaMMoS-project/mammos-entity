@@ -9,5 +9,7 @@ mammos-entity
    quickstart
    entity
    entity-collection
-   io
+   yaml
+   csv
+   hdf5
    useful_operations
