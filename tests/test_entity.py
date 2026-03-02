@@ -136,16 +136,16 @@ def test_check_units():
     assert e.unit == u.A / u.m
     e.quantity.to("kA/m", copy=False)
     assert e.unit == u.A / u.m
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="incompatible with ontology. Allowed units"):
         me.Entity("SpontaneousMagnetization", value=1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(ValueError),
+        pytest.raises(ValueError, match="incompatible with ontology. Allowed units"),
     ):
         me.Entity("SpontaneousMagnetization", value=1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(ValueError),
+        pytest.raises(ValueError, match="incompatible with ontology. Allowed units"),
     ):
         me.Entity("SpontaneousMagnetization", value=1 * u.T, unit="A/m")
 
