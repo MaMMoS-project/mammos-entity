@@ -288,7 +288,7 @@ class Entity:
                 # the user does not specify a unit: we choose the most frequent unit.
                 unit = _get_preferred_unit(ontology_units)
         else:
-            unit = u.Unit(unit if unit else "")
+            unit = u.Unit(unit)
 
         with u.set_enabled_equivalencies(mammos_equivalencies):
             if not any([unit.is_equivalent(ou) for ou in ontology_units]):
