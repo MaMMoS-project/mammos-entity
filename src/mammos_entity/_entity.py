@@ -291,7 +291,7 @@ class Entity:
             unit = u.Unit(unit)
 
         with u.set_enabled_equivalencies(mammos_equivalencies):
-            if not any([unit.is_equivalent(ou) for ou in ontology_units]):
+            if not any(unit.is_equivalent(ou) for ou in ontology_units):
                 raise ValueError(
                     f"Given unit: {unit} incompatible with ontology. "
                     f"Allowed units for entity {pref_label} are: {ontology_units}."
