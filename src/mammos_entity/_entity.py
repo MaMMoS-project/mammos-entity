@@ -297,7 +297,6 @@ class Entity:
                     f"Allowed units for entity {pref_label} are: {ontology_units}."
                 )
 
-        with u.set_enabled_equivalencies(mammos_equivalencies):
             self._quantity = u.Quantity(value=value, unit=unit)
         self._ontology_label = pref_label
 
