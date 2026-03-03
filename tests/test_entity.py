@@ -247,10 +247,10 @@ def test_label_without_concrete_units():
 
 def test_switch_to_pref_label():
     """Test the switch to prefLabel instead of given one."""
-    # assert me.Entity("Ms").ontology_label == "SpontaneousMagnetization"
+    assert me.Entity("Ms").ontology_label == "SpontaneousMagnetization"
     assert me.Entity("K1").ontology_label == "MagnetocrystallineAnisotropyConstantK1"
     assert me.Entity("A").ontology_label == "ExchangeStiffnessConstant"
-    # assert me.Entity("Js").ontology_label == "SpontaneousMagneticPolarization"
+    assert me.Entity("Js").ontology_label == "SpontaneousMagneticPolarization"
 
 
 def test_ontology_information_mammos():
@@ -333,13 +333,13 @@ def test_equality():
         (me.H, "ExternalMagneticField"),
         (me.Hc, "CoercivityHcExternal"),
         (me.J, "MagneticPolarisation"),
-        # (me.Js, "SpontaneousMagneticPolarization"),
+        (me.Js, "SpontaneousMagneticPolarization"),
         (me.K1, "MagnetocrystallineAnisotropyConstantK1"),
         (me.K2, "MagnetocrystallineAnisotropyConstantK2"),
         (me.Ku, "UniaxialAnisotropyConstant"),
         (me.M, "Magnetization"),
         (me.Mr, "Remanence"),
-        # (me.Ms, "SpontaneousMagnetization"),
+        (me.Ms, "SpontaneousMagnetization"),
         (me.T, "ThermodynamicTemperature"),
         (me.Tc, "CurieTemperature"),
     ),
