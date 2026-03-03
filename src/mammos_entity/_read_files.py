@@ -39,36 +39,37 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
     """
     with open(filename, newline="") as csvfile:
         file_version_information = csvfile.readline()
-
-        try:
-            version = re.search(r"v\d+", file_version_information)
-        except StopIteration:
-            raise RuntimeError(f"Trying to read empty file: {filename}") from None
-
-        if not version:
+        version = re.search(r"v\d+", file_version_information)
+        if version is None:
             raise RuntimeError(
                 f"Cannot read version information from file {filename}. "
                 f"Content of the first line: '{file_version_information}'"
             )
-            raise RuntimeError("File does not have version information in line 1.")
+
         if version.group() not in [f"v{i}" for i in range(1, 4)]:
             raise RuntimeError(
                 f"Reading mammos csv {version.group()} is not supported."
             )
-        else:
-            version_number = int(version.group().lstrip("v"))
+        version_number = int(version.group().lstrip("v"))
 
         collection_description = []
 
         # read description
         position = csvfile.tell()
-        if "#--" in next(csvfile):
+        if csvfile.readline().startswith("#--"):
             while True:
-                line = next(csvfile)
-                if "#--" in line:
+                line = csvfile.readline()
+                if line == "":
+                    raise RuntimeError(
+                        "CSV description block is not terminated by a closing dashed "
+                        "line."
+                    )
+                if line.startswith("#--"):
                     break
                 else:
-                    collection_description.append(line.removeprefix("# ").strip())
+                    collection_description.append(
+                        line.removeprefix("# ").rstrip("\r\n")
+                    )
         else:
             # reset the file position
             csvfile.seek(position)
@@ -81,24 +82,44 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
                 quoting=csv.QUOTE_MINIMAL,
                 lineterminator=os.linesep,
             )
-            ontology_labels = next(reader)
-            descriptions = next(reader)
-            next(reader)  # ignore IRIs
-            units = next(reader)
+            try:
+                ontology_labels = next(reader)
+                descriptions = next(reader)
+                next(reader)  # ignore IRIs
+                units = next(reader)
+            except StopIteration as exc:
+                raise RuntimeError(
+                    "CSV metadata is incomplete. Expected four metadata rows before "
+                    "the data table."
+                ) from exc
         else:
-            ontology_labels = csvfile.readline().strip().removeprefix("#").split(",")
+            metadata_rows = [csvfile.readline() for _ in range(3)]
+            if any(row == "" for row in metadata_rows):
+                raise RuntimeError(
+                    "CSV metadata is incomplete. Expected three metadata rows before "
+                    "the data table."
+                )
+            ontology_labels = metadata_rows[0].strip().removeprefix("#").split(",")
+            # ignore IRIs: metadata_rows[1]
+            units = metadata_rows[2].strip().removeprefix("#").split(",")
             descriptions = [""] * len(ontology_labels)
-            csvfile.readline()  # ignore IRIs
-            units = csvfile.readline().strip().removeprefix("#").split(",")
 
-        data = pd.read_csv(csvfile)
+        try:
+            data = pd.read_csv(csvfile)
+        except pd.errors.EmptyDataError as exc:
+            raise RuntimeError("CSV data table is empty.") from exc
         names = data.keys()
         scalar_data = len(data) == 1
 
-    entities = {}
-    for name, ontology_label, description, unit in zip(
-        names, ontology_labels, descriptions, units, strict=True
-    ):
+    try:
+        columns = list(zip(names, ontology_labels, descriptions, units, strict=True))
+    except ValueError as exc:
+        raise RuntimeError(
+            "CSV metadata columns and data columns do not match."
+        ) from exc
+
+    collection = EntityCollection(description="\n".join(collection_description))
+    for name, ontology_label, description, unit in columns:
         data_values = data[name].values if not scalar_data else data[name].values[0]
         if ontology_label:
             entity = Entity(
@@ -107,13 +128,13 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
                 unit=unit,
                 description=description,
             )
-            entities[name] = entity
+            collection[name] = entity
         elif unit:
-            entities[name] = u.Quantity(data_values, unit)
+            collection[name] = u.Quantity(data_values, unit)
         else:
-            entities[name] = data_values
+            collection[name] = data_values
 
-    return EntityCollection(description="\n".join(collection_description), **entities)
+    return collection
 
 
 def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:

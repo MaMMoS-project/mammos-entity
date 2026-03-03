@@ -191,8 +191,102 @@ def test_wrong_file_version_csv(tmp_path):
     )
     (tmp_path / "data.csv").write_text(file_content)
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="Reading mammos csv v0 is not supported."):
         me.from_csv(tmp_path / "data.csv")
+
+
+def test_missing_file_version_csv(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # not a mammos version line
+        Ms
+        1
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+
+    with pytest.raises(RuntimeError, match="Cannot read version information"):
+        me.from_csv(tmp_path / "data.csv")
+
+
+def test_read_csv_error_for_unterminated_description_block(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        #mammos csv v2
+        #----------------------------------------
+        # unterminated description block
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+
+    with pytest.raises(RuntimeError, match="description block is not terminated"):
+        me.from_csv(tmp_path / "data.csv")
+
+
+def test_read_csv_error_for_truncated_v3_metadata_rows(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos csv v3
+        SpontaneousMagnetization
+        first line
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+
+    with pytest.raises(RuntimeError, match="CSV metadata is incomplete"):
+        me.from_csv(tmp_path / "data.csv")
+
+
+def test_read_csv_error_for_metadata_data_column_mismatch(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos csv v3
+        SpontaneousMagnetization,
+        ,
+        https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,
+        kA / m,
+        Ms
+        600.0
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+
+    with pytest.raises(
+        RuntimeError, match="CSV metadata columns and data columns do not match."
+    ):
+        me.from_csv(tmp_path / "data.csv")
+
+
+def test_read_csv_error_for_empty_data_table(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos csv v3
+        SpontaneousMagnetization
+        first line
+        https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+        kA / m
+        """
+    )
+    (tmp_path / "data.csv").write_text(file_content)
+
+    with pytest.raises(RuntimeError, match="CSV data table is empty."):
+        me.from_csv(tmp_path / "data.csv")
+
+
+def test_csv_nested_collection_not_supported(tmp_path):
+    collection = me.EntityCollection(
+        inner=me.EntityCollection(description="nested", value=1),
+    )
+
+    with pytest.raises(ValueError, match="Nested collections cannot be saved to CSV."):
+        collection.to_csv(tmp_path / "data.csv")
+
+
+def test_csv_empty_collection_not_supported(tmp_path):
+    collection = me.EntityCollection(description="only metadata")
+
+    with pytest.raises(ValueError, match="Empty collections cannot be saved to CSV."):
+        collection.to_csv(tmp_path / "data.csv")
 
 
 def test_no_mixed_shape_in_csv():
@@ -212,5 +306,5 @@ def test_no_multi_dim_in_csv():
 
 def test_empty_csv(tmp_path):
     (tmp_path / "data.csv").touch()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="Cannot read version information"):
         me.from_csv(tmp_path / "data.csv")
