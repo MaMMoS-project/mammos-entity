@@ -226,6 +226,56 @@ def _get_preferred_unit(
     return out
 
 
+def _select_ontology_label(label: str) -> str:
+    """Select ontology label from given one.
+
+    First, the label is matched with the `prefLabel`s in the ontology. If the given
+    label does not match with any `prefLabel`, we use the function
+    :py:func:`~mammos.entity.search_labels` to also match `label`s and `altLabel`s.
+
+    If any of these two step returns more than one match, an error is raised.
+
+    Args:
+        label: Given label of an ontology entry.
+
+    Returns:
+        Matched label in the ontology.
+
+    Raises:
+        ValueError: Multiple ontology entries have the selected entry as prefLabel.
+        ValueError: No ontology entry found to match to given label.
+        ValueError: The given label is not the prefLabel for any ontology entry and it
+            is ambiguous as an alternative label.
+
+    """
+    # Find prefLabel
+    prefLabel_matches = mammos_ontology.search(prefLabel=label)
+    n_matches = len(prefLabel_matches)
+    if n_matches == 1:
+        return str(prefLabel_matches[0].prefLabel[0])
+    elif n_matches > 1:
+        raise ValueError(
+            f"The ontology contains more than one entry with the given label '{label}' "
+            "as prefLabel. Please raise an issue in the mammos-entity repository "
+            "https://github.com/MaMMoS-project/mammos-entity/issues or in the "
+            "repository of the relevant ontology."
+        )
+
+    # Find alternative labels
+    label_matches = search_labels(label, auto_wildcard=False)
+    n_matches = len(label_matches)
+    if n_matches == 1:
+        return label_matches[0]
+    elif n_matches == 0:
+        raise ValueError(f"No ontology entry found with label '{label}'.")
+    else:
+        raise ValueError(
+            f"The given label '{label}' is ambiguous. It is not the prefLabel for any "
+            "entry in the ontology and it appears as alternative label for multiple "
+            f"entries: {label_matches}. Please use a prefLabel instead."
+        )
+
+
 class Entity:
     """Create a quantity (a value and a unit) linked to the EMMO ontology.
 
@@ -268,14 +318,11 @@ class Entity:
                 )
             value = value.quantity
 
-        # extract prefLabel
-        label_matches = search_labels(ontology_label, auto_wildcard=False)
-        if len(label_matches) == 0:
-            raise ValueError(f"No entity found with label {ontology_label}")
-        else:
-            # TODO: fix multiple matches case
-            pref_label = label_matches[0]
-        ontology_units = _get_all_possible_units(pref_label)
+        # Select ontology label
+        label = _select_ontology_label(ontology_label)
+
+        # Get ontology-compatible units
+        ontology_units = _get_all_possible_units(label)
 
         if unit is None:
             if isinstance(value, u.Quantity):
@@ -292,11 +339,11 @@ class Entity:
             if not any(unit.is_equivalent(ou) for ou in ontology_units):
                 raise ValueError(
                     f"Given unit: {unit} incompatible with ontology. "
-                    f"Allowed units for entity {pref_label} are: {ontology_units}."
+                    f"Allowed units for entity {label} are: {ontology_units}."
                 )
 
             self._quantity = u.Quantity(value=value, unit=unit)
-        self._ontology_label = pref_label
+        self._ontology_label = label
 
     @property
     def description(self) -> str:

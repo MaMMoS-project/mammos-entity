@@ -210,7 +210,17 @@ def test_all_labels_ontology(ontology_element):
     These are extreme, unfixable cases and we ignore them.
     """
     if ontology_element.prefLabel:
-        me.Entity(ontology_element.prefLabel[0], 42)
+        prefLabel = str(ontology_element.prefLabel[0])
+        if prefLabel in [
+            "Electron",
+            "ElementaryCharge",
+            "Grain",
+            "Point",
+            "RelativePermeability",
+            "RelativePermittivity",
+        ]:
+            pytest.xfail(f"{prefLabel=} is ambiguous")
+        me.Entity(prefLabel, 42)
 
 
 def test_default_unit():
