@@ -4,7 +4,12 @@ from mammos_entity import search_labels
 def test_search_labels_multiple():
     """Search labels with multiple matches."""
     res = search_labels("Polarization")
-    assert res == ["ElectricPolarization", "RemanentMagneticPolarization"]
+    assert res == [
+        "ElectricPolarization",
+        "RemanentMagneticPolarization",
+        "SaturationMagneticPolarization",
+        "SpontaneousMagneticPolarization",
+    ]
 
 
 def test_search_labels_single():

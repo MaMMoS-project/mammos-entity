@@ -26,12 +26,12 @@ def load_offline_ontology() -> ontopy.ontology.Ontology:
     # load EMMO
     # using pathlib.Path(...).as_uri() causes ontopy to fail on Windows, therefore
     # we construct the file uri manually in the form required for ontopy
-    emmo_ttl = f"file://{ontology_dir / 'emmo.ttl'!s}"
+    emmo_ttl = f"file://{ontology_dir / 'emmo-inferred.ttl'!s}"
     logger.debug("loading emmo ttl from '%s'", emmo_ttl)
     w.get_ontology(emmo_ttl).load()
     # now load MaMMoS ontology, which builds upon EMMO; with EMMO already loaded
     # no internet access is required to resolve 'owl:imports <https://w3id.org/emmo'
-    mammos_ttl = f"file://{ontology_dir / 'magnetic_material_mammos.ttl'!s}"
+    mammos_ttl = f"file://{ontology_dir / 'magnetic-materials.ttl'!s}"
     logger.debug("loading mammos ttl from '%s'", mammos_ttl)
     mammos_ontology = w.get_ontology(mammos_ttl).load()
     return mammos_ontology
@@ -75,14 +75,15 @@ def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
         ['ShapeAnisotropy', 'ShapeAnisotropyConstant']
 
         >>> me.search_labels("Magnetization")
-        ['MagneticMomementPerUnitMass', 'Magnetization', 'SpontaneousMagnetization']
+        ['MagneticMomentPerUnitMass', 'Magnetization', 'MassMagnetizationUnit', 'Remanence', 'SaturationMagnetization', 'SpontaneousMagnetization']
 
-        ``'MagneticMomementPerUnitMass'`` appears because ``'MassMagnetization'`` is
+        ``'MagneticMomentPerUnitMass'`` appears because ``'MassMagnetization'`` is
         in its ``altLabel``.
 
         >>> me.search_labels("Magnetization", auto_wildcard=False)
         ['Magnetization']
-    """
+
+    """  # noqa:E501
     label = f"*{text}*" if auto_wildcard else text
     match_by_label = set(mammos_ontology.search(label=label))
     match_by_prefLabel = set(mammos_ontology.search(prefLabel=label))

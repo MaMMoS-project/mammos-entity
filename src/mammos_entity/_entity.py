@@ -30,87 +30,250 @@ base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
 
 
-def _si_unit_from_list(list_cls: list[owlready2.entity.ThingClass]) -> str:
-    """Return an SI unit from a list of entities from the EMMO ontology.
+def _convert_unit(
+    ontology_unit: owlready2.entity.ThingClass,
+) -> astropy.units.UnitBase | None:
+    """Convert ontology unit to astropy unit.
 
-    Given a list of ontology classes, determine which class corresponds to
-    a coherent SI derived unit (or if none found, an SI dimensional unit),
-    then return that class's UCUM code.
+    This function reads the function Unified Code for Units of Measure (UCUM) code and
+    creates an astropy Unit with such code.
 
-    Given a list of ontology classes, we consider only the ones that are classified
-    as `SIDimensionalUnit` and we filter out the ones classified as `NonCoherent`.
-    If a non `Derived` unit can be found, than we filter out all the `Derived` units.
+    Round and square brackets are not recognized by Astropy, so codes with them are
+    filtered off.
 
     Args:
-        list_cls: A list of ontology classes.
+        ontology_unit: Ontology entry for a specific unit.
 
     Returns:
-        The UCUM code (e.g., "J/m^3", "A/m") for the first identified SI unit
-        in the given list of classes.
+        Astropy unit associated with the ontology entry, if found.
+        This function can return `None` if the entity gives no UCUM code,
+        or the UCUM code cannot be processed by astropy.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> me._entity._convert_unit(me.mammos_ontology.AmperePerMetre)
+        Unit("A / m")
 
     """
-    possible_units = [
-        c
-        for c in list_cls
-        if (
-            mammos_ontology.SIDimensionalUnit in c.ancestors()
-            and mammos_ontology.SINonCoherentUnit not in c.ancestors()
-            and mammos_ontology.SINonCoherentDerivedUnit not in c.ancestors()
-        )
-    ]
-    not_derived = [
-        c for c in possible_units if (mammos_ontology.DerivedUnit not in c.ancestors())
-    ]
-    if not_derived:
-        possible_units = not_derived
-
-    # Explanation of the following lines:
-    # 1. We find all ucum (Unified Code for Units of Measure) Code for all units
-    #    in si_unit_cls.
-    # 2. Astropy complains if it sees unit strings with parentheses, so we exclude
-    #    them.
-    # 3. We take the first item. It is not important what unit we are selecting
-    #    because the ontology does not define a single preferred unit. We are
-    #    taking one of the SI coherent derived units or a SI dimensional unit.
-    #    astropy will make the conversion to base units later on.
-    return [
-        unit
-        for unit_class in possible_units
-        for unit in unit_class.ucumCode
-        if "(" not in unit
-    ][0]
+    for code in ontology_unit.ucumCode:
+        if "(" not in code and "[" not in code:
+            with u.set_enabled_aliases(
+                {
+                    # mapping {UCUM: astropy} for non-coherent unit codes
+                    "Cel": u.Celsius,  # degree Celsius
+                    "{#}": u.dimensionless_unscaled,  # number
+                }
+            ):
+                unit = u.Unit(code)
+                return unit
 
 
-def _extract_SI_units(ontology_label: str) -> str:
-    """Find SI unit for the given label from the EMMO ontology.
+def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
+    """Convert an ontology dimension string into astropy units.
 
-    Given a label for an ontology concept, retrieve the corresponding SI unit
-    by traversing the class hierarchy. If a valid unit is found, its UCUM code
-    is returned; otherwise, an empty string is returned (equivalent to dimensionless).
+    In particular, this conversion takes a dimension string of ISQ base quantities
+    and converts it to its ISO unit symbols, returning a unit object from astropy.
+
+    Args:
+        unit_string: The string representation of the ISQ base quantities.
+
+    Returns:
+        The Astropy unit.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> me._entity._convert_dimension_string('T0 L+2 M0 I+1 Θ0 N0 J0')
+        Unit("m2 A")
+
+    """
+    unit_map = {
+        "T": "s",
+        "L": "m",
+        "M": "kg",
+        "I": "A",
+        "Θ": "K",
+        "N": "mol",
+        "J": "cd",
+    }
+
+    # Parse the unit string into a list of (base_unit, exponent) tuples
+    ISQ_list = re.findall(r"([TLMIΘNJ])([+-]?\d+)", unit_string)
+
+    # Create composite unit from list of (ISQ_dimension, exponent)
+    bases = [getattr(u, unit_map[u_[0]]) for u_ in ISQ_list]
+    exponents = [int(u_[1]) for u_ in ISQ_list]
+    astropy_unit = u.CompositeUnit(1, bases, exponents)
+    return astropy_unit
+
+
+def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]:
+    """Get list of accepted units given an ontology label found in the ontology.
+
+    Given a label for an ontology entry, this function finds all SI base units,
+    SI-coherent units, and some selected special units (classified as
+    `SISpecialUnit` in the EMMO ontology), navigating the class hierarchy.
+
+    In case the ontology does not define concrete units (e.g. `Meter`) as subclasses
+    of a certain abstract unit (e.g. `LengthUnit`), we define the unit using the
+    dimension string specified in the `hasDimensionString` attribute of the abstract
+    unit.
 
     Args:
         ontology_label: The label of an ontology concept
             (e.g., 'SpontaneousMagnetization').
 
     Returns:
-        The UCUM code of the concept's SI unit, or None if no suitable SI unit
-        is found or if the unit is a special case like 'Cel.K-1'.
+        A list of all compatible astropy units.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> me._entity._get_all_possible_units("ThermodynamicTemperature")
+        [Unit("K"), Unit("deg_C")]
 
     """
-    thing = mammos_ontology.get_by_label(ontology_label)
-    si_unit = ""
+    thing = me.mammos_ontology[ontology_label]
+    possible_units = []
     for ancestor in thing.ancestors():
+        # we find the ancestor with the attribute `hasMeasurementUnit`
         if hasattr(ancestor, "hasMeasurementUnit") and ancestor.hasMeasurementUnit:
-            if ancestor.hasMeasurementUnit[0] == mammos_ontology.get_by_label(
-                "DimensionlessUnit"
+            measurement_unit = ancestor.hasMeasurementUnit[0]
+            if (
+                measurement_unit == mammos_ontology.DimensionlessUnit
+                or mammos_ontology.DimensionlessUnit in measurement_unit.ancestors()
             ):
-                si_unit = ""
-            elif sub_class := list(ancestor.hasMeasurementUnit[0].subclasses()):
-                si_unit = _si_unit_from_list(sub_class)
-            elif ontology_label := ancestor.hasMeasurementUnit[0].ucumCode:
-                si_unit = ontology_label[0]
+                # entity is dimensionless by ontology
+                possible_units.append(u.Unit(""))
+            elif all_sub_classes := list(ancestor.hasMeasurementUnit[0].subclasses()):
+                for sub_class in all_sub_classes:
+                    # We extract only SI base units, coherent units and special units.
+                    # See https://emmo-repo.github.io/emmo.html#siunit
+                    if isinstance(
+                        sub_class,
+                        (
+                            mammos_ontology.SIBaseUnit,
+                            mammos_ontology.SICoherentDerivedUnit,
+                            mammos_ontology.SISpecialUnit,
+                        ),
+                    ):
+                        converted_unit = _convert_unit(sub_class)
+                        if converted_unit is not None:
+                            possible_units.append(converted_unit)
+                if len(possible_units) == 0:
+                    # Possible case: the abstract unit only points to non-SI
+                    # concrete units. We use Astropy to read the dimension string.
+                    possible_units.append(
+                        _convert_dimension_string(
+                            ancestor.hasMeasurementUnit[0].hasDimensionString
+                        )
+                    )
+            else:
+                # Extreme case: the ancestor has the attribute `hasMeasurementUnit` (the
+                # abstract unit), but it defines to subclasses (the concrete units).
+                # In this case, we create a Astropy unit directly from the dimension
+                # string.
+                possible_units.append(
+                    _convert_dimension_string(
+                        ancestor.hasMeasurementUnit[0].hasDimensionString
+                    )
+                )
             break
-    return si_unit
+    else:
+        # The only alternative is that the ontology concept is not related
+        # to a quantifiable physical entity. So its unit is dimensionless.
+        possible_units.append(u.Unit(""))
+    return sorted(possible_units, key=str)  # return sorted to guarantee reproducibility
+
+
+def _get_preferred_unit(
+    possible_units: list[astropy.units.UnitBase],
+) -> astropy.units.UnitBase:
+    """Choose a preferred unit from a list of possible units.
+
+    If among the possible units there is Kelvin, we always choose it instead of degree
+    Celsius. Otherwise, as the default method of preference we choose the shortest
+    possible unit formulation in base units.
+
+    Args:
+        possible_units: list of astropy units compatible with ontology.
+
+    Returns:
+        Chosen astropy unit.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> import mammos_units as u
+        >>> me._entity._get_preferred_unit([u.Unit("m2"), u.Unit("m2 sr"), u.Unit("mm2"), u.Unit("m2 / sr")])
+        Unit("m2")
+
+        >>> me._entity._get_preferred_unit([u.Unit("deg_C"), u.Unit("0.001 deg_C"), u.Unit("K")])
+        Unit("K")
+
+    """  # noqa:E501
+    if u.Unit("K") in possible_units:
+        return u.Unit("K")
+    if len(possible_units) == 1:
+        return possible_units[0]
+    rescaled_units = []
+    for _unit in possible_units:
+        decomposed_unit = _unit.decompose(bases=base_units)
+        rescaled_unit = u.CompositeUnit(
+            1,
+            decomposed_unit.bases,
+            decomposed_unit.powers,
+        )
+        rescaled_units.append(rescaled_unit)
+    out = sorted(set(rescaled_units), key=lambda x: len(str(x)))[0]
+    return out
+
+
+def _select_ontology_label(label: str) -> str:
+    """Select ontology label from given one.
+
+    First, the label is matched with the `prefLabel`s in the ontology. If the given
+    label does not match with any `prefLabel`, we use the function
+    :py:func:`~mammos.entity.search_labels` to also match `label`s and `altLabel`s.
+
+    If any of these two step returns more than one match, an error is raised.
+
+    Args:
+        label: Given label of an ontology entry.
+
+    Returns:
+        Matched label in the ontology.
+
+    Raises:
+        ValueError: Multiple ontology entries have the selected entry as prefLabel.
+        ValueError: No ontology entry found to match to given label.
+        ValueError: The given label is not the prefLabel for any ontology entry and it
+            is ambiguous as an alternative label.
+
+    """
+    # Find prefLabel
+    prefLabel_matches = mammos_ontology.search(prefLabel=label)
+    n_matches = len(prefLabel_matches)
+    if n_matches == 1:
+        return str(prefLabel_matches[0].prefLabel[0])
+    elif n_matches > 1:
+        raise ValueError(
+            f"The ontology contains more than one entry with the given label '{label}' "
+            "as prefLabel. Please raise an issue in the mammos-entity repository "
+            "https://github.com/MaMMoS-project/mammos-entity/issues or in the "
+            "repository of the relevant ontology."
+        )
+
+    # Find alternative labels
+    label_matches = search_labels(label, auto_wildcard=False)
+    n_matches = len(label_matches)
+    if n_matches == 1:
+        return label_matches[0]
+    elif n_matches == 0:
+        raise ValueError(f"No ontology entry found with label '{label}'.")
+    else:
+        raise ValueError(
+            f"The given label '{label}' is ambiguous. It is not the prefLabel for any "
+            "entry in the ontology and it appears as alternative label for multiple "
+            f"entries: {label_matches}. Please use a prefLabel instead."
+        )
 
 
 class Entity:
@@ -155,44 +318,32 @@ class Entity:
                 )
             value = value.quantity
 
-        if unit is None and isinstance(value, u.Quantity):
-            unit = value.unit
+        # Select ontology label
+        label = _select_ontology_label(ontology_label)
 
-        # extract prefLabel
-        label_matches = search_labels(ontology_label, auto_wildcard=False)
-        if len(label_matches) == 0:
-            raise ValueError(f"No entity found with label {ontology_label}")
-        else:
-            pref_label = label_matches[0]
-
-        with u.set_enabled_aliases(
-            # filtering units we do not want as default
-            {"Cel": "K", "mCel": "K", "har": "m2"}
-        ):
-            si_unit = u.Unit(_extract_SI_units(pref_label))
+        # Get ontology-compatible units
+        ontology_units = _get_all_possible_units(label)
 
         if unit is None:
-            # the user does not specify a unit:
-            # so we initialize the entity with a SI ontology unit.
-            with u.set_enabled_equivalencies(mammos_equivalencies):
-                comp_si_unit = si_unit.decompose(bases=base_units)
-            unit = u.CompositeUnit(1, comp_si_unit.bases, comp_si_unit.powers)
-
+            if isinstance(value, u.Quantity):
+                # No explicit unit is given, but `value` is a Quantity:
+                # we take the unit of `value`
+                unit = value.unit
+            else:
+                # the user does not specify a unit: we choose the most frequent unit.
+                unit = _get_preferred_unit(ontology_units)
         else:
-            # the user specify a unit:
-            # we just check this unit is coherent with the ontology
-            with u.set_enabled_equivalencies(mammos_equivalencies):
-                if not si_unit.is_equivalent(unit):
-                    raise u.UnitConversionError(
-                        f"The unit '{unit}' is not equivalent to the unit of"
-                        f" {pref_label} '{si_unit}'"
-                    )
-
-        comp_unit = u.Unit(unit if unit else "")
+            unit = u.Unit(unit)
 
         with u.set_enabled_equivalencies(mammos_equivalencies):
-            self._quantity = u.Quantity(value=value, unit=comp_unit)
-        self._ontology_label = pref_label
+            if not any(unit.is_equivalent(ou) for ou in ontology_units):
+                raise ValueError(
+                    f"Given unit: {unit} incompatible with ontology. "
+                    f"Allowed units for entity {label} are: {ontology_units}."
+                )
+
+            self._quantity = u.Quantity(value=value, unit=unit)
+        self._ontology_label = label
 
     @property
     def description(self) -> str:

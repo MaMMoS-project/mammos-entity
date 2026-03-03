@@ -1,5 +1,6 @@
 import math
 
+import astropy
 import mammos_units as u
 import numpy as np
 import pytest
@@ -136,16 +137,16 @@ def test_check_units():
     assert e.unit == u.A / u.m
     e.quantity.to("kA/m", copy=False)
     assert e.unit == u.A / u.m
-    with pytest.raises(u.UnitConversionError):
+    with pytest.raises(ValueError, match="incompatible with ontology. Allowed units"):
         me.Entity("SpontaneousMagnetization", value=1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(u.UnitConversionError),
+        pytest.raises(ValueError, match="incompatible with ontology. Allowed units"),
     ):
         me.Entity("SpontaneousMagnetization", value=1, unit="T")
     with (
         u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(u.UnitConversionError),
+        pytest.raises(astropy.units.UnitConversionError),
     ):
         me.Entity("SpontaneousMagnetization", value=1 * u.T, unit="A/m")
 
@@ -195,8 +196,8 @@ def test_axis_labels():
     assert e_3.axis_label == "Demagnetizing Factor"
     e_4 = me.Entity("Entropy")
     assert e_4.axis_label == "Entropy (J / K)"
-    # e_5 = me.Entity("PlanckConstant")
-    # assert e_5.axis_label == "Planck Constant (m2 kg / s)"
+    e_5 = me.Entity("PlanckConstant")
+    assert e_5.axis_label == "Planck Constant (J s)"
 
 
 @pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
@@ -204,8 +205,54 @@ def test_all_labels_ontology(ontology_element):
     """Test all labels in the ontology.
 
     This test creates one Entity instance for each label in the ontology.
+
+    Entities `Person` and `Organization` do not have a `prefLabel`.
+    These are extreme, unfixable cases and we ignore them.
     """
-    me.Entity(ontology_element.prefLabel[0], 42)
+    if ontology_element.prefLabel:
+        prefLabel = str(ontology_element.prefLabel[0])
+        if prefLabel in [
+            "Electron",
+            "ElementaryCharge",
+            "Grain",
+            "Point",
+            "RelativePermeability",
+            "RelativePermittivity",
+        ]:
+            pytest.xfail(f"{prefLabel=} is ambiguous")
+        me.Entity(prefLabel, 42)
+
+
+def test_default_unit():
+    """Test default unit for different entities."""
+    assert me.Entity("MaximumEnergyProduct").unit == u.J / u.m**3
+    assert me.Entity("SpontaneousMagneticPolarisation").unit == u.T
+
+
+def test_label_without_concrete_units():
+    """Test the ontology entries without concrete units.
+
+    This test checks that entries with an abstract unit but no concrete units (i.e. the
+    subclasses of abstract units) are initialized with units given from their dimension
+    strings.
+
+    For example, ``MagneticMoment`` has the abstract unit ``ElectricCurrentAreaUnit``.
+    This abstract unit is not tied to any concrete unit, i.e. it has no subclasses.
+    However, it has the attribute ``hasDimensionString`` is equal to
+    ``'T0 L+2 M0 I+1 Θ0 N0 J0'`` and we read this instead.
+    """
+    assert me.Entity("MagneticMoment").unit == u.A * u.m**2
+    assert me.Entity("DiffusionCoefficient").unit == u.m**2 / u.s
+    assert (
+        me.Entity("DiffusionCoefficientForParticleNumberDensity").unit == u.m**2 / u.s
+    )
+    assert me.Entity("EffectiveDiffusionCoefficient").unit == u.m**2 / u.s
+    assert me.Entity("ElectricDipoleMoment").unit == u.A * u.m * u.s
+    assert me.Entity("EnergyDensityOfStates").unit == u.s**2 / u.m**5 / u.kg
+    assert me.Entity("JouleThomsonCoefficient").unit == u.K * u.s**2 * u.m / u.kg
+    assert me.Entity("LorenzCoefficient").unit == u.m**4 * u.kg**2 / u.A**2 / u.s**6
+    assert me.Entity("MagneticMomentPerUnitMass").unit == u.m**2 * u.A / u.kg
+    assert me.Entity("Mobility").unit == u.A * u.s**2 / u.kg
 
 
 def test_switch_to_pref_label():
@@ -213,7 +260,7 @@ def test_switch_to_pref_label():
     assert me.Entity("Ms").ontology_label == "SpontaneousMagnetization"
     assert me.Entity("K1").ontology_label == "MagnetocrystallineAnisotropyConstantK1"
     assert me.Entity("A").ontology_label == "ExchangeStiffnessConstant"
-    assert me.Entity("Js").ontology_label == "SpontaneousMagneticPolarisation"
+    assert me.Entity("Js").ontology_label == "SpontaneousMagneticPolarization"
 
 
 def test_ontology_information_mammos():
@@ -222,11 +269,11 @@ def test_ontology_information_mammos():
     assert e.ontology_label == "ExternalMagneticField"
     assert (
         e.ontology_iri
-        == "https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+        == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
     )
     assert (
         e.ontology_label_with_iri
-        == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic_material#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+        == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
     )
     assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
     assert e.ontology_label in me.mammos_ontology
@@ -296,7 +343,7 @@ def test_equality():
         (me.H, "ExternalMagneticField"),
         (me.Hc, "CoercivityHcExternal"),
         (me.J, "MagneticPolarisation"),
-        (me.Js, "SpontaneousMagneticPolarisation"),
+        (me.Js, "SpontaneousMagneticPolarization"),
         (me.K1, "MagnetocrystallineAnisotropyConstantK1"),
         (me.K2, "MagnetocrystallineAnisotropyConstantK2"),
         (me.Ku, "UniaxialAnisotropyConstant"),
