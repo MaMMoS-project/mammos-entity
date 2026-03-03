@@ -196,8 +196,8 @@ def test_axis_labels():
     assert e_3.axis_label == "Demagnetizing Factor"
     e_4 = me.Entity("Entropy")
     assert e_4.axis_label == "Entropy (J / K)"
-    # e_5 = me.Entity("PlanckConstant")
-    # assert e_5.axis_label == "Planck Constant (m2 kg / s)"
+    e_5 = me.Entity("PlanckConstant")
+    assert e_5.axis_label == "Planck Constant (J s)"
 
 
 @pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
