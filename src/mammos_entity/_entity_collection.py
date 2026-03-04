@@ -9,13 +9,12 @@ import textwrap
 from typing import TYPE_CHECKING
 
 import h5py
+import mammos_units as u
 import numpy as np
 import pandas as pd
 import yaml
 
 import mammos_entity as me
-
-from . import units as u
 
 if TYPE_CHECKING:
     import collections.abc

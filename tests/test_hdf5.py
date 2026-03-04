@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import h5py
+import mammos_units as u
 import pytest
 
 import mammos_entity as me
@@ -98,7 +99,7 @@ def test_nested_entity_collection_to_hdf5():
     sample = me.EntityCollection(
         description="produced by student",
         properties=col,
-        edge_length=[1, 2, 3] * me.units.mm,
+        edge_length=[1, 2, 3] * u.mm,
         measurement_device="device X",
     )
 

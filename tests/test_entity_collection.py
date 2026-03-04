@@ -1,8 +1,8 @@
+import mammos_units as u
 import pandas as pd
 import pytest
 
 import mammos_entity as me
-from mammos_entity import units as u
 
 
 def test_entity_collection_with_description():

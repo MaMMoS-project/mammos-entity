@@ -8,8 +8,6 @@ loaded MaMMoS ontology object.
 
 import importlib.metadata
 
-import mammos_units as units
-
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 from mammos_entity._factory import (
