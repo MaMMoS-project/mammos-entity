@@ -100,8 +100,8 @@ def test_read_yaml_v1(tmp_path):
 def test_read_yaml_v2_flat(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: |-
           File description.
         data:
@@ -151,8 +151,8 @@ def test_read_yaml_v2_flat(tmp_path):
 def test_read_yaml_v2_nested(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: Top-level description.
         data:
           sample:
@@ -270,8 +270,8 @@ def test_write_read_yaml_with_empty_nested_collection(tmp_path):
 def test_read_yaml_error_includes_full_collection_path(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: Top-level description.
         data:
           outer:
@@ -295,8 +295,8 @@ def test_read_yaml_error_includes_full_collection_path(tmp_path):
 def test_read_yaml_error_includes_full_entity_path_with_dotted_key(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: Top-level description.
         data:
           outer:
@@ -327,8 +327,8 @@ def test_read_yaml_error_includes_full_entity_path_with_dotted_key(tmp_path):
 def test_read_yaml_error_for_null_ontology_label(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: Top-level description.
         data:
           Ms:
@@ -355,8 +355,8 @@ def test_read_yaml_error_for_null_ontology_label(tmp_path):
 def test_read_yaml_error_for_invalid_top_level_description_type(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: null
         data:
           value:
@@ -380,8 +380,8 @@ def test_read_yaml_error_for_invalid_top_level_description_type(tmp_path):
 def test_read_yaml_error_for_non_string_entity_description(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: Top-level description.
         data:
           Ms:
@@ -409,25 +409,22 @@ def test_read_yaml_error_for_non_string_entity_description(tmp_path):
     "file_content",
     [
         "description: x\ndata: {}\n",
-        "metadata: []\ndescription: x\ndata: {}\n",
-        "metadata: {}\ndescription: x\ndata: {}\n",
+        "description: {}\ndata: {}\n",
     ],
 )
-def test_read_yaml_error_for_missing_metadata_version(tmp_path, file_content):
+def test_read_yaml_error_for_missing_metadata(tmp_path, file_content):
     filename = tmp_path / "data.yaml"
     filename.write_text(file_content)
 
-    with pytest.raises(
-        RuntimeError, match="File does not have a key metadata:version."
-    ):
+    with pytest.raises(RuntimeError, match="File does not have a 'metadata' key."):
         me.from_yaml(filename)
 
 
 def test_read_yaml_error_for_invalid_v2_top_level_keys(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: ok
         data: {}
         extra: 1
@@ -443,8 +440,8 @@ def test_read_yaml_error_for_invalid_v2_top_level_keys(tmp_path):
 def test_read_yaml_error_for_non_mapping_v2_data(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: ok
         data: 1
         """
@@ -460,8 +457,8 @@ def test_read_yaml_error_for_non_mapping_v2_data(tmp_path):
 def test_read_yaml_error_for_empty_v2_top_level_data(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: ok
         data: {}
         """
@@ -481,8 +478,8 @@ def test_read_yaml_error_for_empty_v2_top_level_data(tmp_path):
 def test_read_yaml_with_empty_v2_nested_collection_data(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: ok
         data:
           inner:
@@ -502,8 +499,8 @@ def test_read_yaml_with_empty_v2_nested_collection_data(tmp_path):
 def test_read_yaml_error_for_non_string_ontology_iri(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: ok
         data:
           Ms:
@@ -525,8 +522,8 @@ def test_read_yaml_error_for_non_string_ontology_iri(tmp_path):
 def test_read_yaml_error_for_mapping_without_collection_or_leaf_keys(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: ok
         data:
           item:
@@ -546,8 +543,8 @@ def test_read_yaml_error_for_mapping_without_collection_or_leaf_keys(tmp_path):
 def test_read_yaml_error_prefers_entity_like_when_leaf_hints_are_present(tmp_path):
     file_content = textwrap.dedent(
         """\
-        metadata:
-          version: v2
+        # mammos yaml v2
+        metadata: null
         description: ok
         data:
           item:

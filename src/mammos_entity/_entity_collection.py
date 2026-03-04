@@ -510,17 +510,18 @@ class EntityCollection:
     def to_yaml(self, filename: str | os.PathLike) -> None:
         r"""Write collection to YAML file.
 
-        YAML files have the following format:
+        MaMMoS YAML files have the following format:
+
+        - one commented line containing the mammos format version
 
         - three top-level keys ``metadata``, ``description`` and ``data``
-        - ``metadata`` contains one key:
 
-          - ``version``: a string that matches the regex v\d+
+        - the ``metadata`` key contains at the moment no keys
 
-        - ``description``: a (multi-line) string with arbitrary content
+        - the ``description`` key contains a (multi-line) string with arbitrary content
           describing the top-level collection
 
-        - ``data`` contains one key per element in the collection. Each entry is either
+        - the ``data`` key contains one key per element in the collection. Each entry is either
           an entity-like entry or a nested collection node.
 
         Collection nodes are recursive and have two keys ``description`` and ``data``:
@@ -553,6 +554,7 @@ class EntityCollection:
 
         .. version-changed:: v2
 
+           - The version of the file is now stored in the first commented line.
            - The top-level collection description is stored under ``description``
              (next to ``metadata`` and ``data``). Previously it was stored in
              ``metadata:description``.
@@ -601,8 +603,8 @@ class EntityCollection:
             The new file has the following content:
 
             >>> print(Path("example.yaml").read_text())
-            metadata:
-              version: v2
+            # mammos yaml v2
+            metadata: null
             description: Test data
             data:
               index:
@@ -651,8 +653,8 @@ class EntityCollection:
             ... )
             >>> measurement.to_yaml("nested_example.yaml")
             >>> print(Path("nested_example.yaml").read_text())
-            metadata:
-              version: v2
+            # mammos yaml v2
+            metadata: null
             description: measurement with device X
             data:
               sample:
@@ -728,7 +730,7 @@ class EntityCollection:
                     result["data"][name] = _serialize_entity_like(element)
             return result
 
-        entity_dict = {"metadata": {"version": "v2"}, **_serialize_collection(self)}
+        entity_dict = {"metadata": None, **_serialize_collection(self)}
 
         # custom dumper to change style of lists, tuples and multi-line strings
         class _Dumper(yaml.SafeDumper):
@@ -775,6 +777,7 @@ class EntityCollection:
         _Dumper.add_representer(str, _represent_string)
 
         with open(filename, "w") as f:
+            f.write("# mammos yaml v2\n")
             yaml.dump(
                 entity_dict,
                 stream=f,
