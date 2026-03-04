@@ -19,7 +19,7 @@ import mammos_entity as me
 if TYPE_CHECKING:
     import collections.abc
 
-    import astropy
+    import mammos_units
     import numpy.typing
 
     import mammos_entity
@@ -30,7 +30,7 @@ class EntityCollection:
     """Container class storing entity-like objects.
 
     An :py:class:`~mammos_entity.EntityCollection` groups entities together. It can
-    store :py:class:`~mammos_entity.Entity`, :py:class:`~astropy.units.Quantity` and
+    store :py:class:`~mammos_entity.Entity`, :py:class:`~mammos_units.Quantity` and
     other objects (lists, tuples, arrays, etc.). We refer to all of these as
     `entity-like`.
 
@@ -96,9 +96,7 @@ class EntityCollection:
     def __init__(
         self,
         description: str = "",
-        **kwargs: mammos_entity.Entity
-        | astropy.units.Quantity
-        | numpy.typing.ArrayLike,
+        **kwargs: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
     ):
         """Initialize EntityCollection, keywords become attributes of the class.
 
@@ -111,13 +109,13 @@ class EntityCollection:
 
     def __getitem__(
         self, key: str
-    ) -> mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike:
+    ) -> mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike:
         return self._entities[key]
 
     def __setitem__(
         self,
         key: str,
-        value: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
+        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
     ):
         if not isinstance(key, str):
             raise TypeError(
@@ -134,7 +132,7 @@ class EntityCollection:
         self,
     ) -> collections.abc.Iterator[
         tuple[
-            str, mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike
+            str, mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike
         ]
     ]:
         yield from self._entities.items()
@@ -148,7 +146,7 @@ class EntityCollection:
     def __setattr__(
         self,
         name: str,
-        value: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
+        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
     ) -> None:
         """Add new elements to entities dictionary.
 
@@ -167,7 +165,7 @@ class EntityCollection:
 
     def __getattr__(
         self, name: str
-    ) -> mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike:
+    ) -> mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike:
         """Access entities via dot notation.
 
         Allow access to entities using ``collection.name`` as a short-hand for
@@ -541,7 +539,7 @@ class EntityCollection:
             - ``unit``: unit of the entity (``""`` for dimensionless)
             - ``value``: value of the data
 
-          - For :py:class:`~astropy.units.Quantity`:
+          - For :py:class:`~mammos_units.Quantity`:
 
             - ``unit``: unit of the quantity
             - ``value``: value of the data
@@ -699,7 +697,7 @@ class EntityCollection:
 
         def _serialize_entity_like(
             element: mammos_entity.Entity
-            | astropy.units.Quantity
+            | mammos_units.Quantity
             | numpy.typing.ArrayLike,
         ) -> dict:
             if isinstance(element, me.Entity):
@@ -813,7 +811,7 @@ class EntityCollection:
 
 def _to_hdf5(
     data: mammos_entity.Entity
-    | astropy.units.Quantity
+    | mammos_units.Quantity
     | numpy.typing.ArrayLike
     | mammos_entity.EntityCollection,
     base: h5py.File | h5py.Group | str | os.PathLike,

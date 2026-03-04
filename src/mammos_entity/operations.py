@@ -11,39 +11,39 @@ import numpy as np
 from mammos_entity._entity import Entity
 
 if TYPE_CHECKING:
-    import astropy.units
+    import mammos_units
     import numpy.typing
 
     import mammos_entity
 
 
 def concat_flat(
-    *elements: mammos_entity.Entity | astropy.units.Quantity | numpy.typing.ArrayLike,
-    unit: astropy.units.Unit | str | None = None,
+    *elements: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+    unit: mammos_units.Unit | str | None = None,
     description: str | None = None,
 ) -> mammos_entity.Entity:
-    """Concatenate objects into a unique flat Entity.
+    r"""Concatenate objects into a unique flat Entity.
 
     At least one of the inputs must be an Entity with a `ontology_label`.
     The unit of the first Entity is accepted unless the optional argument `unit` is
     defined.
 
-    Arrays are flattened according to `np.flatten` in `order="C"`.
+    Arrays are flattened according to :py:func:`numpy.flatten` in ``order="C"``.
 
     Args:
         *elements: object arguments to be concatenated.
         unit: If specified, all values are converted to this unit.
         description: If specified, this description string is assigned to the resulting
             entity. If not specified, all unique descriptions from the input entities
-            are collected and concatenated (separated by |). The order of the collected descriptions
+            are collected and concatenated (separated by \|). The order of the collected descriptions
             might change.
 
     Examples:
-    >>> import mammos_entity as me
-    >>> import mammos_units as u
-    >>> Ms = me.Ms([500, 600], "kA/m")
-    >>> me.operations.concat_flat(Ms, 0.3, 700000 * u.A / u.m, unit="MA/m", description="Merge XRD and literature values")
-    Entity(ontology_label='SpontaneousMagnetization', value=array([0.5, 0.6, 0.3, 0.7]), unit='MA / m', description='Merge XRD and literature values')
+        >>> import mammos_entity as me
+        >>> import mammos_units as u
+        >>> Ms = me.Ms([500, 600], "kA/m")
+        >>> me.operations.concat_flat(Ms, 0.3, 700000 * u.A / u.m, unit="MA/m", description="Merge XRD and literature values")
+        Entity(ontology_label='SpontaneousMagnetization', value=array([0.5, 0.6, 0.3, 0.7]), unit='MA / m', description='Merge XRD and literature values')
 
     """  # noqa: E501
     _elements = []
