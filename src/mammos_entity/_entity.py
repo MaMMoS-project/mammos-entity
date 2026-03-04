@@ -302,9 +302,9 @@ class Entity:
     def __init__(
         self,
         ontology_label: str,
-        value: numpy.typing.ArrayLike
+        value: mammos_entity.Entity
         | mammos_units.Quantity
-        | mammos_entity.Entity = 0,
+        | numpy.typing.ArrayLike = 0,
         unit: str | None | mammos_units.UnitBase = None,
         description: str = "",
     ):
@@ -419,11 +419,11 @@ class Entity:
         return mammos_ontology.get_by_label(self.ontology_label)
 
     @property
-    def quantity(self) -> astropy.units.Quantity:
-        """Return the entity as a `mammos_units.Quantity`.
+    def quantity(self) -> mammos_units.Quantity:
+        """Return the value and unit of the entity as a Quantity.
 
-        Return a stand-alone `mammos_units.Quantity` object with the same value
-        and unit, detached from the ontology link.
+        Return a stand-alone :py:class:`~mammos_units.Quantity` object with the same
+        value and unit, detached from the ontology link.
 
         Returns:
             A copy of this entity as a pure physical quantity.
@@ -442,7 +442,7 @@ class Entity:
         return self.quantity.value
 
     @property
-    def unit(self) -> astropy.units.UnitBase:
+    def unit(self) -> mammos_units.UnitBase:
         """Unit of the entity data."""
         return self.quantity.unit
 

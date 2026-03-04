@@ -343,7 +343,7 @@ def from_hdf5(
     """Read HDF5 file, group or dataset and convert to Entity or EntityCollection.
 
     Datasets are converted to :py:class:`~mammos_entity.Entity`,
-    :py:class:`~astropy.units.Quantity`, or a numpy array or other builtin datatype
+    :py:class:`~mammos_units.Quantity`, or a numpy array or other builtin datatype
     depending on their associated metadata and shape.
 
     Groups are converted to :py:class:`~mammos_entity.EntityCollection`. Arbitrary
