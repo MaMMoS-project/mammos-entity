@@ -570,3 +570,22 @@ class Entity:
         if record_mammos_entity_version:
             dset.attrs["mammos_entity_version"] = me.__version__
         return dset
+
+
+def ensure_entity(required_label: str, **kwargs: mammos_entity.Entity) -> None:
+    """Ensure that object is an entity of the required name."""
+    if len(kwargs) != 1:
+        raise RuntimeError(
+            f"Exactly one entity must be passed as keyword argument, got {len(kwargs)}."
+        )
+    arg_name, entity = kwargs.popitem()
+    if not isinstance(entity, Entity):
+        raise TypeError(
+            f"Argument {arg_name}: expected type 'mammos_entity.Entity', "
+            f"got '{type(entity).__module__}.{type(entity).__name__}'"
+        )
+    if entity.ontology_label != required_label:
+        raise ValueError(
+            f"Argument {arg_name}: expected entity '{required_label}', "
+            f"got '{entity.ontology_label}'"
+        )
