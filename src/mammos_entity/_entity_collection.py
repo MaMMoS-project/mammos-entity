@@ -521,7 +521,7 @@ class EntityCollection:
         - the ``description`` key contains a (multi-line) string with arbitrary content
           describing the top-level collection
 
-        - the ``data`` key contains one key per element in the collection. Each entry is either
+        - ``data`` contains one key per element in the collection. Each entry is either
           an entity-like entry or a nested collection node.
 
         Collection nodes are recursive and have two keys ``description`` and ``data``:
