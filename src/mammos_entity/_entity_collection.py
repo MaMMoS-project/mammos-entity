@@ -512,11 +512,11 @@ class EntityCollection:
 
         MaMMoS YAML files have the following format:
 
-        - one commented line containing the mammos format version
+        - one commented line containing the mammos format version in the form `# mammos yaml v<version-number>`.
 
-        - three top-level keys ``metadata``, ``description`` and ``data``
+        - a mapping with three top-level keys ``metadata``, ``description`` and ``data``
 
-        - the ``metadata`` key contains at the moment no keys
+        - ``metadata`` is currently unused and should be empty
 
         - the ``description`` key contains a (multi-line) string with arbitrary content
           describing the top-level collection
@@ -554,7 +554,7 @@ class EntityCollection:
 
         .. version-changed:: v2
 
-           - The version of the file is now stored in the first commented line.
+           - The version of the file is now stored in the first commented line, previously it was stored in ``metadata:description``.
            - The top-level collection description is stored under ``description``
              (next to ``metadata`` and ``data``). Previously it was stored in
              ``metadata:description``.
@@ -777,7 +777,7 @@ class EntityCollection:
         _Dumper.add_representer(str, _represent_string)
 
         with open(filename, "w") as f:
-            f.write("# mammos yaml v2\n")
+            f.write(f"# mammos yaml v2{os.linesep}")
             yaml.dump(
                 entity_dict,
                 stream=f,
