@@ -405,18 +405,23 @@ def test_read_yaml_error_for_non_string_entity_description(tmp_path):
     ) in message
 
 
-@pytest.mark.parametrize(
-    "file_content",
-    [
-        "description: x\ndata: {}\n",
-        "description: {}\ndata: {}\n",
-    ],
-)
-def test_read_yaml_error_for_missing_metadata(tmp_path, file_content):
+def test_read_yaml_error_for_missing_metadata(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        metadata: null
+        description: ""
+        data:
+          x:
+            value: 1
+        """
+    )
     filename = tmp_path / "data.yaml"
     filename.write_text(file_content)
 
-    with pytest.raises(RuntimeError, match="File does not have a 'metadata' key."):
+    with pytest.raises(
+        RuntimeError,
+        match=("must have exactly two top-level keys, 'metadata' and 'data'"),
+    ):
         me.from_yaml(filename)
 
 
