@@ -151,41 +151,43 @@ def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
         A collection object providing access to all entities saved in the file.
 
     .. seealso:: :py:func:`mammos_entity.EntityCollection.to_yaml`
+
     """
+    with open(filename) as f:
+        first_line = f.readline().strip()
+    if first_line == "# mammos yaml v2":
+        return _from_yaml_v2(filename)
+    if first_line.startswith("#"):
+        raise RuntimeError(
+            "First comment line not compatible with any mammos yaml format."
+        )
+    return _from_yaml_v1(filename)
+
+
+def _from_yaml_v1(filename: str | Path) -> mammos_entity.EntityCollection:
+    """Read MaMMoS YAML file v1."""
     with open(filename) as f:
         file_content = yaml.safe_load(f)
 
     if not isinstance(file_content, Mapping):
         raise RuntimeError("YAML files must contain a top-level mapping.")
 
-    if "metadata" not in file_content:
-        raise RuntimeError("File does not have a 'metadata' key.")
-
-    # Try to read v1
-    if (
-        file_content["metadata"] is not None
-        and "version" in file_content["metadata"]
-        and file_content["metadata"]["version"] == "v1"
-    ):
-        return _from_yaml_v1(file_content)
-
-    # Try to read v2
-    with open(filename) as f:
-        first_line = f.readline().strip()
-    match first_line:
-        case "# mammos yaml v2":
-            return _from_yaml_v2(file_content)
-
-    raise RuntimeError("File format not recognized.")
-
-
-def _from_yaml_v1(file_content: dict) -> mammos_entity.EntityCollection:
-    """Read MaMMoS YAML file v1."""
     if set(file_content.keys()) != {"metadata", "data"}:
         raise RuntimeError(
             "mammos yaml v1 files must have exactly two top-level keys, "
             "'metadata' and 'data'."
         )
+
+    if not (
+        file_content["metadata"] is not None
+        and "version" in file_content["metadata"]
+        and file_content["metadata"]["version"] == "v1"
+    ):
+        raise RuntimeError(
+            "Wrong mammos yaml v1 syntax. Expected 'metadata' key with "
+            "the 'version' equal to 'v1'."
+        )
+
     collection_description = file_content["metadata"].get("description") or ""
     if not isinstance(file_content.get("data"), Mapping):
         raise RuntimeError("'data' must be a mapping.")
@@ -197,8 +199,14 @@ def _from_yaml_v1(file_content: dict) -> mammos_entity.EntityCollection:
     return collection
 
 
-def _from_yaml_v2(file_content: dict) -> mammos_entity.EntityCollection:
+def _from_yaml_v2(filename: str | Path) -> mammos_entity.EntityCollection:
     """Read MaMMoS YAML file v2."""
+    with open(filename) as f:
+        file_content = yaml.safe_load(f)
+
+    if not isinstance(file_content, Mapping):
+        raise RuntimeError("YAML files must contain a top-level mapping.")
+
     if set(file_content.keys()) != {"metadata", "description", "data"}:
         raise RuntimeError(
             "mammos yaml v2 files must have exactly three top-level keys, "
