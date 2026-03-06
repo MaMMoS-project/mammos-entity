@@ -157,10 +157,6 @@ def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
         first_line = f.readline().strip()
     if first_line == "# mammos yaml v2":
         return _from_yaml_v2(filename)
-    if first_line.startswith("#"):
-        raise RuntimeError(
-            "First comment line not compatible with any mammos yaml format."
-        )
     return _from_yaml_v1(filename)
 
 
