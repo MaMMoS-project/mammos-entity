@@ -363,3 +363,107 @@ def test_bad_description():
     """Check bad type for description."""
     with pytest.raises(ValueError):
         me.Ms(1, description=1)
+
+
+@pytest.mark.parametrize(
+    "value, expected_value, expected_unit",
+    [
+        (me.Entity("ThermodynamicTemperature", 300.0 * u.K), 300.0, u.K),
+        (300.0 * u.K, 300.0, u.K),
+        (300.0, 300.0, u.deg_C),
+        (
+            me.Entity("ThermodynamicTemperature", [100.0, 200.0, 300.0] * u.K),
+            [100.0, 200.0, 300.0],
+            u.K,
+        ),
+        ([100.0, 200.0, 300.0] * u.K, [100.0, 200.0, 300.0], u.K),
+        ([100.0, 200.0, 300.0], [100.0, 200.0, 300.0], u.deg_C),
+    ],
+)
+def test_from_compatible(value, expected_value, expected_unit):
+    """Test from_compatible with valid inputs."""
+    out = me._entity.from_compatible(
+        "ThermodynamicTemperature",
+        "deg_C",
+        temperature=value,
+    )
+    assert out.ontology_label == "ThermodynamicTemperature"
+    assert np.allclose(out.value, expected_value)
+    assert out.unit == expected_unit
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        me.Entity("CurieTemperature", 300.0 * u.K),
+        me.Entity("NeelTemperature", 300.0 * u.K),
+        me.Entity("ThermodynamicTemperature", 300.0 * u.K),
+        300.0 * u.K,
+        300.0,
+    ],
+)
+def test_from_compatible_compatible_entity(value):
+    """Test from_compatible with a compatible entity."""
+    out = me._entity.from_compatible(
+        "ThermodynamicTemperature",
+        "K",
+        compatible_entities=("CurieTemperature", "NeelTemperature"),
+        temperature=value,
+    )
+    assert out.ontology_label == "ThermodynamicTemperature"
+    assert np.allclose(out.value, 300.0)
+    assert out.unit == u.K
+
+
+def test_from_compatible_enforce_unit():
+    """Test from_compatible with enforce_unit=True."""
+    out = me._entity.from_compatible(
+        "ThermodynamicTemperature",
+        "deg_C",
+        enforce_unit=True,
+        temperature=300 * u.K,
+    )
+    assert out.ontology_label == "ThermodynamicTemperature"
+    assert np.allclose(out.value, 26.85)
+    assert out.unit == u.deg_C
+
+
+@pytest.mark.parametrize(
+    "value, expected_error",
+    [
+        (me.Entity("ExternalMagneticField", 1), ValueError),
+        (1 * u.m, ValueError),
+        ("String", TypeError),
+        ([1, 2, "String"], TypeError),
+        (
+            [
+                me.Entity("ThermodynamicTemperature", [100.0] * u.K),
+                me.Entity("ThermodynamicTemperature", [200.0] * u.K),
+                me.Entity("ThermodynamicTemperature", [300.0] * u.K),
+            ],
+            TypeError,
+        ),
+    ],
+)
+def test_from_compatible_errors(value, expected_error):
+    """Test from_compatible raises on incompatible inputs."""
+    with pytest.raises(expected_error):
+        me._entity.from_compatible(
+            "ThermodynamicTemperature",
+            "deg_C",
+            temperature=value,
+        )
+
+
+def test_from_compatible_wrong_kwarg():
+    """Test from_compatible raises with wrong number of kwargs."""
+    with pytest.raises(RuntimeError):
+        me._entity.from_compatible("ThermodynamicTemperature", "deg_C")
+
+    with pytest.raises(RuntimeError):
+        me._entity.from_compatible(
+            "ThermodynamicTemperature",
+            "deg_C",
+            temperature=5,
+            tc=5,
+        )
