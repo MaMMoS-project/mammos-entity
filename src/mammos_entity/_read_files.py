@@ -202,7 +202,7 @@ def _from_yaml_v2(filename: str | Path) -> mammos_entity.EntityCollection:
         file_content = yaml.safe_load(f)
 
     if not isinstance(file_content, Mapping):
-        raise RuntimeError("YAML files must contain a top-level mapping.")
+        raise RuntimeError("mammos yaml v2 files must contain a top-level mapping.")
 
     if set(file_content.keys()) != {"metadata", "description", "data"}:
         raise RuntimeError(
