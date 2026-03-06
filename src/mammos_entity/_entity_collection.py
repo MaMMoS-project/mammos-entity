@@ -777,7 +777,7 @@ class EntityCollection:
         _Dumper.add_representer(str, _represent_string)
 
         with open(filename, "w") as f:
-            f.write(f"# mammos yaml v2{os.linesep}")
+            f.write(f"# mammos yaml v2\n")
             yaml.dump(
                 entity_dict,
                 stream=f,
