@@ -175,7 +175,8 @@ def _from_yaml_v1(filename: str | Path) -> mammos_entity.EntityCollection:
         )
 
     if not (
-        file_content["metadata"] is not None
+        "metadata" in file_content
+        and isinstance(file_content["metadata"], Mapping)
         and "version" in file_content["metadata"]
         and file_content["metadata"]["version"] == "v1"
     ):
