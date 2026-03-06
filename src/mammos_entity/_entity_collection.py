@@ -512,7 +512,7 @@ class EntityCollection:
 
         MaMMoS YAML files have the following format:
 
-        - one commented line containing the mammos format version in the form `# mammos yaml v<version-number>`.
+        - one commented line at the top of the file containing the mammos format version in the form `# mammos yaml v<version-number>`.
 
         - a mapping with three top-level keys ``metadata``, ``description`` and ``data``
 
