@@ -315,7 +315,7 @@ class EntityCollection:
 
         The EntityCollection is created by combining metadata with data from the
         dataframe matching key/column names. The available metadata determines whether
-        an element becomes an :py:class:`~mammos_entity.Entity``, a
+        an element becomes an :py:class:`~mammos_entity.Entity`, a
         :py:class:`mammos_units.Quantity` or a numpy array.
 
         All column names in the `dataframe` must also exist as keys in `metadata` and
