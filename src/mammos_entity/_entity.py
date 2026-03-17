@@ -437,7 +437,7 @@ class Entity:
         return self.quantity
 
     @property
-    def value(self) -> numpy.scalar | numpy.ndarray:
+    def value(self) -> numpy.number | numpy.ndarray:
         """Numerical data of the entity."""
         return self.quantity.value
 

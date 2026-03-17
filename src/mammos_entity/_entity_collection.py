@@ -239,7 +239,7 @@ class EntityCollection:
         args += "\n".join(f"{key}={val!r}," for key, val in self._entities.items())
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
 
-    def to_dataframe(self, include_units: bool = False) -> pd.DataFrame:
+    def to_dataframe(self, include_units: bool = False) -> pandas.DataFrame:
         """Convert values to dataframe.
 
         Args:

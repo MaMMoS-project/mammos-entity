@@ -18,11 +18,12 @@ from mammos_entity._entity_collection import EntityCollection
 if TYPE_CHECKING:
     import mammos_units
     import numpy
+    import pathlib
 
     import mammos_entity
 
 
-def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
+def from_csv(filename: str | pathlib.Path) -> mammos_entity.EntityCollection:
     """Read MaMMoS CSV file.
 
     The required file format is described in
@@ -137,7 +138,7 @@ def from_csv(filename: str | Path) -> mammos_entity.EntityCollection:
     return collection
 
 
-def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
+def from_yaml(filename: str | pathlib.Path) -> mammos_entity.EntityCollection:
     """Read MaMMoS YAML file.
 
     The required file format is described in
@@ -160,7 +161,7 @@ def from_yaml(filename: str | Path) -> mammos_entity.EntityCollection:
     return _from_yaml_v1(filename)
 
 
-def _from_yaml_v1(filename: str | Path) -> mammos_entity.EntityCollection:
+def _from_yaml_v1(filename: str | pathlib.Path) -> mammos_entity.EntityCollection:
     """Read MaMMoS YAML file v1."""
     with open(filename) as f:
         file_content = yaml.safe_load(f)
@@ -196,7 +197,7 @@ def _from_yaml_v1(filename: str | Path) -> mammos_entity.EntityCollection:
     return collection
 
 
-def _from_yaml_v2(filename: str | Path) -> mammos_entity.EntityCollection:
+def _from_yaml_v2(filename: str | pathlib.Path) -> mammos_entity.EntityCollection:
     """Read MaMMoS YAML file v2."""
     with open(filename) as f:
         file_content = yaml.safe_load(f)
