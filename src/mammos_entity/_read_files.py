@@ -4,7 +4,6 @@ import csv
 import os
 import re
 from collections.abc import Mapping
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import h5py
@@ -16,9 +15,10 @@ from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 
 if TYPE_CHECKING:
+    import pathlib
+
     import mammos_units
     import numpy
-    import pathlib
 
     import mammos_entity
 
