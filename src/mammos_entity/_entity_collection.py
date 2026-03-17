@@ -805,9 +805,9 @@ class EntityCollection:
                 with the given name will be created. If a file with that name exists
                 already, it will be overwritten without notice.
             name: Name for the newly created group. If an element with that name
-                exists already in `base` the function will fail. If `name` is ``None``
-                entities of the collection will be added directly to `base` and the
-                collection description will be added to `base` attributes.
+                exists already in `base` the function will fail. If ``name`` is ``None``
+                entities of the collection will be added directly to ``base`` and the
+                collection description will be added to ``base`` attributes.
 
         Returns:
             If ``base`` is an open :py:class:`~h5py.File` or :py:class:`~h5py.Group` the
