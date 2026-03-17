@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
     import mammos_units
     import numpy.typing
+    import pandas
 
     import mammos_entity
     import mammos_entity.typing
@@ -308,7 +309,7 @@ class EntityCollection:
 
     @classmethod
     def from_dataframe(
-        cls, dataframe: pd.DataFrame, metadata: dict[str, dict]
+        cls, dataframe: pandas.DataFrame, metadata: dict[str, dict]
     ) -> mammos_entity.EntityCollection:
         """Create EntityCollection from dataframe and metadata.
 
