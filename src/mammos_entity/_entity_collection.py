@@ -810,9 +810,9 @@ class EntityCollection:
                 collection description will be added to `base` attributes.
 
         Returns:
-            If `base` is an open `File` or `Group` the newly created group. If `base` is
-            a file name nothing is returned (because the file created internally will be
-            closed before the function returns).
+            If ``base`` is an open :py:class:`~h5py.File` or :py:class:`~h5py.Group` the
+            newly created group. If `base` is a file name nothing is returned (because
+            the file created internally will be closed before the function returns).
         """
         return _to_hdf5(self, base, name)
 
