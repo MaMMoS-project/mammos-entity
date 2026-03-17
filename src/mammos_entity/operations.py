@@ -28,7 +28,8 @@ def concat_flat(
     The unit of the first Entity is accepted unless the optional argument `unit` is
     defined.
 
-    Arrays are flattened according to :py:func:`numpy.flatten` in ``order="C"``.
+    Arrays are flattened according to NumPy's :py:meth:`~numpy.ndarray.flatten` in
+    ``order="C"``.
 
     Args:
         *elements: object arguments to be concatenated.
