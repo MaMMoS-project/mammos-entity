@@ -285,12 +285,13 @@ class EntityCollection:
         In addition there is one key-value pair ``description`` for the collection
         description.
 
-        Example:
-        >>> import mammos_entity as me
-        >>> import mammos_units as u
-        >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
-        >>> col.metadata()
-        {'description': 'The description', 'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+        Examples:
+            >>> import mammos_entity as me
+            >>> import mammos_units as u
+            >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
+            >>> col.metadata()
+            {'description': 'The description', 'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+
         """  # noqa: E501
         result = {"description": self.description}
         for name, entity_like in self._entities.items():
