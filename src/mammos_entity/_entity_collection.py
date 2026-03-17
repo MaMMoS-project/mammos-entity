@@ -425,7 +425,7 @@ class EntityCollection:
                 :py:class:`~mammos_entity.EntityCollection` (nested collections are not
                 supported in CSV) or if the collection is empty.
 
-        Example:
+        Examples:
             Here is an example with five columns:
 
             - an index with no units or ontology label
@@ -572,7 +572,7 @@ class EntityCollection:
         Raises:
             ValueError: If the top-level collection is empty.
 
-        Example:
+        Examples:
             Here is an example with six entries:
 
             - an index with no units or ontology label
