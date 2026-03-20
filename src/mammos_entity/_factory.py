@@ -34,7 +34,7 @@ def A(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labeled "ExchangeStiffnessConstant".
+        An ``ExchangeStiffnessConstant`` entity.
 
     """
     return Entity("ExchangeStiffnessConstant", value, unit, **kwargs)
@@ -56,7 +56,7 @@ def BHmax(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labelled "MaximumEnergyProduct".
+        A ``MaximumEnergyProduct`` entity.
 
     """
     return Entity("MaximumEnergyProduct", value, unit, **kwargs)
@@ -78,7 +78,7 @@ def B(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labelled "MagneticFluxDensity".
+        A ``MagneticFluxDensity`` entity.
 
     """
     return Entity("MagneticFluxDensity", value, unit, **kwargs)
@@ -98,7 +98,7 @@ def H(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        Entity: An `Entity` object labeled "ExternalMagneticField".
+        An ``ExternalMagneticField`` entity.
 
 
     """
@@ -121,7 +121,7 @@ def Hc(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        Entity: An `Entity` object labeled "CoercivityHcExternal".
+        A ``CoercivityHcExternal`` entity.
 
     """
     return Entity("CoercivityHcExternal", value, unit, **kwargs)
@@ -143,7 +143,7 @@ def J(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labeled "MagneticPolarisation".
+        A ``MagneticPolarisation`` entity.
 
     """
     return Entity("MagneticPolarisation", value, unit, **kwargs)
@@ -165,7 +165,7 @@ def Js(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labeled "SpontaneousMagneticPolarisation".
+        A ``SpontaneousMagneticPolarisation`` entity.
 
     """
     return Entity("SpontaneousMagneticPolarisation", value, unit, **kwargs)
@@ -191,7 +191,7 @@ def K1(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labeled "MagnetocrystallineAnisotropyConstantK1".
+        A ``MagnetocrystallineAnisotropyConstantK1`` entity.
 
     """
     return Entity("MagnetocrystallineAnisotropyConstantK1", value, unit, **kwargs)
@@ -217,7 +217,7 @@ def K2(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labeled "MagnetocrystallineAnisotropyConstantK2".
+        A ``MagnetocrystallineAnisotropyConstantK2`` entity.
 
     """
     return Entity("MagnetocrystallineAnisotropyConstantK2", value, unit, **kwargs)
@@ -239,7 +239,7 @@ def Ku(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labeled "UniaxialAnisotropyConstant".
+        A ``UniaxialAnisotropyConstant`` entity.
 
     """
     return Entity("UniaxialAnisotropyConstant", value, unit, **kwargs)
@@ -261,7 +261,7 @@ def M(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labelled "Magnetization".
+        A ``Magnetization`` entity.
 
     """
     return Entity("Magnetization", value, unit, **kwargs)
@@ -283,7 +283,7 @@ def Mr(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labelled "Remanence".
+        A ``Remanence`` entity.
 
     """
     return Entity("Remanence", value, unit, **kwargs)
@@ -305,7 +305,7 @@ def Ms(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labelled "SpontaneousMagnetization".
+        A ``SpontaneousMagnetization`` entity.
 
     """
     return Entity("SpontaneousMagnetization", value, unit, **kwargs)
@@ -327,7 +327,7 @@ def T(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labelled "ThermodynamicTemperature".
+        A ``ThermodynamicTemperature`` entity.
 
     """
     return Entity("ThermodynamicTemperature", value, unit, **kwargs)
@@ -349,7 +349,7 @@ def Tc(
             :py:class:`~mammos_entity.Entity`.
 
     Returns:
-        An `Entity` object labelled "CurieTemperature".
+        A ``CurieTemperature`` entity.
 
     """
     return Entity("CurieTemperature", value, unit, **kwargs)

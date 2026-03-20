@@ -318,17 +318,17 @@ class EntityCollection:
         an element becomes an :py:class:`~mammos_entity.Entity`, a
         :py:class:`mammos_units.Quantity` or a numpy array.
 
-        All column names in the `dataframe` must also exist as keys in `metadata` and
-        vice versa.
+        All column names in the ``dataframe`` must also exist as keys in ``metadata``
+        and vice versa.
 
-        In addition `metadata` can have a key ``description`` containing a description
+        In addition ``metadata`` can have a key ``description`` containing a description
         for the collection.
 
         Args:
             dataframe: A dataframe containing the values for the individual entities.
             metadata: A dictionary with the structure similar to the one defined in
                 :py:func:`~EntityCollection.metadata`. The keys ``unit`` and
-                ``description`` for an :py:class`~mammos_entity.Entity` are however
+                ``description`` for an :py:class:`~mammos_entity.Entity` are however
                 optional. If not present, default units from the ontology and an empty
                 description are used.
         """
@@ -434,7 +434,7 @@ class EntityCollection:
               description
             - a made-up quantity alpha with a unit but no ontology label
             - demagnetizing factor with an ontology entry but no unit
-            - a column `comment` containing a string comment without units or ontology
+            - a column ``comment`` containing a string comment without units or ontology
               label
 
             The file has a description reading "Test data".
@@ -517,7 +517,7 @@ class EntityCollection:
 
         MaMMoS YAML files have the following format:
 
-        - one commented line at the top of the file containing the mammos format version in the form `# mammos yaml v<version-number>`.
+        - one commented line at the top of the file containing the mammos format version in the form ``# mammos yaml v<version-number>``.
 
         - a mapping with three top-level keys ``metadata``, ``description`` and ``data``
 
@@ -581,7 +581,7 @@ class EntityCollection:
               description
             - a made-up quantity alpha with a unit but no ontology label
             - demagnetizing factor with an ontology entry but no unit
-            - a column `comment` containing a string comment without units or ontology
+            - a column ``comment`` containing a string comment without units or ontology
               label
             - an element Tc with only a single value
 

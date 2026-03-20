@@ -46,7 +46,7 @@ def _convert_unit(
 
     Returns:
         Astropy unit associated with the ontology entry, if found.
-        This function can return `None` if the entity gives no UCUM code,
+        This function can return ``None`` if the entity gives no UCUM code,
         or the UCUM code cannot be processed by astropy.
 
     Examples:
@@ -370,11 +370,12 @@ class Entity:
     def ontology_label(self) -> str:
         """The ontology label that links the entity to the EMMO ontology.
 
-        Retrieve the ontology label corresponding to the `ThingClass` that defines the
+        Retrieve the ontology label corresponding to the
+        :py:class:`owlready2.entity.ThingClass` object that defines the
         given entity in ontology.
 
         Returns:
-            The ontology label corresponding to the right ThingClass.
+            The ontology label corresponding to the right ontology record.
 
         """
         return self._ontology_label
@@ -384,10 +385,11 @@ class Entity:
         """The ontology IRI that links the entity to the EMMO ontology.
 
         Retrieve the ontology IRI (Internationalized Resource Identifier) corresponding
-        to the `ThingClass` that defines the given entity in ontology.
+        to the :py:class:`owlready2.entity.ThingClass` that defines the given entity
+        in ontology.
 
         Returns:
-            The ontology IRI corresponding to the right ThingClass.
+            The ontology IRI corresponding to the right ontology record.
 
         """
         return self.ontology.iri
@@ -396,13 +398,13 @@ class Entity:
     def ontology_label_with_iri(self) -> str:
         """The ontology label with its IRI. Unique link to EMMO ontology.
 
-        Returns the `self.ontology_label` together with the IRI (a URL that
-        points to the definition of this entity.) IRI stands for
+        Returns the :py:attr:`~mammos_entity.Entity.ontology_label` together with the
+        IRI (a URL that points to the definition of this entity.) IRI stands for
         Internationalized Resource Identifier.
 
         Returns:
-            The ontology label corresponding to the right ThingClass, together with the
-            IRI.
+            The ontology label corresponding to the right ontology record, together
+            with the IRI.
 
         """
         return f"{self.ontology_label} {self.ontology_iri}"
@@ -410,10 +412,12 @@ class Entity:
     # FIX: right not this will fail if no internet!
     @property
     def ontology(self) -> owlready2.entity.ThingClass:
-        """Retrieve the ontology class corresponding to the entity's label.
+        """Retrieve the ontology object.
+
+        This is the corresponding ontology object from the owlready2 library.
 
         Returns:
-            The ontology class from `mammos_ontology` that matches the entity's label.
+            The ontology object matching the entity.
 
         """
         return mammos_ontology.get_by_label(self.ontology_label)
@@ -433,7 +437,7 @@ class Entity:
 
     @property
     def q(self) -> mammos_units.Quantity:
-        """Quantity attribute, shorthand for `.quantity`."""
+        """Quantity attribute, shorthand for '.quantity'."""
         return self.quantity
 
     @property
@@ -451,6 +455,7 @@ class Entity:
         """Return an ontology-based axis label for the plots.
 
         The axis label consist of ontology label and unit:
+
         - The ontology label is split with spaces at all capital letters
         - The units are added in parentheses.
 
@@ -536,7 +541,7 @@ class Entity:
                 exists already in `base` the function will fail.
 
         Returns:
-            If `base` is an open `File` or `Group` the newly created dataset. If `base`
+            If `base` is an open `File` or `Group`, the newly created dataset. If `base`
             is a file name nothing is returned (because the file created internally will
             be closed before the function returns).
         """
