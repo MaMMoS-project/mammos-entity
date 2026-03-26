@@ -437,7 +437,7 @@ class Entity:
 
     @property
     def q(self) -> mammos_units.Quantity:
-        """Quantity attribute, shorthand for '.quantity'."""
+        """Quantity attribute, shorthand for :py:attr:`~Entity.quantity`."""
         return self.quantity
 
     @property
