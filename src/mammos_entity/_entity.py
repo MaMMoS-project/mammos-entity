@@ -414,8 +414,6 @@ class Entity:
     def ontology(self) -> owlready2.entity.ThingClass:
         """Retrieve the ontology object.
 
-        This is the corresponding ontology object from the owlready2 library.
-
         Returns:
             The ontology object matching the entity.
 
