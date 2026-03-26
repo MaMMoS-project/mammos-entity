@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
     import mammos_units
     import numpy.typing
+    import pandas
 
     import mammos_entity
     import mammos_entity.typing
@@ -238,7 +239,7 @@ class EntityCollection:
         args += "\n".join(f"{key}={val!r}," for key, val in self._entities.items())
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
 
-    def to_dataframe(self, include_units: bool = False) -> pd.DataFrame:
+    def to_dataframe(self, include_units: bool = False) -> pandas.DataFrame:
         """Convert values to dataframe.
 
         Args:
@@ -274,6 +275,7 @@ class EntityCollection:
         This method creates a dictionary containing metadata for all entities in the
         collection. Keys are names of the (entities) attributes of the collection,
         values are dictionaries with:
+
         - keys ``ontology_label``, ``unit`` and ``description`` if the attribute is an
           entity
         - key ``unit`` if the attribute is a quantity
@@ -282,12 +284,13 @@ class EntityCollection:
         In addition there is one key-value pair ``description`` for the collection
         description.
 
-        Example:
-        >>> import mammos_entity as me
-        >>> import mammos_units as u
-        >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
-        >>> col.metadata()
-        {'description': 'The description', 'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+        Examples:
+            >>> import mammos_entity as me
+            >>> import mammos_units as u
+            >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
+            >>> col.metadata()
+            {'description': 'The description', 'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+
         """  # noqa: E501
         result = {"description": self.description}
         for name, entity_like in self._entities.items():
@@ -304,26 +307,26 @@ class EntityCollection:
 
     @classmethod
     def from_dataframe(
-        cls, dataframe: pd.DataFrame, metadata: dict[str, dict]
+        cls, dataframe: pandas.DataFrame, metadata: dict[str, dict]
     ) -> mammos_entity.EntityCollection:
         """Create EntityCollection from dataframe and metadata.
 
         The EntityCollection is created by combining metadata with data from the
         dataframe matching key/column names. The available metadata determines whether
-        an element becomes an :py:class:`~mammos_entity.Entity``, a
+        an element becomes an :py:class:`~mammos_entity.Entity`, a
         :py:class:`mammos_units.Quantity` or a numpy array.
 
-        All column names in the `dataframe` must also exist as keys in `metadata` and
-        vice versa.
+        All column names in the ``dataframe`` must also exist as keys in ``metadata``
+        and vice versa.
 
-        In addition `metadata` can have a key ``description`` containing a description
+        In addition ``metadata`` can have a key ``description`` containing a description
         for the collection.
 
         Args:
             dataframe: A dataframe containing the values for the individual entities.
             metadata: A dictionary with the structure similar to the one defined in
                 :py:func:`~EntityCollection.metadata`. The keys ``unit`` and
-                ``description`` for an :py:class`~mammos_entity.Entity` are however
+                ``description`` for an :py:class:`~mammos_entity.Entity` are however
                 optional. If not present, default units from the ontology and an empty
                 description are used.
         """
@@ -421,7 +424,7 @@ class EntityCollection:
                 :py:class:`~mammos_entity.EntityCollection` (nested collections are not
                 supported in CSV) or if the collection is empty.
 
-        Example:
+        Examples:
             Here is an example with five columns:
 
             - an index with no units or ontology label
@@ -429,7 +432,7 @@ class EntityCollection:
               description
             - a made-up quantity alpha with a unit but no ontology label
             - demagnetizing factor with an ontology entry but no unit
-            - a column `comment` containing a string comment without units or ontology
+            - a column ``comment`` containing a string comment without units or ontology
               label
 
             The file has a description reading "Test data".
@@ -512,7 +515,7 @@ class EntityCollection:
 
         MaMMoS YAML files have the following format:
 
-        - one commented line at the top of the file containing the mammos format version in the form `# mammos yaml v<version-number>`.
+        - one commented line at the top of the file containing the mammos format version in the form ``# mammos yaml v<version-number>``.
 
         - a mapping with three top-level keys ``metadata``, ``description`` and ``data``
 
@@ -568,7 +571,7 @@ class EntityCollection:
         Raises:
             ValueError: If the top-level collection is empty.
 
-        Example:
+        Examples:
             Here is an example with six entries:
 
             - an index with no units or ontology label
@@ -576,7 +579,7 @@ class EntityCollection:
               description
             - a made-up quantity alpha with a unit but no ontology label
             - demagnetizing factor with an ontology entry but no unit
-            - a column `comment` containing a string comment without units or ontology
+            - a column ``comment`` containing a string comment without units or ontology
               label
             - an element Tc with only a single value
 
@@ -800,14 +803,14 @@ class EntityCollection:
                 with the given name will be created. If a file with that name exists
                 already, it will be overwritten without notice.
             name: Name for the newly created group. If an element with that name
-                exists already in `base` the function will fail. If `name` is ``None``
-                entities of the collection will be added directly to `base` and the
-                collection description will be added to `base` attributes.
+                exists already in `base` the function will fail. If ``name`` is ``None``
+                entities of the collection will be added directly to ``base`` and the
+                collection description will be added to ``base`` attributes.
 
         Returns:
-            If `base` is an open `File` or `Group` the newly created group. If `base` is
-            a file name nothing is returned (because the file created internally will be
-            closed before the function returns).
+            If ``base`` is an open :py:class:`~h5py.File` or :py:class:`~h5py.Group` the
+            newly created group. If `base` is a file name nothing is returned (because
+            the file created internally will be closed before the function returns).
         """
         return _to_hdf5(self, base, name)
 

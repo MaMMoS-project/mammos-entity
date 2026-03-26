@@ -1,9 +1,15 @@
-"""Entity (Quantity and EMMO ontology label).
+"""Entity functionality.
 
-Exposes the primary components of the MaMMoS entity package, including
-the `Entity` class for ontology-linked physical quantities, pre-defined
-factory methods for common magnetic entities (Ms, A, Ku, H), and the
-loaded MaMMoS ontology object.
+Entities are quantities (numbers with units) with an associated ontology label.
+
+This packages contains classes for defining, collecting and saving such entities (
+:py:class:`~mammos_entity.Entity` and :py:class:`~mammos_entity.EntityCollection`),
+the :py:func:`~mammos_entity.search_labels` function to search for partial
+or full matches of labels defined in the ontology, the reading routines
+:py:func:`~mammos_entity.from_csv`, :py:func:`~mammos_entity.from_hdf5`
+:py:func:`~mammos_entity.from_yaml`, and some pre-defined factory methods for
+magnetic entities (such as :py:class:`~mammos_entity.Ms`, :py:class:`~mammos_entity.A`,
+:py:class:`~mammos_entity.Ku`, and :py:class:`~mammos_entity.H`).
 """
 
 import importlib.metadata

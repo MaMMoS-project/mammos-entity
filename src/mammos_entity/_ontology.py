@@ -17,7 +17,7 @@ def load_offline_ontology() -> ontopy.ontology.Ontology:
     """Load EMMO and MaMMoS ontology from 'ontology' directory.
 
     The returned ontology object contains all definitions from both ontologies, EMMO is
-    in the attribute `.imported_ontologies` and accessible in other methods when using
+    in the attribute ``.imported_ontologies`` and accessible in other methods when using
     ``imported=True``.
 
     """
@@ -56,8 +56,8 @@ def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
     all entities. The match is case sensitive. The returned label is always the
     ``prefLabel``.
 
-    This function uses internally the method `.search()` of
-    `mammos_entity.mammos_ontology`.
+    This function uses internally the method ``.search()`` of
+    ``mammos_entity.mammos_ontology``.
 
     Args:
         text: String to match.
