@@ -278,9 +278,7 @@ class EntityCollection:
 
         - keys ``ontology_label``, ``unit`` and ``description`` if the attribute is an
           entity
-
         - key ``unit`` if the attribute is a quantity
-
         - an empty dictionary otherwise
 
         In addition there is one key-value pair ``description`` for the collection
