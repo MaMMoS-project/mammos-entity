@@ -34,3 +34,11 @@ cd mammos-entity
   - `pixi run test-all`: run `unittest`, `doctest` and `notebooktest`
   - `pixi run examples`: start jupyter lab in examples/ directory
   - `pixi run style`: style checks on all files using `pre-commit run --all-files`
+
+
+## Updating shipped ontologies
+This Python packages ship the ontologies EMMO and MagMO to allow offline use. When these ontologies change, it is necessary to manually change them.
+
+- **EMMO**: this can be downloaded from https://w3id.org/emmo/<version>/inferred by specifying the desired `<version>`.
+
+- **MagMO**: Download the turtle file `magnetic-materials.ttl` from the [MagneticMaterialsOntology Releases](https://github.com/MaMMoS-project/MagneticMaterialsOntology/releases) and put it in the `src/mammos-entity/ontology` repository (overwriting the previous file). No further changes are necessary.
