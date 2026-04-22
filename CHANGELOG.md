@@ -6,6 +6,13 @@ This project uses [towncrier](https://towncrier.readthedocs.io/) and the changes
 
 <!-- towncrier release notes start -->
 
+## [mammos-entity 0.13.0](https://github.com/MaMMoS-project/mammos-entity/tree/0.13.0) – 2026-04-22
+
+### Changed
+
+- Updated versions of shipped ontologies: Magnetic Materials domain Ontology (MagMO) to 0.0.5. ([#215](https://github.com/MaMMoS-project/mammos-entity/pull/215))
+
+
 ## [mammos-entity 0.12.0](https://github.com/MaMMoS-project/mammos-entity/tree/0.12.0) – 2026-03-06
 
 ### Added
