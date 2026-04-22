@@ -39,6 +39,6 @@ cd mammos-entity
 ## Updating shipped ontologies
 This Python packages ship the ontologies EMMO and MagMO to allow offline use. When these ontologies change upstream, it is necessary to manually update the bundled copy.
 
-- **EMMO**: this can be downloaded from https://w3id.org/emmo/<version>/inferred by specifying the desired `<version>`.
+- **EMMO**: this can be downloaded from https://w3id.org/emmo/VERSION/inferred by specifying the desired `VERSION`.
 
 - **MagMO**: Download the turtle file `magnetic-materials.ttl` from the [MagneticMaterialsOntology Releases](https://github.com/MaMMoS-project/MagneticMaterialsOntology/releases) and put it in the `src/mammos-entity/ontology` repository (overwriting the previous file). No further changes are necessary.
