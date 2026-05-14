@@ -56,8 +56,14 @@ in each repository's `CONTRIBUTING.md`.
 
 - Public APIs should have docstrings with examples where practical.
 - Examples should use explicit units and should show the expected entity labels.
-- Keep user-facing documentation in README files, `CONTRIBUTING.md`, package
-  docs, or examples. Agent-only operational advice belongs in `AGENTS.md`.
+- Keep user-facing documentation in README files, package
+  docs, or examples.
+- Agent-only operational advice belongs in `AGENTS.md`.
+- When new information is needed, put it in the document for its audience. Use
+  README files, examples, or normal docs for user-facing information. Use this
+  package's `CONTRIBUTING.md` for mammos-entity developer guidance and
+  `CONTRIBUTING-MaMMoS.md` for shared MaMMoS developer guidance. Use `AGENTS.md`
+  only for AI-specific operating instructions.
 
 ### Validating inputs to a function
 
