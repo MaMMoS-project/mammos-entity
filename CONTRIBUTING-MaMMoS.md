@@ -12,7 +12,7 @@ in each repository's `CONTRIBUTING.md`.
 
 ## Code and repository conventions
 
-- Use American spelling in documentation, comments, and public names.
+- Use American spelling everywhere.
 - Use the `src` layout for Python packages.
 - Keep tests outside the deployed package.
 - Follow Ruff for style decisions.
@@ -41,6 +41,7 @@ in each repository's `CONTRIBUTING.md`.
 
 ## Return values and inputs
 
+- When a function or method returns one MaMMoS value the return object should preferably be an Entity.
 - When a function or method returns more than one MaMMoS value, prefer a custom
   composite object based on `mammos_entity.EntityCollection`.
 - Attributes of such composite objects should be `mammos_entity.Entity` objects
