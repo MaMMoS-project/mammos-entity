@@ -41,3 +41,16 @@ def test_problematic_labels():
     `altLabel`, `prefLabel`. The function `search_labels` should fix this behaviour.
     """
     assert search_labels("Status") == ["Status", "hasStatus"]
+
+
+def test_empty_label():
+    """Test querying for all possible entity labels.
+
+    We test that the labels of some highly used entities appear when searching for
+    all possible labels.
+    """
+    all_labels = search_labels("")
+    assert "SpontaneousMagnetization" in all_labels
+    assert "ExchangeStiffnessConstant" in all_labels
+    assert "MaximumEnergyProduct" in all_labels
+    assert "CurieTemperature" in all_labels
