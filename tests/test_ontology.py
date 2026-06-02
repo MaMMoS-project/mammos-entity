@@ -1,4 +1,5 @@
 from mammos_entity import search_labels
+from mammos_entity._ontology import _search_metadata
 
 
 def test_search_labels_multiple():
@@ -54,3 +55,33 @@ def test_empty_label():
     assert "ExchangeStiffnessConstant" in all_labels
     assert "MaximumEnergyProduct" in all_labels
     assert "CurieTemperature" in all_labels
+
+
+def test_search_metadata():
+    """Test _search_metadata function.
+
+    1. Querying for all entities containing the word 'anisotropy' in their
+      elucidation or comment.
+    2. Querying for all entities whose elucidation or comment is strictly
+      the word 'anisotropy'.
+    3. Querying for all entities containing the word 'Anisotropy' (capitalized)
+      in their elucidation or comment.
+    """
+    assert _search_metadata("anisotropy") == [
+        "AnisotropyField",
+        "CubicMagnetocrystallineAnisotropy",  # only in elucidation
+        "InducedMagneticAnisotropy",  # only in elucidation
+        "MagneticAnisotropy",  # only in elucidation
+        "MagnetocrystallineAnisotropy",  # only in elucidation
+        "MagnetocrystallineAnisotropyConstantK1",  # only in comment
+        "MagnetocrystallineAnisotropyConstantK1c",  # only in comment
+        "MagnetocrystallineAnisotropyConstantK2",  # only in comment
+        "MagnetocrystallineAnisotropyConstantK2c",  # only in comment
+        "MagnetocrystallineAnisotropyEnergy",  # only in elucidation
+        "ShapeAnisotropy",  # only in comment
+        "UniaxialMagneticAnisotropy",  # only in elucidation
+        "UniaxialAnisotropyConstant",  # only in elucidation
+        "UniaxialMagnetocrystallineAnisotropy",  # only in elucidation
+    ]
+    assert _search_metadata("anisotropy", auto_wildcard=False) == []
+    assert _search_metadata("Anisotropy") == []
