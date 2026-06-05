@@ -79,8 +79,8 @@ def test_search_metadata():
         "MagnetocrystallineAnisotropyConstantK2c",  # only in comment
         "MagnetocrystallineAnisotropyEnergy",  # only in elucidation
         "ShapeAnisotropy",  # only in comment
-        "UniaxialMagneticAnisotropy",  # only in elucidation
         "UniaxialAnisotropyConstant",  # only in elucidation
+        "UniaxialMagneticAnisotropy",  # only in elucidation
         "UniaxialMagnetocrystallineAnisotropy",  # only in elucidation
     ]
     assert _search_metadata("anisotropy", auto_wildcard=False) == []
