@@ -124,6 +124,7 @@ def _search_metadata(text: str, auto_wildcard: bool = True) -> list[str]:
         >>> me._ontology._search_metadata("magnetic area moment")
         ['Magnetization']
     """
+    _ = mammos_ontology.Magnetization.elucidation  # this loads all elucidations
     string = f"*{text}*" if auto_wildcard else text
     match_by_elucidation = set(mammos_ontology.search(elucidation=string))
     match_by_comment = set(mammos_ontology.search(comment=string))
