@@ -94,3 +94,43 @@ def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
         for thing in possible_things
         if hasattr(thing, "prefLabel")
     )
+
+
+def _search_metadata(text: str, auto_wildcard: bool = True) -> list[str]:
+    """Search entities by matching metadata 'comment' and 'elucidation'.
+
+    The string ``text`` is searched into ``comment``, and ``elucidation``, of
+    all entities. The match is case sensitive. The returned ``prefLabel``s are
+    ordered alphabetically for reproducibility.
+
+    This function uses internally the method ``.search()`` of
+    ``mammos_entity.mammos_ontology``.
+
+    Args:
+        text: String to match.
+        auto_wildcard: If True, the wildcard ``*`` is added at the beginning
+            and at the end of the string ``text``. This allows partial matches, finding
+            labels containing ``text``. If False, only labels identical to ``text``
+            are returned.
+
+            Passing ``"text", auto_wildcard=True`` is identical to passing
+            ``"*text*", auto_wildcard=False``.
+
+    Returns:
+        Entity things containing the searched string in the metadata.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> me._ontology._search_metadata("magnetic area moment")
+        ['Magnetization']
+    """
+    _ = mammos_ontology.Magnetization.elucidation  # this loads all elucidations
+    string = f"*{text}*" if auto_wildcard else text
+    match_by_elucidation = set(mammos_ontology.search(elucidation=string))
+    match_by_comment = set(mammos_ontology.search(comment=string))
+    possible_things = match_by_elucidation | match_by_comment
+    return sorted(
+        str(thing.prefLabel[0])
+        for thing in possible_things
+        if hasattr(thing, "prefLabel")
+    )
