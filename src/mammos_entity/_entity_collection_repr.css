@@ -1,0 +1,167 @@
+.mammos-entity-collection {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.45;
+}
+
+.mammos-entity-collection samp {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.mammos-entity-collection .collection-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  margin-bottom: 0.15em;
+}
+
+.mammos-entity-collection .collection-title {
+  font-weight: 600;
+}
+
+.mammos-entity-collection .collection-toolbar {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 0.22rem;
+}
+
+.mammos-entity-collection .collection-toolbar button {
+  font: inherit;
+  font-size: 0.95em;
+  line-height: 1;
+  color: #6b6b6b;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  min-width: 1em;
+  text-decoration: none;
+}
+
+.mammos-entity-collection .collection-toolbar button:hover {
+  color: #444;
+}
+
+.mammos-entity-collection .collection-toolbar button:disabled {
+  color: #9a9a9a;
+  cursor: progress;
+}
+
+.mammos-entity-collection .collection-status {
+  color: #777;
+  font-size: 0.9em;
+  opacity: 0;
+  transition: opacity 120ms ease;
+  white-space: nowrap;
+}
+
+.mammos-entity-collection[data-busy="true"] .collection-status {
+  opacity: 1;
+}
+
+.mammos-entity-collection .collection-description {
+  color: inherit;
+  font-style: italic;
+}
+
+.mammos-entity-collection .collection-body {
+  padding-left: 0;
+}
+
+.mammos-entity-collection .collection-children {
+  margin-left: 0.68rem;
+  padding-left: 1rem;
+}
+
+.mammos-entity-collection .collection-children > .branch-item {
+  position: relative;
+  margin: 0.14em 0;
+  --branch-join: 0.82em;
+  --branch-gap: 0.3rem;
+  --branch-tick: 0.55rem;
+  --branch-trunk: calc(var(--branch-gap) + var(--branch-tick));
+}
+
+.mammos-entity-collection .collection-children > .branch-item::before {
+  content: "";
+  position: absolute;
+  top: var(--branch-join);
+  transform: translateY(-50%);
+  right: calc(100% + var(--branch-gap));
+  width: var(--branch-tick);
+  border-top: 1px solid #d7d7d7;
+}
+
+.mammos-entity-collection .collection-children > .collection-description::before {
+  display: none;
+}
+
+.mammos-entity-collection .collection-children > .branch-item::after {
+  content: "";
+  position: absolute;
+  top: -0.14em;
+  bottom: -0.14em;
+  right: calc(100% + var(--branch-trunk));
+  border-left: 1px solid #d7d7d7;
+}
+
+.mammos-entity-collection .collection-children > .branch-item:first-child::after {
+  top: 0;
+}
+
+.mammos-entity-collection .collection-children > .branch-item:last-child::after {
+  bottom: calc(100% - var(--branch-join));
+}
+
+.mammos-entity-collection .collection-children > .branch-item:only-child::after {
+  top: 0;
+  bottom: calc(100% - var(--branch-join));
+}
+
+.mammos-entity-collection .entity-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 0.75rem;
+  align-items: start;
+}
+
+.mammos-entity-collection .entity-key {
+  color: #222;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mammos-entity-collection .entity-value {
+  min-width: 0;
+}
+
+.mammos-entity-collection summary {
+  color: inherit;
+  cursor: pointer;
+  margin: 0.18em 0;
+}
+
+.mammos-entity-collection summary::marker {
+  color: #777;
+}
+
+.mammos-entity-collection .summary-key {
+  font-weight: 400;
+}
+
+.mammos-entity-collection .summary-preview {
+  color: #777;
+  font-size: 0.95em;
+  margin-left: 0.45rem;
+}
+
+.mammos-entity-collection details {
+  margin: 0.2em 0 0.35em 0;
+}
+
+.mammos-entity-collection .nested-children {
+  margin-top: 0.2rem;
+}
