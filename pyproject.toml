@@ -67,6 +67,11 @@ pydocstyle.convention = "google"
 "*.ipynb" = ["B018"]  # "Found useless expression. Either assign it to a variable or remove it."; false positives when using implicit __repr__ in the notebook
 "tests/*" = ["D100", "D103"]  # do not enforce docstrings in tests
 
+[tool.hatch.build]
+artifacts = [
+  "src/mammos_entity/*.css",
+]
+
 [tool.pixi.workspace]
 channels = [ "conda-forge" ]
 platforms = [ "osx-arm64", "linux-64", "osx-64", "win-64" ]

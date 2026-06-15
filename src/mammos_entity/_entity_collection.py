@@ -4,8 +4,12 @@ from __future__ import annotations
 
 import copy
 import csv
+import html
+import importlib.resources
 import os
 import textwrap
+import uuid
+from functools import cache
 from typing import TYPE_CHECKING
 
 import h5py
@@ -25,6 +29,14 @@ if TYPE_CHECKING:
 
     import mammos_entity
     import mammos_entity.typing
+
+
+@cache
+def _entity_collection_repr_css() -> str:
+    css = importlib.resources.files("mammos_entity").joinpath(
+        "_entity_collection_repr.css"
+    )
+    return f"<style>{css.read_text(encoding='utf-8')}</style>"
 
 
 class EntityCollection:
@@ -238,6 +250,202 @@ class EntityCollection:
         args = f"description={self.description!r},\n"
         args += "\n".join(f"{key}={val!r}," for key, val in self._entities.items())
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
+
+    def _repr_html_(self) -> str:
+        """Render the collection as notebook-friendly HTML."""
+        root_id = f"mammos-entity-collection-{uuid.uuid4().hex}"
+        return (
+            f"{_entity_collection_repr_css()}{self._repr_html_block(root_id=root_id)}"
+        )
+
+    @staticmethod
+    def _format_html_text(text: str) -> str:
+        """Escape plain text for safe inline HTML display."""
+        return html.escape(text).replace(" ", "&nbsp;").replace("\n", "<br>")
+
+    @classmethod
+    def _repr_html_row(cls, key: str, value_html: str) -> str:
+        """Render a single key/value row."""
+        return (
+            "<div class='branch-item entity-row'>"
+            f"<div class='entity-key'>{cls._format_html_text(key)}</div>"
+            f"<div class='entity-value'>{value_html}</div>"
+            "</div>"
+        )
+
+    @classmethod
+    def _repr_html_value(
+        cls,
+        key: str,
+        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+    ) -> str:
+        """Render one stored value, using HTML reprs when available."""
+        if isinstance(value, EntityCollection):
+            return value._repr_html_nested(key)
+        repr_html = getattr(value, "_repr_html_", None)
+        if callable(repr_html):
+            try:
+                value_html = repr_html()
+            except Exception:
+                value_html = cls._format_html_text(repr(value))
+        else:
+            value_html = cls._format_html_text(repr(value))
+        return cls._repr_html_row(key, value_html)
+
+    def _repr_html_summary_preview(self) -> str:
+        """Build the compact preview text for nested collections."""
+        count = len(self._entities)
+        item_label = "item" if count == 1 else "items"
+        preview_keys = list(self._entities)[:3]
+        preview = ", ".join(preview_keys)
+        if len(self._entities) > 3:
+            preview += ", ..."
+        if preview:
+            return self._format_html_text(f"{count} {item_label} · {preview}")
+        return self._format_html_text(f"{count} {item_label}")
+
+    @classmethod
+    def _repr_html_children(
+        cls,
+        children: list[str],
+        *,
+        nested: bool = False,
+    ) -> str:
+        """Wrap rendered child rows in the right container."""
+        if not children:
+            return ""
+        child_class = (
+            "collection-children nested-children" if nested else "collection-children"
+        )
+        return f"<div class='{child_class}'>{''.join(children)}</div>"
+
+    def _repr_html_nested(self, key: str) -> str:
+        """Render this collection as a nested expandable branch."""
+        summary = self._format_html_text(key)
+        preview = self._repr_html_summary_preview()
+        return (
+            "<details class='branch-item'>"
+            "<summary>"
+            f"<span class='summary-key'>{summary}</span>"
+            "<span class='summary-preview'>"
+            f"{self._format_html_text(self.__class__.__name__)}"
+            f"&nbsp;·&nbsp;{preview}"
+            "</span>"
+            "</summary>"
+            f"{self._repr_html_block(nested=True)}"
+            "</details>"
+        )
+
+    @staticmethod
+    def _repr_html_details_script(root_id: str, *, open_state: bool) -> str:
+        """Build the inline script for top-level expand/collapse controls.
+
+        The returned JavaScript is embedded directly in the HTML button's
+        ``onclick`` handler so the notebook repr stays self-contained.
+
+        When the button is clicked, the script:
+        - looks up the collection root by ``root_id``
+        - ignores the click if the collection is already processing another
+          expand/collapse action
+        - marks the collection as busy, updates the live status text, and
+          disables the toolbar buttons
+        - toggles nested ``<details>`` elements in small batches over multiple
+          animation frames instead of in one large synchronous loop
+        - clears the busy state and re-enables the controls when finished
+
+        Batching the work allows the browser to repaint the busy feedback
+        before all nested nodes have been updated, which keeps large
+        collections from appearing frozen during expand/collapse.
+        """
+        state = "true" if open_state else "false"
+        label = "Expanding..." if open_state else "Collapsing..."
+        return (
+            f"const root = document.getElementById('{root_id}');"
+            "if (!root || root.dataset.busy === 'true') return;"
+            "const status = root.querySelector('.collection-status');"
+            "const buttons = root.querySelectorAll('.collection-toolbar button');"
+            "const details = Array.from(root.querySelectorAll('details'));"
+            "root.dataset.busy = 'true';"
+            "root.setAttribute('aria-busy', 'true');"
+            f"if (status) status.textContent = '{label}';"
+            "buttons.forEach((button) => { button.disabled = true; });"
+            "const batchSize = 50;"
+            "let index = 0;"
+            "const finish = () => {"
+            "root.dataset.busy = 'false';"
+            "root.setAttribute('aria-busy', 'false');"
+            "if (status) status.textContent = '';"
+            "buttons.forEach((button) => { button.disabled = false; });"
+            "};"
+            # Process the tree in batches so the busy state can repaint between frames.
+            "const step = () => {"
+            "details.slice(index, index + batchSize).forEach((element) => { "
+            f"element.open = {state};"
+            " });"
+            "index += batchSize;"
+            "if (index < details.length) { requestAnimationFrame(step); return; }"
+            "finish();"
+            "};"
+            "requestAnimationFrame(() => { requestAnimationFrame(step); });"
+        )
+
+    @classmethod
+    def _repr_html_controls(cls, root_id: str) -> str:
+        """Render top-level expand/collapse controls."""
+        expand = cls._repr_html_details_script(root_id, open_state=True)
+        collapse = cls._repr_html_details_script(root_id, open_state=False)
+        return (
+            "<div class='collection-toolbar'>"
+            f"<button type='button' title='Collapse all' aria-label='Collapse all' "
+            f'onclick="{collapse}">▸</button>'
+            f"<button type='button' title='Expand all' aria-label='Expand all' "
+            f'onclick="{expand}">▾</button>'
+            "<span class='collection-status' aria-live='polite'></span>"
+            "</div>"
+        )
+
+    def _repr_html_block(
+        self,
+        *,
+        nested: bool = False,
+        root_id: str | None = None,
+    ) -> str:
+        """Render either the top-level block or nested child content."""
+        children = []
+        if self.description:
+            children.append(
+                "<div class='branch-item collection-description'>"
+                f"{self._format_html_text(self.description)}"
+                "</div>"
+            )
+        has_nested_collections = False
+        for key, value in self._entities.items():
+            has_nested_collections = has_nested_collections or isinstance(
+                value, EntityCollection
+            )
+            children.append(self._repr_html_value(key, value))
+        child_html = self._repr_html_children(children, nested=nested)
+        if nested:
+            return child_html
+        controls = ""
+        if has_nested_collections:
+            if root_id is None:
+                raise ValueError("root_id is required for top-level HTML controls.")
+            controls = self._repr_html_controls(root_id)
+        return (
+            f"<div id='{root_id}' class='mammos-entity-collection' "
+            "data-busy='false' aria-busy='false'>"
+            "<div class='collection-header'>"
+            "<div class='collection-title'>"
+            f"<span>{self._format_html_text(self.__class__.__name__)}</span>"
+            "</div>"
+            f"{controls}"
+            "</div>"
+            "<div class='collection-body'>"
+            f"{child_html}"
+            "</div>"
+            "</div>"
+        )
 
     def to_dataframe(self, include_units: bool = False) -> pandas.DataFrame:
         """Convert values to dataframe.
