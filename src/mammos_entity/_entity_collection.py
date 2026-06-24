@@ -282,6 +282,13 @@ class EntityCollection:
         """Render one stored value, using HTML reprs when available."""
         if isinstance(value, EntityCollection):
             return value._repr_html_nested(key)
+        repr_html_fragment = getattr(value, "_repr_html_fragment_", None)
+        if callable(repr_html_fragment):
+            try:
+                value_html = repr_html_fragment()
+            except Exception:
+                value_html = cls._format_html_text(repr(value))
+            return cls._repr_html_row(key, value_html)
         repr_html = getattr(value, "_repr_html_", None)
         if callable(repr_html):
             try:
@@ -364,7 +371,7 @@ class EntityCollection:
             "if (!root || root.dataset.busy === 'true') return;"
             "const status = root.querySelector('.collection-status');"
             "const buttons = root.querySelectorAll('.collection-toolbar button');"
-            "const details = Array.from(root.querySelectorAll('details'));"
+            "const details = Array.from(root.querySelectorAll('details.branch-item'));"
             "root.dataset.busy = 'true';"
             "root.setAttribute('aria-busy', 'true');"
             f"if (status) status.textContent = '{label}';"
