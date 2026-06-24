@@ -28,21 +28,65 @@
   gap: 0.22rem;
 }
 
+.mammos-entity-inline {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1.45;
+}
+
+.mammos-entity-inline .entity-label {
+  font-weight: 600;
+  color: rgb(95, 95, 95);
+}
+
+.mammos-entity-inline .entity-collapsed {
+  display: inline;
+}
+
+.mammos-entity-inline .entity-expanded {
+  display: none;
+}
+
+.mammos-entity-inline[data-expanded="true"] .entity-collapsed {
+  display: none;
+}
+
+.mammos-entity-inline[data-expanded="true"] .entity-expanded {
+  display: inline;
+}
+
+.mammos-entity-inline .entity-toggle {
+  font: inherit;
+  color: #6b6b6b;
+  cursor: pointer;
+  display: inline;
+  margin-right: 0.22rem;
+  text-decoration: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
 .mammos-entity-collection .collection-toolbar button {
   font: inherit;
-  font-size: 0.95em;
-  line-height: 1;
   color: #6b6b6b;
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
+  font-size: 0.95em;
+  line-height: 1;
   min-width: 1em;
   text-decoration: none;
 }
 
+.mammos-entity-inline .entity-toggle:hover,
 .mammos-entity-collection .collection-toolbar button:hover {
   color: #444;
+}
+
+.mammos-entity-inline .entity-toggle:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 1px;
 }
 
 .mammos-entity-collection .collection-toolbar button:disabled {
@@ -50,9 +94,13 @@
   cursor: progress;
 }
 
+.mammos-entity-inline .entity-meta,
 .mammos-entity-collection .collection-status {
   color: #777;
   font-size: 0.9em;
+}
+
+.mammos-entity-collection .collection-status {
   opacity: 0;
   transition: opacity 120ms ease;
   white-space: nowrap;
@@ -138,10 +186,21 @@
   min-width: 0;
 }
 
+.mammos-entity-inline .entity-full-value {
+  display: inline;
+  white-space: pre;
+}
+
 .mammos-entity-collection summary {
   color: inherit;
   cursor: pointer;
   margin: 0.18em 0;
+}
+
+.mammos-entity-collection .summary-preview,
+.mammos-entity-inline .entity-meta {
+  color: #777;
+  font-size: 0.95em;
 }
 
 .mammos-entity-collection summary::marker {
@@ -153,8 +212,6 @@
 }
 
 .mammos-entity-collection .summary-preview {
-  color: #777;
-  font-size: 0.95em;
   margin-left: 0.45rem;
 }
 
