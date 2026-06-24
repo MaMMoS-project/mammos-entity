@@ -28,6 +28,7 @@ def test_write_read_yaml(tmp_path):
         comments=["Some comment", "Some other comment", "A third comment"],
     )
     collection["the length"] = me.Entity("Length", [1, 2, 3])
+    collection["description"] = me.Entity("Length", [0, 0, 0])
     collection.to_yaml(tmp_path / "example.yaml")
 
     read_data = me.from_yaml(tmp_path / "example.yaml")
@@ -44,6 +45,7 @@ def test_write_read_yaml(tmp_path):
     assert read_data.demag_factor == collection.demag_factor
     assert list(read_data.comments) == collection.comments
     assert read_data["the length"] == collection["the length"]
+    assert read_data["description"] == collection["description"]
 
 
 def test_read_yaml_v1(tmp_path):

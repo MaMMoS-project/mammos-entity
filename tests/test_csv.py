@@ -35,6 +35,7 @@ def test_write_read_csv(tmp_path):
         comments=["Some comment", "Some other comment", "A third comment"],
     )
     collection["the length"] = me.Entity("Length", [1, 2, 3])
+    collection["description"] = me.Entity("Length", [0, 0, 1])
     collection.to_csv(tmp_path / "example.csv")
 
     read_data = me.from_csv(tmp_path / "example.csv")
@@ -51,6 +52,7 @@ def test_write_read_csv(tmp_path):
     assert read_data.demag_factor == collection.demag_factor
     assert list(read_data.comments) == collection.comments
     assert read_data["the length"] == collection["the length"]
+    assert read_data["description"] == collection["description"]
 
     df_without_units = read_data.to_dataframe()
     assert list(df_without_units.columns) == [
@@ -60,6 +62,7 @@ def test_write_read_csv(tmp_path):
         "demag_factor",
         "comments",
         "the length",
+        "description",
     ]
 
     df_with_units = read_data.to_dataframe(include_units=True)
@@ -70,6 +73,7 @@ def test_write_read_csv(tmp_path):
         "demag_factor",
         "comments",
         "the length (m)",
+        "description (m)",
     ]
 
     df = pd.read_csv(tmp_path / "example.csv", header=9)

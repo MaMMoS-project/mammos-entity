@@ -43,9 +43,12 @@ class EntityCollection:
     is a valid Python name and no property/method of EntityCollection shadows the
     entity. The dictionary interface does not have these limitations.
 
-    Entities can have arbitrary string names, with the exception that
-    ``description`` is not allowed. Entities passed as keyword arguments when creating
-    the collection must have valid Python names.
+    Entities can have arbitrary string names. Entities passed as keyword arguments when
+    creating the collection must have valid Python names. Entities with other names can
+    be added after the collection has been created using the dictonary interface (item
+    assignment). Similarly, an entity with key ``description`` can only be added via
+    item assignment. Entities with names starting with an underscore can only be
+    accessed via the dictionary interface.
 
     Examples:
         >>> import mammos_entity as me
@@ -92,6 +95,16 @@ class EntityCollection:
         >>> list(collection)
         [('Ms', Entity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')), ('A', [1, 2, 3])]
 
+        An entity with key ``description`` can only be set/accessed via the
+        dictionary-like interface as it collides with the `description` property of the
+        collection:
+
+        >>> collection["description"] = ["An entity-like", "with key description"]
+        >>> collection.description
+        'A description'
+        >>> collection["description"]
+        ['An entity-like', 'with key description']
+
     """  # noqa: E501
 
     def __init__(
@@ -122,8 +135,6 @@ class EntityCollection:
             raise TypeError(
                 f"Name must be a string, received {key!r} ({type(key).__name__})."
             )
-        if key == "description":
-            raise KeyError("'description' is not allowed as entity name.")
         self._entities[key] = value
 
     def __delitem__(self, key: str) -> None:
@@ -204,14 +215,18 @@ class EntityCollection:
 
     def __copy__(self):
         """Shallow copy of entities."""
-        return self.__class__(description=self.description, **self._entities)
+        collection = self.__class__(description=self.description)
+        for name, entity_like in self:
+            collection[name] = entity_like
+        return collection
 
     def __deepcopy__(self, memo):
         """Deep copy of entities."""
-        entities = {
-            name: copy.deepcopy(entity, memo) for name, entity in self._entities.items()
-        }
-        return self.__class__(description=self.description, **entities)
+        collection = self.__class__(description=self.description)
+        for name, entity_like in self:
+            collection[name] = copy.deepcopy(entity_like, memo)
+
+        return collection
 
     @property
     def description(self) -> str:
@@ -254,7 +269,7 @@ class EntityCollection:
             Returns:
                 A string " (unit)" if the element has a unit, otherwise an empty string.
             """
-            unit = getattr(getattr(self, key), "unit", None)
+            unit = getattr(self[key], "unit", None)
             if unit and str(unit):
                 return f" ({unit!s})"
             else:
@@ -269,7 +284,7 @@ class EntityCollection:
             }
         )
 
-    def metadata(self) -> dict[str, str | dict[str, str]]:
+    def metadata(self) -> dict[str, dict[str, str]]:
         """Get entity metadata as dictionary.
 
         This method creates a dictionary containing metadata for all entities in the
@@ -281,18 +296,18 @@ class EntityCollection:
         - key ``unit`` if the attribute is a quantity
         - an empty dictionary otherwise
 
-        In addition there is one key-value pair ``description`` for the collection
-        description.
-
         Examples:
             >>> import mammos_entity as me
             >>> import mammos_units as u
             >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
             >>> col.metadata()
-            {'description': 'The description', 'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+            {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
 
+        .. version-changed:: 0.14.0
+           The collection description has been removed from the metadata to allow the
+           name ``description`` as key for an entity-like.
         """  # noqa: E501
-        result = {"description": self.description}
+        result = {}
         for name, entity_like in self._entities.items():
             element = {}
             if isinstance(entity_like, me.Entity):
@@ -307,7 +322,10 @@ class EntityCollection:
 
     @classmethod
     def from_dataframe(
-        cls, dataframe: pandas.DataFrame, metadata: dict[str, dict]
+        cls,
+        dataframe: pandas.DataFrame,
+        metadata: dict[str, dict],
+        description: str = "",
     ) -> mammos_entity.EntityCollection:
         """Create EntityCollection from dataframe and metadata.
 
@@ -329,9 +347,9 @@ class EntityCollection:
                 ``description`` for an :py:class:`~mammos_entity.Entity` are however
                 optional. If not present, default units from the ontology and an empty
                 description are used.
+            description: Description of the entity collection.
         """
         metadata = copy.deepcopy(metadata)  # do not modify the user's metadata dict
-        description = metadata.pop("description", "")
         if missing_keys := set(dataframe.columns) - set(metadata):
             raise ValueError(
                 f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}"
@@ -341,7 +359,7 @@ class EntityCollection:
                 f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}"
             )
 
-        entities = {}
+        collection = cls(description=description)
         for name in metadata:
             value = dataframe[name].to_numpy()
             if len(value) == 1:
@@ -361,9 +379,9 @@ class EntityCollection:
                 )
             else:
                 elem = value
-            entities[name] = elem
+            collection[name] = elem
 
-        return cls(description=description, **entities)
+        return collection
 
     def to_csv(self, filename: str | os.PathLike) -> None:
         r"""Write collection to CSV file.

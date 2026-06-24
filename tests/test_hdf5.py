@@ -80,15 +80,17 @@ def test_entity_collection_to_hdf5_roundtrip():
             T=me.T([50, 100, 200]),
             Tc=me.Tc(600, "K"),
         )
+        col["description"] = me.Entity("Length", [0, 0, 0])
         col.to_hdf5(f, "/sample1/properties")
 
         col_read = me.from_hdf5(f["/sample1/properties"])
         assert isinstance(col_read, me.EntityCollection)
         assert col_read.description == col.description
-        assert [name for name, _entity in col_read] == ["Ms", "T", "Tc"]
+        assert [name for name, _entity in col_read] == ["Ms", "T", "Tc", "description"]
         assert col_read.Ms == col.Ms
         assert col_read.T == col.T
         assert col_read.Tc == col.Tc
+        assert col_read["description"] == col["description"]
 
 
 def test_entity_collection_to_hdf5_extra_features_do_not_affect_read():
