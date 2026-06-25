@@ -80,7 +80,6 @@ def _is_metric_prefixed_symbol(unit, reference_unit) -> bool:
 class ConversionType(Enum):
     ORDINARY = "ordinary"  # category 1
     DIMENSION_CONSTRAINED_TRIVIAL = "dimension_constrained_trivial"  # category 3
-    RELATION_CHANGING = "relation_changing"  # category 4
 
     # Optional backwards-compatible alias.
     TRIVIAL = "dimension_constrained_trivial"
@@ -698,17 +697,11 @@ class Entity:
         do not guarantee relation preservation. The returned entity must still be
         ontology/unit-compatible.
 
-        Relation-changing conversions are not handled by Entity.to(), because they
-        require a system- or convention-level conversion.
+        System-level conversions that transform relation systems are outside the
+        scope of Entity.to().
         """
         conversion_type = _as_conversion_type(conversion_type)
         target_unit = u.Unit(unit)
-
-        if conversion_type is ConversionType.RELATION_CHANGING:
-            raise ValueError(
-                "Relation-changing conversions cannot be performed by Entity.to(). "
-                "They require a system or convention-level conversion."
-            )
 
         if conversion_type is ConversionType.ORDINARY:
             self._validate_ordinary_conversion(target_unit)
