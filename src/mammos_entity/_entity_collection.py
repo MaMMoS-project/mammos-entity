@@ -515,49 +515,47 @@ class EntityCollection:
 
         MaMMoS YAML files have the following format:
 
-        - one commented line at the top of the file containing the mammos format version in the form ``# mammos yaml v<version-number>``.
-
+        - one commented line at the top of the file containing the mammos format version
+          in the form ``# mammos yaml v<version-number>``.
         - a mapping with three top-level keys ``metadata``, ``description`` and ``data``
-
         - ``metadata`` is currently unused and should be empty
-
         - the ``description`` key contains a (multi-line) string with arbitrary content
           describing the top-level collection
-
         - ``data`` contains one key per element in the collection. Each entry is either
           an entity-like entry or a nested collection node.
 
         Collection nodes are recursive and have two keys ``description`` and ``data``:
 
-          - ``description``: a (multi-line) string with arbitrary content
-          - ``data``: mapping from entry names to entity-like entries or nested
-            collection nodes
+        - ``description``: a (multi-line) string with arbitrary content
+        - ``data``: mapping from entry names to entity-like entries or nested
+          collection nodes
 
         Entity-like entries have the following keys:
 
-          - For :py:class:`~mammos_entity.Entity`:
+        - For :py:class:`~mammos_entity.Entity`:
 
-            - ``ontology_label``: label in the ontology
-            - ``description``: description string
-            - ``ontology_iri``: IRI of the entity
-            - ``unit``: unit of the entity (``""`` for dimensionless)
-            - ``value``: value of the data
+          - ``ontology_label``: label in the ontology
+          - ``description``: description string
+          - ``ontology_iri``: IRI of the entity
+          - ``unit``: unit of the entity (``""`` for dimensionless)
+          - ``value``: value of the data
 
-          - For :py:class:`~mammos_units.Quantity`:
+        - For :py:class:`~mammos_units.Quantity`:
 
-            - ``unit``: unit of the quantity
-            - ``value``: value of the data
+          - ``unit``: unit of the quantity
+          - ``value``: value of the data
 
-          - For any other value:
+        - For any other value:
 
-            - ``value``: value of the data
+          - ``value``: value of the data
 
         .. version-added:: v2
            The ``description`` key for each object.
 
         .. version-changed:: v2
 
-           - The version of the file is now stored in the first commented line, previously it was stored in ``metadata:description``.
+           - The version of the file is now stored in the first commented line,
+             previously it was stored in ``metadata:description``.
            - The top-level collection description is stored under ``description``
              (next to ``metadata`` and ``data``). Previously it was stored in
              ``metadata:description``.

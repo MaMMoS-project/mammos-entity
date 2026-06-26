@@ -16,7 +16,6 @@ in each repository's `CONTRIBUTING.md`.
 - Use the `src` layout for Python packages.
 - Keep tests outside the deployed package.
 - Follow Ruff for style decisions.
-- Use 120-character line length for notebooks.
 - Use semantic versioning for all packages.
 - Update the metapackage version according to the largest version change of any
   dependent package or of the metapackage itself.
@@ -41,7 +40,8 @@ in each repository's `CONTRIBUTING.md`.
 
 ## Return values and inputs
 
-- When a function or method returns one MaMMoS value the return object should preferably be an Entity.
+- When a function or method returns one MaMMoS value the return object should
+  preferably be an Entity.
 - When a function or method returns more than one MaMMoS value, prefer a custom
   composite object based on `mammos_entity.EntityCollection`.
 - Attributes of such composite objects should be `mammos_entity.Entity` objects
@@ -54,6 +54,7 @@ in each repository's `CONTRIBUTING.md`.
 ## Documentation and examples
 
 - Public APIs must have docstrings, where practical with examples.
+- Private APIs should also have docstrings in most cases. Exceptions can be made for small utility functions when their behavior is fully clear from the function name.
 - Examples should use explicit units and should show the expected entity labels.
 - Keep user-facing documentation in README files, package
   docs, or examples.
