@@ -43,12 +43,12 @@ class EntityCollection:
     is a valid Python name and no property/method of EntityCollection shadows the
     entity. The dictionary interface does not have these limitations.
 
-    Entities can have arbitrary string names. Entities passed as keyword arguments when
-    creating the collection must have valid Python names. Entities with other names can
-    be added after the collection has been created using the dictonary interface (item
-    assignment). Similarly, an entity with key ``description`` can only be added via
-    item assignment. Entities with names starting with an underscore can only be
-    accessed via the dictionary interface.
+    Collection members (also called entities) can have arbitrary string names. Entities
+    passed as keyword arguments whens creating the collection must have valid Python names.
+    Entities with other names can be added after the collection has been created using the
+    dictonary interface (item assignment). Similarly, an entity with key ``description``
+    can only be added via item assignment. Entities with names starting with an underscore
+    can only be accessed via the dictionary interface.
 
     Examples:
         >>> import mammos_entity as me
