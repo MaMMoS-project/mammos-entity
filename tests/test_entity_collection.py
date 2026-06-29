@@ -35,8 +35,10 @@ def test_entity_name_clash():
     assert ec.to_dataframe == "missing"
     assert ec["to_dataframe"] == me.Ms()
 
-    with pytest.raises(KeyError):
-        ec["description"] = me.T()
+    # 'description' can be used as entity-like name if accessed via dict interface
+    ec["description"] = me.T()
+    assert isinstance(ec["description"], me.Entity)
+    assert ec.description == ""
 
 
 def test_entity_name_must_be_string():
@@ -109,7 +111,6 @@ def test_metadata():
         V=1,
     )
     reference = {
-        "description": "descr",
         "M": {"ontology_label": "Magnetization", "unit": "A / m", "description": ""},
         "Tc": {"ontology_label": "CurieTemperature", "unit": "K", "description": "low"},
         "T_q": {"unit": "K"},
@@ -163,13 +164,13 @@ def test_to_dataframe_unsupported():
 def test_from_dataframe():
     data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
     metadata = {
-        "description": "",
         "M": {"ontology_label": "Magnetization", "unit": "kA/m", "description": "abc"},
         "T": {"ontology_label": "ThermodynamicTemperature"},
         "l_q": {"unit": "m"},
         "x": {},
     }
-    collection = me.EntityCollection.from_dataframe(data, metadata)
+    collection = me.EntityCollection.from_dataframe(data, metadata, description="desc")
+    assert collection.description == "desc"
     assert me.M([1, 2], "kA/m") == collection.M
     assert collection.M.description == "abc"
     assert me.T([3, 4], "K") == collection.T
@@ -183,9 +184,19 @@ def test_dataframe_roundtrip():
     Tq = me.T([3, 4]).q
     V = [5, 6]
     col = me.EntityCollection("descr", M=M, Tq=Tq, V=V)
-    col_new = me.EntityCollection.from_dataframe(col.to_dataframe(), col.metadata())
+    col["name with spaces"] = [0, 0]
+    col["description"] = [1, 1]
+    col_new = me.EntityCollection.from_dataframe(
+        col.to_dataframe(), col.metadata(), col.description
+    )
     assert col_new.M == M
     assert all(col_new.Tq == Tq)
     assert all(col_new.V == V)
     assert col_new.description == "descr"
-    assert [name for name, _entity in col_new] == ["M", "Tq", "V"]
+    assert [name for name, _entity in col_new] == [
+        "M",
+        "Tq",
+        "V",
+        "name with spaces",
+        "description",
+    ]
