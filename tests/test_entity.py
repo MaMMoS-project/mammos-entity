@@ -334,6 +334,98 @@ def test_equality():
     assert e_1 == A()
 
 
+def test_entity_to_ordinary_conversions():
+    """Test ordinary Entity.to conversions for metric-prefix rescalings."""
+    ms = me.Ms(100_000, "A/m")
+    assert ms.to("kA/m") == ms
+    assert ms.to("mA/cm") == ms
+
+    b = me.B(1, "T")
+    assert b.to("mT") == b
+
+    exchange = me.A(1, "J/m")
+    assert exchange.to("kJ/mm") == exchange
+
+
+def test_entity_to_preserves_metadata():
+    """Test that Entity.to preserves ontology label and description."""
+    ms = me.Ms(100_000, "A/m", description="test description")
+    out = ms.to("kA/m")
+
+    assert out.ontology_label == ms.ontology_label
+    assert out.description == ms.description
+    assert out == ms
+
+
+def test_entity_to_special_units_are_not_ordinary_except_identity():
+    """Test special units are not ordinary conversions, except identity."""
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.Ms(1, "A/m").to("Oe")
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.Ms(1, "Oe").to("A/m")
+
+    ms_oe = me.Ms(1, "Oe")
+    assert ms_oe.to("Oe") == ms_oe
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.B(1, "T").to("G")
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.B(1, "G").to("T")
+
+    b_g = me.B(1, "G")
+    assert b_g.to("G") == b_g
+
+
+def test_entity_to_affine_temperature_is_not_ordinary_except_identity():
+    """Test affine temperature conversions are not ordinary, except identity."""
+    with pytest.raises(ValueError, match="affine or offset-based"):
+        me.T(300, "K").to("deg_C")
+
+    with pytest.raises(ValueError, match="affine or offset-based"):
+        me.T(26.85, "deg_C").to("K")
+
+    temp_c = me.T(26.85, "deg_C")
+    assert temp_c.to("deg_C") == temp_c
+
+
+def test_entity_to_dimension_constrained_conversions():
+    """Test explicit dimension-constrained conversions."""
+    ms_oe = me.Ms(1, "A/m").to(
+        "Oe",
+        conversion_type="dimension_constrained",
+    )
+    assert ms_oe.unit == u.Oe
+
+    b_g = me.B(1, "T").to(
+        "G",
+        conversion_type="dimension_constrained",
+    )
+    assert b_g.unit == u.G
+
+    temp_c = me.T(300, "K").to(
+        "deg_C",
+        conversion_type="dimension_constrained",
+    )
+    assert temp_c.unit == u.deg_C
+
+
+def test_entity_to_rejects_unsupported_conversion_type():
+    """Test unsupported conversion types are rejected."""
+    with pytest.raises(ValueError, match="'system' is not a valid ConversionType"):
+        me.B(1, "T").to("G", conversion_type="system")
+
+
+def test_entity_to_array_values():
+    """Test Entity.to scales array values elementwise."""
+    b = me.B(np.array([1, 2, 3]), "T")
+    out = b.to("mT")
+
+    assert out.unit == u.mT
+    assert np.allclose(out.value, [1000, 2000, 3000])
+
+
 @pytest.mark.parametrize(
     "function, expected_label",
     (
