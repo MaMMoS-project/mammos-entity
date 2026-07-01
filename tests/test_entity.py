@@ -390,23 +390,23 @@ def test_entity_to_affine_temperature_is_not_ordinary_except_identity():
     assert temp_c.to("deg_C") == temp_c
 
 
-def test_entity_to_dimension_constrained_trivial_conversions():
-    """Test explicit dimension-constrained trivial conversions."""
+def test_entity_to_dimension_constrained_conversions():
+    """Test explicit dimension-constrained conversions."""
     ms_oe = me.Ms(1, "A/m").to(
         "Oe",
-        conversion_type="dimension_constrained_trivial",
+        conversion_type="dimension_constrained",
     )
     assert ms_oe.unit == u.Oe
 
     b_g = me.B(1, "T").to(
         "G",
-        conversion_type="dimension_constrained_trivial",
+        conversion_type="dimension_constrained",
     )
     assert b_g.unit == u.G
 
     temp_c = me.T(300, "K").to(
         "deg_C",
-        conversion_type="dimension_constrained_trivial",
+        conversion_type="dimension_constrained",
     )
     assert temp_c.unit == u.deg_C
 

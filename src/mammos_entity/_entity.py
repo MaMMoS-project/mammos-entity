@@ -79,23 +79,12 @@ def _is_metric_prefixed_symbol(unit, reference_unit) -> bool:
 
 class ConversionType(Enum):
     ORDINARY = "ordinary"  # category 1
-    DIMENSION_CONSTRAINED_TRIVIAL = "dimension_constrained_trivial"  # category 3
-
-    # Optional backwards-compatible alias.
-    TRIVIAL = "dimension_constrained_trivial"
+    DIMENSION_CONSTRAINED = "dimension_constrained"  # category 3
 
 
 def _as_conversion_type(value: ConversionType | str) -> ConversionType:
     if isinstance(value, ConversionType):
         return value
-    if value == "trivial":
-        return ConversionType.DIMENSION_CONSTRAINED_TRIVIAL
-    if value == "unconstrained_trivial":
-        raise ValueError(
-            "Unconstrained trivial conversions are not supported by Entity.to(). "
-            "Use conversion_type='dimension_constrained_trivial' for isolated "
-            "ontology-compatible conversions."
-        )
     return ConversionType(value)
 
 
@@ -640,7 +629,7 @@ class Entity:
                 f"{target_unit} for entity {self.ontology_label}. "
                 "Both source and target units must be pure rescalings of an "
                 "ontology unit. "
-                "Use conversion_type='dimension_constrained_trivial' for explicit "
+                "Use conversion_type='dimension_constrained' for explicit "
                 "isolated mappings."
             )
 
@@ -653,7 +642,7 @@ class Entity:
                 f"{target_unit} for entity {self.ontology_label}. "
                 "This conversion is affine or offset-based, not a pure linear "
                 "rescaling. "
-                "Use conversion_type='dimension_constrained_trivial' for isolated "
+                "Use conversion_type='dimension_constrained' for isolated "
                 "value conversions."
             )
 
@@ -663,15 +652,15 @@ class Entity:
                 f"{target_unit} for entity {self.ontology_label}. "
                 "This conversion is linear, but its scale factor is not a decimal "
                 "metric-prefix factor 10**k. "
-                "Use conversion_type='dimension_constrained_trivial' for explicit "
+                "Use conversion_type='dimension_constrained' for explicit "
                 "isolated mappings."
             )
 
-    def _validate_dimension_constrained_trivial_conversion(
+    def _validate_dimension_constrained_conversion(
         self,
         target_unit: mammos_units.UnitBase,
     ) -> None:
-        """Validate a dimension-constrained trivial conversion.
+        """Validate a dimension-constrained conversion.
 
         These are isolated entity conversions. They may use equivalencies allowed
         by the current unit system, but they do not guarantee relation preservation.
@@ -692,9 +681,9 @@ class Entity:
         restricted to pure rescalings of ontology-compatible units. They are intended
         for representation changes that do not alter the relation structure.
 
-        Dimension-constrained trivial conversions are isolated entity conversions.
-        They may use unit equivalencies allowed by the current unit system, but they
-        do not guarantee relation preservation. The returned entity must still be
+        Dimension-constrained conversions are isolated entity conversions. They may
+        use unit equivalencies allowed by the current unit system, but they do not
+        guarantee relation preservation. The returned entity must still be
         ontology/unit-compatible.
 
         System-level conversions that transform relation systems are outside the
@@ -706,8 +695,8 @@ class Entity:
         if conversion_type is ConversionType.ORDINARY:
             self._validate_ordinary_conversion(target_unit)
 
-        elif conversion_type is ConversionType.DIMENSION_CONSTRAINED_TRIVIAL:
-            self._validate_dimension_constrained_trivial_conversion(target_unit)
+        elif conversion_type is ConversionType.DIMENSION_CONSTRAINED:
+            self._validate_dimension_constrained_conversion(target_unit)
 
         else:
             raise ValueError(f"Unsupported conversion type: {conversion_type}")
