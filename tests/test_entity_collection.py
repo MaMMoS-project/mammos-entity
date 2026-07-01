@@ -1,8 +1,31 @@
 import mammos_units as u
+import numpy as np
 import pandas as pd
 import pytest
 
 import mammos_entity as me
+
+
+class HtmlValue:
+    """Test helper exposing a custom HTML repr."""
+
+    def _repr_html_(self):
+        return "<span>custom html</span>"
+
+
+class BrokenHtmlValue:
+    """Test helper whose HTML repr fails."""
+
+    def _repr_html_(self):
+        raise RuntimeError("broken html repr")
+
+    def __repr__(self):
+        """Return a stable repr for fallback assertions."""
+        return "BrokenHtmlValue()"
+
+
+class DerivedEntityCollection(me.EntityCollection):
+    """Test helper subclass for nested collection HTML repr coverage."""
 
 
 def test_entity_collection_with_description():
@@ -100,6 +123,139 @@ def test_bad_description():
     """Check bad type for description of an EntityCollection."""
     with pytest.raises(ValueError):
         me.EntityCollection(description=1)
+
+
+def test_repr_html():
+    ec = me.EntityCollection("descr", M=me.M(1, "A/m"), a=[1, 2])
+
+    html = ec._repr_html_()
+
+    assert html.startswith("<style>")
+    assert html.count("<style>") == 1
+    assert "class='mammos-entity-collection'" in html
+    assert "data-busy='false'" in html
+    assert "aria-busy='false'" in html
+    assert "class='collection-header'" in html
+    assert "class='collection-title'" in html
+    assert "<span>EntityCollection</span>" in html
+    assert "class='collection-body'" in html
+    assert "class='collection-children'" in html
+    assert "<div class='branch-item collection-description'>descr</div>" in html
+    assert html.count("class='branch-item entity-row'") == 2
+    assert "<div class='entity-key'>M</div>" in html
+    assert "<div class='entity-value'><samp class='mammos-entity-inline'>" in html
+    assert "<span class='entity-label'>Magnetization</span>" in html
+    assert "1.0&nbsp;A&nbsp;/&nbsp;m" in html
+    assert "<div class='entity-key'>a</div>" in html
+    assert "<div class='entity-value'>[1,&nbsp;2]</div>" in html
+    assert "<details" not in html
+    assert "EntityCollection(" not in html
+    assert "EntityCollection)" not in html
+    assert "Expand all" not in html
+    assert "Collapse all" not in html
+
+
+def test_repr_html_uses_value_repr_html_when_available():
+    ec = me.EntityCollection(custom=HtmlValue())
+
+    html = ec._repr_html_()
+
+    assert "<div class='entity-key'>custom</div>" in html
+    assert "<div class='entity-value'><span>custom html</span></div>" in html
+
+
+def test_repr_html_falls_back_when_value_repr_html_raises():
+    ec = me.EntityCollection(custom=HtmlValue(), broken=BrokenHtmlValue())
+
+    html = ec._repr_html_()
+
+    assert "<div class='entity-key'>custom</div>" in html
+    assert "<div class='entity-value'><span>custom html</span></div>" in html
+    assert "<div class='entity-key'>broken</div>" in html
+    assert "<div class='entity-value'>BrokenHtmlValue()</div>" in html
+
+
+def test_repr_html_nested_collection_keeps_content_in_details():
+    ec = me.EntityCollection(
+        outer=1,
+        inner=me.EntityCollection("inner descr", T=me.T(2)),
+    )
+
+    html = ec._repr_html_()
+
+    assert html.count("<style>") == 1
+    assert html.count("class='mammos-entity-collection'") == 1
+    assert "<details class='branch-item'>" in html
+    assert "class='collection-toolbar'" in html
+    assert "ontoggle=" not in html
+    assert "<template data-entity-collection-template>" not in html
+    assert "title='Expand all'" in html
+    assert "title='Collapse all'" in html
+    assert "aria-label='Expand all'" in html
+    assert "aria-label='Collapse all'" in html
+    assert "class='collection-status' aria-live='polite'" in html
+    assert ">▾</button>" in html
+    assert ">▸</button>" in html
+    assert html.index("title='Collapse all'") < html.index("title='Expand all'")
+    assert html.count("<button type='button'") == 2
+    assert html.count("onclick=") == 2
+    assert "root.querySelectorAll('details.branch-item')" in html
+    assert "Expanding..." in html
+    assert "Collapsing..." in html
+    assert "<summary>" in html
+    assert "<span class='summary-key'>inner</span>" in html
+    assert (
+        "<span class='summary-preview'>EntityCollection&nbsp;·&nbsp;"
+        "1&nbsp;item&nbsp;·&nbsp;T</span>"
+    ) in html
+    assert "class='collection-children nested-children'" in html
+    assert (
+        "<div class='branch-item collection-description'>inner&nbsp;descr</div>"
+    ) in html
+    assert "description=&#x27;&#x27;" not in html
+    assert "<div class='entity-key'>T</div>" in html
+    assert "<span class='entity-label'>ThermodynamicTemperature</span>" in html
+    assert "<span>2.0&nbsp;K</span></samp></div>" in html
+    assert "EntityCollection(" not in html
+
+
+def test_repr_html_embeds_long_entity_value_preview():
+    ec = me.EntityCollection(M=me.M(np.arange(24).reshape(4, 6), "A/m"))
+
+    html = ec._repr_html_()
+
+    assert "<samp class='mammos-entity-inline' data-expanded='false'>" in html
+    assert html.count("class='entity-toggle'") == 2
+    assert html.count("role='button'") == 2
+    assert html.count("tabindex='0'") == 2
+    assert "aria-label='Expand value'" in html
+    assert "aria-label='Collapse value'" in html
+    assert "<span class='entity-full-value'>" in html
+    assert "class='entity-meta'>·&nbsp;shape=(4,&nbsp;6)</span>" in html
+    assert "[0.&nbsp;1.&nbsp;2.&nbsp;3." in html
+    assert "&nbsp;A&nbsp;/&nbsp;m" in html
+    assert "<div class='entity-key'>M</div>" in html
+    assert "<details class='branch-item'>" not in html
+    assert "Expand all" not in html
+
+
+def test_repr_html_subclass_treats_base_collection_values_as_nested():
+    ec = DerivedEntityCollection(inner=me.EntityCollection(T=me.T(2)))
+
+    html = ec._repr_html_()
+
+    assert "<span>DerivedEntityCollection</span>" in html
+    assert "title='Expand all'" in html
+    assert "title='Collapse all'" in html
+    assert html.count("<style>") == 1
+    assert html.count("id='mammos-entity-collection-") == 1
+    assert (
+        "<details class='branch-item'><summary><span class='summary-key'>inner</span>"
+    ) in html
+    assert (
+        "<span class='summary-preview'>EntityCollection&nbsp;·&nbsp;"
+        "1&nbsp;item&nbsp;·&nbsp;T</span>"
+    ) in html
 
 
 def test_metadata():
