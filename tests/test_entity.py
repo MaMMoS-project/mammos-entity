@@ -347,6 +347,14 @@ def test_entity_to_ordinary_conversions():
     assert exchange.to("kJ/mm") == exchange
 
 
+def test_metric_prefix_detection_does_not_confuse_composite_units():
+    """Test that products such as m s are not parsed like prefixed units."""
+    assert me._entity._is_scaled_version_of("mK", "K")
+    assert not me._entity._is_scaled_version_of("m K", "K")
+    assert me._entity._is_scaled_version_of("ms", "s")
+    assert not me._entity._is_scaled_version_of("m s", "s")
+
+
 def test_entity_to_preserves_metadata():
     """Test that Entity.to preserves ontology label and description."""
     ms = me.Ms(100_000, "A/m", description="test description")
@@ -390,31 +398,25 @@ def test_entity_to_affine_temperature_is_not_ordinary_except_identity():
     assert temp_c.to("deg_C") == temp_c
 
 
-def test_entity_to_dimension_constrained_conversions():
-    """Test explicit dimension-constrained conversions."""
-    ms_oe = me.Ms(1, "A/m").to(
-        "Oe",
-        conversion_type="dimension_constrained",
-    )
-    assert ms_oe.unit == u.Oe
+def test_entity_to_rejects_non_ordinary_conversions():
+    """Test Entity.to only accepts ordinary conversions."""
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.Ms(1, "A/m").to("Oe")
 
-    b_g = me.B(1, "T").to(
-        "G",
-        conversion_type="dimension_constrained",
-    )
-    assert b_g.unit == u.G
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.B(1, "T").to("G")
 
-    temp_c = me.T(300, "K").to(
-        "deg_C",
-        conversion_type="dimension_constrained",
-    )
-    assert temp_c.unit == u.deg_C
+    with pytest.raises(ValueError, match="affine or offset-based"):
+        me.T(300, "K").to("deg_C")
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.Entity("Energy", 1, "J").to("eV")
 
 
-def test_entity_to_rejects_unsupported_conversion_type():
-    """Test unsupported conversion types are rejected."""
-    with pytest.raises(ValueError, match="'system' is not a valid ConversionType"):
-        me.B(1, "T").to("G", conversion_type="system")
+def test_entity_to_rejects_conversion_type_keyword():
+    """Test Entity.to does not expose alternative conversion modes."""
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        me.B(1, "T").to("G", conversion_type="dimension_constrained")
 
 
 def test_entity_to_array_values():

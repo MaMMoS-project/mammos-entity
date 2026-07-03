@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import os
 import re
-from enum import Enum
 from typing import TYPE_CHECKING
 
 import h5py
@@ -67,25 +66,25 @@ def _is_metric_prefixed_symbol(unit, reference_unit) -> bool:
         kJ -> J   True
         G  -> T   False
         eV -> J   False
+        m s -> s  False
     """
     unit = u.Unit(unit)
     reference_unit = u.Unit(reference_unit)
+
+    if (
+        not hasattr(unit, "bases")
+        or not hasattr(reference_unit, "bases")
+        or len(unit.bases) != 1
+        or len(reference_unit.bases) != 1
+        or unit.powers != [1]
+        or reference_unit.powers != [1]
+    ):
+        return False
 
     unit_str = str(unit).replace(" ", "")
     ref_str = str(reference_unit).replace(" ", "")
 
     return any(unit_str == f"{prefix}{ref_str}" for prefix in _METRIC_PREFIXES)
-
-
-class ConversionType(Enum):
-    ORDINARY = "ordinary"  # category 1
-    DIMENSION_CONSTRAINED = "dimension_constrained"  # category 3
-
-
-def _as_conversion_type(value: ConversionType | str) -> ConversionType:
-    if isinstance(value, ConversionType):
-        return value
-    return ConversionType(value)
 
 
 def _deprefix_unit(unit: mammos_units.UnitBase) -> mammos_units.UnitBase:
@@ -628,9 +627,7 @@ class Entity:
                 f"Cannot perform ordinary conversion from {self.unit} to "
                 f"{target_unit} for entity {self.ontology_label}. "
                 "Both source and target units must be pure rescalings of an "
-                "ontology unit. "
-                "Use conversion_type='dimension_constrained' for explicit "
-                "isolated mappings."
+                "ontology unit."
             )
 
         with u.set_enabled_equivalencies(mammos_equivalencies):
@@ -641,9 +638,7 @@ class Entity:
                 f"Cannot perform ordinary conversion from {self.unit} to "
                 f"{target_unit} for entity {self.ontology_label}. "
                 "This conversion is affine or offset-based, not a pure linear "
-                "rescaling. "
-                "Use conversion_type='dimension_constrained' for isolated "
-                "value conversions."
+                "rescaling."
             )
 
         if not _has_decimal_scale(self.unit, target_unit):
@@ -651,55 +646,24 @@ class Entity:
                 f"Cannot perform ordinary conversion from {self.unit} to "
                 f"{target_unit} for entity {self.ontology_label}. "
                 "This conversion is linear, but its scale factor is not a decimal "
-                "metric-prefix factor 10**k. "
-                "Use conversion_type='dimension_constrained' for explicit "
-                "isolated mappings."
+                "metric-prefix factor 10**k."
             )
-
-    def _validate_dimension_constrained_conversion(
-        self,
-        target_unit: mammos_units.UnitBase,
-    ) -> None:
-        """Validate a dimension-constrained conversion.
-
-        These are isolated entity conversions. They may use equivalencies allowed
-        by the current unit system, but they do not guarantee relation preservation.
-
-        The Entity constructor still enforces ontology/unit compatibility.
-        """
-        return
 
     def to(
         self,
         unit: str | mammos_units.UnitBase,
-        *,
-        conversion_type: ConversionType | str = ConversionType.ORDINARY,
     ) -> mammos_entity.Entity:
         """Return a copy of the entity converted to a different unit.
 
-        By default this performs an ordinary conversion. Ordinary conversions are
-        restricted to pure rescalings of ontology-compatible units. They are intended
-        for representation changes that do not alter the relation structure.
-
-        Dimension-constrained conversions are isolated entity conversions. They may
-        use unit equivalencies allowed by the current unit system, but they do not
-        guarantee relation preservation. The returned entity must still be
-        ontology/unit-compatible.
+        This performs an ordinary conversion. Ordinary conversions are restricted
+        to pure rescalings of ontology-compatible units. They are intended for
+        representation changes that do not alter the relation structure.
 
         System-level conversions that transform relation systems are outside the
         scope of Entity.to().
         """
-        conversion_type = _as_conversion_type(conversion_type)
         target_unit = u.Unit(unit)
-
-        if conversion_type is ConversionType.ORDINARY:
-            self._validate_ordinary_conversion(target_unit)
-
-        elif conversion_type is ConversionType.DIMENSION_CONSTRAINED:
-            self._validate_dimension_constrained_conversion(target_unit)
-
-        else:
-            raise ValueError(f"Unsupported conversion type: {conversion_type}")
+        self._validate_ordinary_conversion(target_unit)
 
         return self.__class__(
             self.ontology_label,
