@@ -810,8 +810,22 @@ class EntityCollection:
     ) -> h5py.Group | None:
         """Write a collection to an HDF5 group.
 
-        Entities of the collection become datasets in the group. The collection
-        description is added to the group attributes.
+        The HDF5 structure is:
+
+        - The collection is stored as an HDF5 group.
+        - The collection description is written to the group's ``description``
+          attribute.
+        - Each element of the collection becomes a child of the group:
+          - :py:class:`~mammos_entity.Entity` objects are stored as HDF5 datasets
+            with attributes ``ontology_label``, ``ontology_iri``, ``unit``,
+            ``description`` (see :py:func:`~mammos_entity.Entity.to_hdf5`).
+          - :py:class:`~mammos_units.Quantity` objects are stored as datasets
+            with a ``unit`` attribute.
+          - Plain values are stored as datasets without mammos-specific attributes.
+          - Nested :py:class:`~mammos_entity.EntityCollection` objects become
+            nested HDF5 groups (recursive structure).
+        - The ``mammos_entity_version`` attribute is written only on the outermost
+          group (or dataset), not on nested elements.
 
         Args:
             base: If it is an open HDF5 file or a group in an HDF5 file, data will be
@@ -827,6 +841,11 @@ class EntityCollection:
             If ``base`` is an open :py:class:`~h5py.File` or :py:class:`~h5py.Group` the
             newly created group. If `base` is a file name nothing is returned (because
             the file created internally will be closed before the function returns).
+
+        .. seealso::
+
+           :py:func:`mammos_entity.Entity.to_hdf5`
+           :py:func:`mammos_entity.from_hdf5`
         """
         return _to_hdf5(self, base, name)
 
