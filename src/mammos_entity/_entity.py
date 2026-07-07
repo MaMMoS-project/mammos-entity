@@ -448,6 +448,59 @@ class Entity:
         """Unit of the entity data."""
         return self.quantity.unit
 
+    def __getitem__(self, key):
+        """Index or slice the entity's values.
+
+        Returns a new :py:class:`Entity` with the same ontology label, unit, and
+        description, but with a subset of the values.
+
+        All indexing and slicing operations supported by NumPy are valid, including
+        integers, slices, ellipsis, boolean arrays, and integer arrays.
+
+        Args:
+            key: Index or slice to apply to the entity's values.
+
+        Returns:
+            A new :py:class:`Entity` with the same ontology label, unit and
+            description, containing the selected values.
+
+        Raises:
+            IndexError: If the entity has a scalar value and an index other than
+                ``()`` is used.
+
+        Examples:
+            >>> import mammos_entity as me
+            >>> Ms = me.Ms([500, 600, 700], "kA/m")
+
+            Integer indexing returns a scalar entity:
+
+            >>> Ms[0]
+            Entity(ontology_label='SpontaneousMagnetization', value=np.float64(500.0), unit='kA / m')
+
+            Slice indexing returns an entity with a subset of the values:
+
+            >>> Ms[1:3]
+            Entity(ontology_label='SpontaneousMagnetization', value=array([600., 700.]), unit='kA / m')
+
+            Boolean indexing selects values where the mask is ``True``:
+
+            >>> Ms[[True, False, True]]
+            Entity(ontology_label='SpontaneousMagnetization', value=array([500., 700.]), unit='kA / m')
+
+            The ontology label, unit, and description are preserved:
+
+            >>> sliced = Ms[1:]
+            >>> sliced.ontology_label
+            'SpontaneousMagnetization'
+            >>> sliced.unit
+            Unit("kA / m")
+
+        """  # noqa: E501
+        sliced_quantity = self._quantity[key]
+        return self.__class__(
+            self._ontology_label, sliced_quantity, description=self._description
+        )
+
     @property
     def axis_label(self) -> str:
         """Return an ontology-based axis label for the plots.
