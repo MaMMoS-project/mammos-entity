@@ -8,6 +8,7 @@ from numpy import array  # noqa: F401  # required for repr eval
 
 import mammos_entity as me
 from mammos_entity import Entity  # noqa: F401  # required for repr eval
+from mammos_entity._repr import _repr_css
 
 
 def test_init_float():
@@ -183,72 +184,65 @@ def test_repr_html():
     """Test compact HTML repr for standalone entity display."""
     e = me.Entity("CurieTemperature", 300, description="measured <carefully>")
 
-    html = e._repr_html_()
+    fragment = e._repr_html_fragment_()
 
-    assert html.startswith("<style>")
-    assert html.count("<style>") == 1
-    assert "class='mammos-entity-inline'" in html
-    assert "<span class='entity-label'>CurieTemperature</span>" in html
-    assert "300.0" in html
-    assert "&nbsp;K</span>" in html
-    assert "<em>measured &lt;carefully&gt;</em>" in html
-    assert "class='entity-toggle'" not in html
-    assert "data-expanded='false'" not in html
+    assert fragment == (
+        "<samp class='mammos-entity-inline'>"
+        "<span class='entity-label'>CurieTemperature</span>&nbsp;"
+        "<span>300.0&nbsp;K</span>"
+        "<br><em>measured &lt;carefully&gt;</em>"
+        "</samp>"
+    )
+    assert e._repr_html_() == f"{_repr_css()}{fragment}"
 
 
 def test_repr_html_dimensionless():
     """Test HTML repr for dimensionless entities."""
     e = me.Entity("DemagnetizingFactor", 0.3)
 
-    html = e._repr_html_()
-
-    assert "<span class='entity-label'>DemagnetizingFactor</span>" in html
-    assert "<span>0.3</span>" in html
-    assert "description=" not in html
-    assert "class='entity-toggle'" not in html
-    assert "shape=" not in html
+    assert e._repr_html_fragment_() == (
+        "<samp class='mammos-entity-inline'>"
+        "<span class='entity-label'>DemagnetizingFactor</span>&nbsp;"
+        "<span>0.3</span>"
+        "</samp>"
+    )
 
 
 def test_repr_html_small_array_stays_single_line():
     """Test that compact arrays stay on one line."""
     e = me.Entity("ThermodynamicTemperature", [[1, 2], [3, 4]], "K")
 
-    html = e._repr_html_()
-
-    assert "class='entity-collapsed'" not in html
-    assert "class='entity-expanded'" not in html
-    assert "class='entity-toggle'" not in html
-    assert "data-expanded='false'" not in html
-    assert "[[1." in html
-    assert "[3.&nbsp;4.]]" in html
-    assert "&nbsp;K</span>" in html
-    assert "shape=(2, 2)" not in html
-    assert "class='entity-meta'" not in html
+    assert e._repr_html_fragment_() == (
+        "<samp class='mammos-entity-inline'>"
+        "<span class='entity-label'>ThermodynamicTemperature</span>&nbsp;"
+        "<span>[[1.&nbsp;2.]&nbsp;[3.&nbsp;4.]]&nbsp;K</span>"
+        "</samp>"
+    )
 
 
 def test_repr_html_long_value_uses_inline_toggle():
     """Test HTML repr for long values."""
     e = me.Entity("ExternalMagneticField", np.arange(24).reshape(4, 6), "A/m")
 
-    html = e._repr_html_()
+    fragment = e._repr_html_fragment_()
 
-    assert "class='entity-collapsed'" in html
-    assert "class='entity-expanded'" in html
-    assert html.count("class='entity-toggle'") == 2
-    assert html.count("role='button'") == 2
-    assert html.count("tabindex='0'") == 2
-    assert "aria-label='Expand value'" in html
-    assert "aria-label='Collapse value'" in html
-    assert "data-expanded='false'" in html
-    assert "<span class='entity-label'>ExternalMagneticField</span>" in html
-    assert "class='entity-meta'>·&nbsp;shape=(4,&nbsp;6)</span>" in html
-    assert "<span class='entity-full-value'>" in html
-    assert "[0.&nbsp;1.&nbsp;2.&nbsp;3." in html
-    assert "&nbsp;A&nbsp;/&nbsp;m" in html
-    assert "[[ 0.  1.  2.  3.  4.  5.]" in html
-    assert "[18. 19. 20. 21. 22. 23.]] A / m</span>" in html
-    assert "this.closest('.mammos-entity-inline')" in html
-    assert "event.key==='Enter'" in html
+    assert "class='entity-collapsed'" in fragment
+    assert "class='entity-expanded'" in fragment
+    assert fragment.count("class='entity-toggle'") == 2
+    assert fragment.count("role='button'") == 2
+    assert fragment.count("tabindex='0'") == 2
+    assert "aria-label='Expand value'" in fragment
+    assert "aria-label='Collapse value'" in fragment
+    assert "data-expanded='false'" in fragment
+    assert "<span class='entity-label'>ExternalMagneticField</span>" in fragment
+    assert "class='entity-meta'>·&nbsp;shape=(4,&nbsp;6)</span>" in fragment
+    assert "<span class='entity-full-value'>" in fragment
+    assert "[0.&nbsp;1.&nbsp;2.&nbsp;3." in fragment
+    assert "&nbsp;A&nbsp;/&nbsp;m" in fragment
+    assert "[[ 0.  1.  2.  3.  4.  5.]" in fragment
+    assert "[18. 19. 20. 21. 22. 23.]] A / m</span>" in fragment
+    assert "this.closest('.mammos-entity-inline')" in fragment
+    assert "event.key==='Enter'" in fragment
 
 
 def test_axis_labels():

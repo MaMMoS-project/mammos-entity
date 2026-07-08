@@ -5,11 +5,9 @@ from __future__ import annotations
 import copy
 import csv
 import html
-import importlib.resources
 import os
 import textwrap
 import uuid
-from functools import cache
 from typing import TYPE_CHECKING
 
 import h5py
@@ -19,6 +17,7 @@ import pandas as pd
 import yaml
 
 import mammos_entity as me
+from mammos_entity._repr import _repr_css
 
 if TYPE_CHECKING:
     import collections.abc
@@ -29,14 +28,6 @@ if TYPE_CHECKING:
 
     import mammos_entity
     import mammos_entity.typing
-
-
-@cache
-def _entity_collection_repr_css() -> str:
-    css = importlib.resources.files("mammos_entity").joinpath(
-        "_entity_collection_repr.css"
-    )
-    return f"<style>{css.read_text(encoding='utf-8')}</style>"
 
 
 class EntityCollection:
@@ -254,9 +245,7 @@ class EntityCollection:
     def _repr_html_(self) -> str:
         """Render the collection as notebook-friendly HTML."""
         root_id = f"mammos-entity-collection-{uuid.uuid4().hex}"
-        return (
-            f"{_entity_collection_repr_css()}{self._repr_html_block(root_id=root_id)}"
-        )
+        return f"{_repr_css()}{self._repr_html_block(root_id=root_id)}"
 
     @staticmethod
     def _format_html_text(text: str) -> str:
@@ -282,21 +271,26 @@ class EntityCollection:
         """Render one stored value, using HTML reprs when available."""
         if isinstance(value, EntityCollection):
             return value._repr_html_nested(key)
+        fallback_html = cls._format_html_text(repr(value))
         repr_html_fragment = getattr(value, "_repr_html_fragment_", None)
         if callable(repr_html_fragment):
             try:
                 value_html = repr_html_fragment()
             except Exception:
-                value_html = cls._format_html_text(repr(value))
+                value_html = fallback_html
+            if not value_html:
+                value_html = fallback_html
             return cls._repr_html_row(key, value_html)
         repr_html = getattr(value, "_repr_html_", None)
         if callable(repr_html):
             try:
                 value_html = repr_html()
             except Exception:
-                value_html = cls._format_html_text(repr(value))
+                value_html = fallback_html
         else:
-            value_html = cls._format_html_text(repr(value))
+            value_html = fallback_html
+        if not value_html:
+            value_html = fallback_html
         return cls._repr_html_row(key, value_html)
 
     def _repr_html_summary_preview(self) -> str:

@@ -8,10 +8,8 @@ includes helper functions for inferring the correct SI units from the ontology.
 from __future__ import annotations
 
 import html
-import importlib.resources
 import os
 import re
-from functools import cache
 from typing import TYPE_CHECKING
 
 import h5py
@@ -20,6 +18,7 @@ import numpy as np
 
 import mammos_entity as me
 from mammos_entity._ontology import mammos_ontology, search_labels
+from mammos_entity._repr import _repr_css
 
 if TYPE_CHECKING:
     import astropy.units
@@ -32,15 +31,6 @@ if TYPE_CHECKING:
 
 base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
-
-
-@cache
-def _entity_repr_css() -> str:
-    """Load the shared CSS used by standalone entities and collections."""
-    css = importlib.resources.files("mammos_entity").joinpath(
-        "_entity_collection_repr.css"
-    )
-    return f"<style>{css.read_text(encoding='utf-8')}</style>"
 
 
 def _convert_unit(
@@ -527,9 +517,6 @@ class Entity:
                 escaped = escaped.replace(" ", "&nbsp;")
             return escaped
 
-        def format_html_preformatted_text(text: str) -> str:
-            return html.escape(text)
-
         value_text = str(self.value)
         compact_value_text = " ".join(value_text.split())
         single_line_value_text = compact_value_text
@@ -542,7 +529,7 @@ class Entity:
             unit_html_collapsed = (
                 f"&nbsp;{format_html_text(str(self.unit), preserve_spaces=True)}"
             )
-            unit_html_expanded = f" {format_html_preformatted_text(str(self.unit))}"
+            unit_html_expanded = f" {html.escape(str(self.unit))}"
 
         show_value_details = len(f"{single_line_value_text} {self.unit!s}".strip()) > 80
 
@@ -603,7 +590,7 @@ class Entity:
             "aria-label='Collapse value' "
             f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
             "<span class='entity-full-value'>"
-            f"{format_html_preformatted_text(value_text)}"
+            f"{html.escape(value_text)}"
             f"{unit_html_expanded}"
             "</span>"
             "</span>"
@@ -621,7 +608,7 @@ class Entity:
 
     def _repr_html_(self) -> str:
         """Render the entity as compact notebook-friendly HTML."""
-        return f"{_entity_repr_css()}{self._repr_html_fragment_()}"
+        return f"{_repr_css()}{self._repr_html_fragment_()}"
 
     def to_hdf5(
         self,
