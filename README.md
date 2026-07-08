@@ -1,6 +1,6 @@
 # mammos-entity
 
-`mammos-entity` provides entities. An **entity** is a quantity, which in addition links the entity to its definition in the [ontology](https://mammos-project.github.io/MagneticMaterialsOntology/doc/magnetic_material_mammos.html). A **quantity** is an object that carries a value and units.
+`mammos-entity` provides entities. An **entity** is a quantity, which in addition links the entity to its definition in the [MagMO ontology](https://emmo-repo.github.io/domain-magnetic-materials/). A **quantity** is an object that carries a value and units.
 
 | Description   | Badge                                                                                                                                                                                                                                                                                                      |
 |---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -39,9 +39,8 @@ The code is licensed under MIT.
 
 The ontology files in src/mammos_entity/ontology are licensed under CC-BY-4.0
 (LICENSE_ONTOLOGY). `emmo.ttl` is taken from
-[EMMO](https://github.com/emmo-repo/EMMO), `magnetic_material_mammos.ttl` is
-taken from [MaMMoS
-MagneticMaterialsOntology](https://github.com/MaMMoS-project/MagneticMaterialsOntology/tree/main).
+[EMMO](https://github.com/emmo-repo/EMMO), `magnetic-materials.ttl` is
+taken from [emmo-repo/domain-magnetic-materials](https://github.com/emmo-repo/domain-magnetic-materials).
 No modifications have been made to the ontology files.
 
 ## How to cite
