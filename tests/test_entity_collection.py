@@ -1,3 +1,5 @@
+import re
+
 import mammos_units as u
 import numpy as np
 import pandas as pd
@@ -140,7 +142,7 @@ def test_repr_html(monkeypatch):
     ec = me.EntityCollection("descr", M=me.M(1, "A/m"), a=[1, 2])
 
     expected_block = (
-        "<div id='root' class='mammos-entity-collection' "
+        "<div id='root' class='mammos-entity-collection-v2' "
         "data-busy='false' aria-busy='false'>"
         "<div class='collection-header'>"
         "<div class='collection-title'><span>EntityCollection</span></div>"
@@ -151,8 +153,9 @@ def test_repr_html(monkeypatch):
         "<div class='branch-item entity-row'>"
         "<div class='entity-key'>M</div>"
         "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline'>"
-        "<span class='entity-label'>Magnetization</span>&nbsp;"
+        "<samp class='mammos-entity-inline-v2'>"
+        "<span class='entity-label'>Magnetization</span>"
+        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
         "<span>1.0&nbsp;A&nbsp;/&nbsp;m</span>"
         "</samp>"
         "</div>"
@@ -174,7 +177,72 @@ def test_repr_html(monkeypatch):
         lambda: type("DummyUuid", (), {"hex": "root"})(),
     )
     assert ec._repr_html_() == (
-        f"{_repr_css()}{{ec._repr_html_block(root_id='mammos-entity-collection-root')}}"
+        f"{_repr_css()}{ec._repr_html_block(root_id='mammos-entity-collection-v2-root')}"
+    )
+
+
+def test_repr_css_uses_explicit_jupyter_color_tiers():
+    css = _repr_css()
+
+    assert re.search(
+        r"--mammos-repr-primary:\s*var\(\s*--jp-content-font-color0,",
+        css,
+    )
+    assert re.search(
+        r"--mammos-repr-secondary:\s*var\(\s*--jp-content-font-color1,",
+        css,
+    )
+    assert re.search(
+        r"--mammos-repr-muted:\s*var\(\s*--jp-content-font-color2,",
+        css,
+    )
+    assert re.search(
+        r"--mammos-repr-soft-label:\s*var\(--mammos-repr-secondary\);",
+        css,
+    )
+    assert re.search(
+        r"--mammos-repr-soft-label:\s*color-mix\(\s*in srgb,\s*"
+        r"var\(--mammos-repr-secondary\) 55%,\s*"
+        r"var\(--mammos-repr-muted\)\s*\);",
+        css,
+        re.S,
+    )
+    assert re.search(
+        r"\.mammos-entity-inline-v2 \.entity-toggle \{\s*font: inherit;\s*"
+        r"color: var\(--mammos-repr-secondary\);",
+        css,
+        re.S,
+    )
+    assert re.search(
+        r"\.mammos-entity-collection-v2 \.collection-toolbar button \{\s*"
+        r"font: inherit;\s*color: var\(--mammos-repr-secondary\);",
+        css,
+        re.S,
+    )
+    assert re.search(
+        r"\.mammos-entity-inline-v2 \.entity-label \{\s*font-weight: 600;\s*"
+        r"color: var\(--mammos-repr-soft-label\);",
+        css,
+        re.S,
+    )
+    assert re.search(
+        r"\.mammos-entity-collection-v2 \.entity-key \{\s*"
+        r"color: var\(--mammos-repr-primary\);",
+        css,
+        re.S,
+    )
+    assert re.search(
+        r"\.mammos-entity-inline-v2 \.entity-summary-preview \{\s*"
+        r"color: var\(--mammos-repr-primary\);",
+        css,
+        re.S,
+    )
+    assert re.search(
+        r"\.mammos-entity-inline-v2 \.entity-meta,\s*"
+        r"\.mammos-entity-collection-v2 \.collection-status \{\s*"
+        r"color: var\(--mammos-repr-muted\);",
+        css,
+        re.S,
     )
 
 
@@ -220,8 +288,9 @@ def test_repr_html_nested_collection_keeps_content_in_details():
         "<div class='branch-item entity-row'>"
         "<div class='entity-key'>T</div>"
         "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline'>"
-        "<span class='entity-label'>ThermodynamicTemperature</span>&nbsp;"
+        "<samp class='mammos-entity-inline-v2'>"
+        "<span class='entity-label'>ThermodynamicTemperature</span>"
+        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
         "<span>2.0&nbsp;K</span>"
         "</samp>"
         "</div>"
@@ -235,7 +304,7 @@ def test_repr_html_nested_collection_keeps_content_in_details():
     ec = me.EntityCollection(outer=1, inner=inner)
     controls_html = me.EntityCollection._repr_html_controls("root")
     assert ec._repr_html_block(root_id="root") == (
-        "<div id='root' class='mammos-entity-collection' "
+        "<div id='root' class='mammos-entity-collection-v2' "
         "data-busy='false' aria-busy='false'>"
         "<div class='collection-header'>"
         "<div class='collection-title'><span>EntityCollection</span></div>"
@@ -271,7 +340,7 @@ def test_repr_html_subclass_treats_base_collection_values_as_nested():
     ec = DerivedEntityCollection(inner=inner)
 
     assert ec._repr_html_block(root_id="root") == (
-        "<div id='root' class='mammos-entity-collection' "
+        "<div id='root' class='mammos-entity-collection-v2' "
         "data-busy='false' aria-busy='false'>"
         "<div class='collection-header'>"
         "<div class='collection-title'><span>DerivedEntityCollection</span></div>"

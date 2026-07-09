@@ -32,6 +32,66 @@ if TYPE_CHECKING:
 base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
 
+_ENTITY_REPR_SUMMARY_EDGE_ITEMS = 3
+_ENTITY_REPR_EXPANDED_THRESHOLD = 100
+
+
+def _strip_array_repr_brackets(text: str) -> str:
+    """Remove the outer brackets from a one-dimensional NumPy repr string."""
+    if text.startswith("[") and text.endswith("]"):
+        return text[1:-1]
+    return text
+
+
+def _format_array_repr_summary(value: numpy.typing.ArrayLike) -> str:
+    """Format a flattened preview for array values in HTML reprs."""
+
+    def compact(text: str) -> str:
+        return " ".join(text.split())
+
+    flattened = np.ravel(value)
+    if flattened.size <= 2 * _ENTITY_REPR_SUMMARY_EDGE_ITEMS:
+        return compact(
+            _strip_array_repr_brackets(
+                np.array2string(flattened, max_line_width=10_000)
+            )
+        )
+    head = compact(
+        _strip_array_repr_brackets(
+            np.array2string(
+                flattened[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS],
+                max_line_width=10_000,
+            )
+        )
+    )
+    tail = compact(
+        _strip_array_repr_brackets(
+            np.array2string(
+                flattened[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:],
+                max_line_width=10_000,
+            )
+        )
+    )
+    return f"{head} ... {tail}"
+
+
+def _array_repr_expanded_edgeitems(value: numpy.typing.ArrayLike) -> int:
+    """Choose NumPy edgeitems for a bounded expanded array repr."""
+    array = np.asarray(value)
+    if array.ndim <= 1:
+        return _ENTITY_REPR_EXPANDED_THRESHOLD // 2
+    return max(1, int((_ENTITY_REPR_EXPANDED_THRESHOLD ** (1 / array.ndim)) / 2))
+
+
+def _format_array_repr_expanded(value: numpy.typing.ArrayLike) -> str:
+    """Format a bounded expanded representation for array values in HTML reprs."""
+    array = np.asarray(value)
+    with np.printoptions(
+        threshold=_ENTITY_REPR_EXPANDED_THRESHOLD,
+        edgeitems=_array_repr_expanded_edgeitems(array),
+    ):
+        return repr(array)
+
 
 def _convert_unit(
     ontology_unit: owlready2.entity.ThingClass,
@@ -503,7 +563,7 @@ class Entity:
         """Build the inline script for expanding or collapsing long values."""
         state = "true" if expanded else "false"
         return (
-            "const root = this.closest('.mammos-entity-inline');"
+            "const root = this.closest('.mammos-entity-inline-v2');"
             "if (!root) return;"
             f"root.dataset.expanded = '{state}';"
         )
@@ -518,6 +578,7 @@ class Entity:
             return escaped
 
         value_text = str(self.value)
+        expanded_value_text = value_text
         compact_value_text = " ".join(value_text.split())
         single_line_value_text = compact_value_text
         label_html = (
@@ -531,35 +592,18 @@ class Entity:
             )
             unit_html_expanded = f" {html.escape(str(self.unit))}"
 
-        show_value_details = len(f"{single_line_value_text} {self.unit!s}".strip()) > 80
-
         description_html = ""
         if self.description:
-            description_html = f"<br><em>{format_html_text(self.description)}</em>"
-
-        if not show_value_details:
-            value_html = format_html_text(single_line_value_text, preserve_spaces=True)
-            return (
-                "<samp class='mammos-entity-inline'>"
-                f"{label_html}"
-                "&nbsp;"
-                f"<span>{value_html}{unit_html_collapsed}</span>"
-                f"{description_html}"
-                "</samp>"
-            )
+            description_html = f"<em>{format_html_text(self.description)}</em>"
 
         preview_value_text = compact_value_text
+        expanded_content_text = expanded_value_text
         shape_html = ""
         header_html = label_html
         shape = getattr(self.value, "shape", ())
         if shape not in [(), None]:
-            preview_values = np.ravel(self.value)[:4]
-            preview_value_text = np.array2string(
-                preview_values,
-                max_line_width=10_000,
-            )
-            if self.value.size > len(preview_values):
-                preview_value_text = f"{preview_value_text[:-1]} ...]"
+            preview_value_text = _format_array_repr_summary(self.value)
+            expanded_content_text = _format_array_repr_expanded(self.value)
             shape_text = f"· shape={shape}"
             shape_html = (
                 f"&nbsp;<span class='entity-meta'>"
@@ -567,6 +611,30 @@ class Entity:
             )
         elif len(preview_value_text) > 80:
             preview_value_text = f"{preview_value_text[:77].rstrip()}..."
+
+        show_value_details = len(f"{single_line_value_text} {self.unit!s}".strip()) > 80
+        if shape not in [(), None]:
+            show_value_details = show_value_details or "..." in value_text
+
+        if not show_value_details:
+            compact_shape_html = ""
+            if shape not in [(), None] and self.value.size > 3:
+                compact_shape_html = (
+                    f"&nbsp;<span class='entity-meta'>"
+                    f"{format_html_text(f'· shape={shape}', preserve_spaces=True)}"
+                    "</span>"
+                )
+            compact_separator_html = "&nbsp;<span class='entity-meta'>·</span>"
+            value_html = format_html_text(single_line_value_text, preserve_spaces=True)
+            return (
+                "<samp class='mammos-entity-inline-v2'>"
+                f"{label_html}"
+                f"{compact_separator_html}&nbsp;"
+                f"<span>{value_html}{unit_html_collapsed}</span>"
+                f"{compact_shape_html}"
+                f"{'<br>' if description_html else ''}{description_html}"
+                "</samp>"
+            )
 
         expand = self._repr_html_toggle_script(expanded=True)
         collapse = self._repr_html_toggle_script(expanded=False)
@@ -576,33 +644,42 @@ class Entity:
         )
         preview_html = format_html_text(preview_value_text, preserve_spaces=True)
         header_html = f"{header_html}{shape_html}"
-        collapsed_html = (
-            "<span class='entity-collapsed'>"
+        summary_html_collapsed = (
+            "<span class='entity-collapsed entity-summary'>"
             "<span role='button' tabindex='0' class='entity-toggle' "
             "aria-label='Expand value' "
             f'onclick="{expand}" onkeydown="{toggle_onkeydown}">[+]</span>'
-            f"<span>{preview_html}{unit_html_collapsed}</span>"
+            f"<span class='entity-summary-preview'>{preview_html}</span>"
+            f"<span>{unit_html_collapsed}</span>"
             "</span>"
         )
-        expanded_html = (
-            "<span class='entity-expanded'>"
+        summary_html_expanded = (
+            "<span class='entity-expanded entity-summary'>"
             "<span role='button' tabindex='0' class='entity-toggle' "
             "aria-label='Collapse value' "
             f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
+            f"<span class='entity-summary-preview'>{preview_html}</span>"
+            f"<span>{unit_html_collapsed}</span>"
+            "</span>"
+        )
+        expanded_html = (
+            "<span class='entity-expanded-details'>"
             "<span class='entity-full-value'>"
-            f"{html.escape(value_text)}"
-            f"{unit_html_expanded}"
+            f"{html.escape(expanded_content_text)}"
+            f"{'' if shape not in [(), None] else unit_html_expanded}"
             "</span>"
             "</span>"
         )
 
         return (
-            "<samp class='mammos-entity-inline' data-expanded='false'>"
+            "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
             f"{header_html}"
             "<br>"
-            f"{collapsed_html}"
-            f"{expanded_html}"
             f"{description_html}"
+            f"{'<br>' if description_html else ''}"
+            f"{summary_html_collapsed}"
+            f"{summary_html_expanded}"
+            f"{expanded_html}"
             "</samp>"
         )
 

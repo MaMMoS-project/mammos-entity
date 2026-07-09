@@ -244,7 +244,7 @@ class EntityCollection:
 
     def _repr_html_(self) -> str:
         """Render the collection as notebook-friendly HTML."""
-        root_id = f"mammos-entity-collection-{uuid.uuid4().hex}"
+        root_id = f"mammos-entity-collection-v2-{uuid.uuid4().hex}"
         return f"{_repr_css()}{self._repr_html_block(root_id=root_id)}"
 
     @staticmethod
@@ -434,7 +434,7 @@ class EntityCollection:
                 raise ValueError("root_id is required for top-level HTML controls.")
             controls = self._repr_html_controls(root_id)
         return (
-            f"<div id='{root_id}' class='mammos-entity-collection' "
+            f"<div id='{root_id}' class='mammos-entity-collection-v2' "
             "data-busy='false' aria-busy='false'>"
             "<div class='collection-header'>"
             "<div class='collection-title'>"
