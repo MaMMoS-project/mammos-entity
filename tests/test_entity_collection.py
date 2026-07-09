@@ -1,3 +1,4 @@
+import importlib.resources
 import re
 
 import mammos_units as u
@@ -8,6 +9,11 @@ import pytest
 import mammos_entity as me
 import mammos_entity._entity_collection as entity_collection_module
 from mammos_entity._repr import _repr_css
+
+
+def _strip_html_event_handlers(fragment: str) -> str:
+    """Normalize inline event handlers in HTML repr snapshots."""
+    return re.sub(r'(onclick|onkeydown)="[^"]*"', r'\1="..."', fragment)
 
 
 class HtmlValue:
@@ -138,7 +144,8 @@ def test_bad_description():
         me.EntityCollection(description=1)
 
 
-def test_repr_html(monkeypatch):
+def test_repr_html_plain_collection_exact_snapshot(monkeypatch):
+    """Freeze the plain collection HTML structure."""
     ec = me.EntityCollection("descr", M=me.M(1, "A/m"), a=[1, 2])
 
     expected_block = (
@@ -181,69 +188,46 @@ def test_repr_html(monkeypatch):
     )
 
 
-def test_repr_css_uses_explicit_jupyter_color_tiers():
-    css = _repr_css()
+def test_repr_html_details_script():
+    """Check the expand/collapse-all script behavior without freezing formatting."""
+    expanding = me.EntityCollection._repr_html_details_script("root", open_state=True)
+    collapsing = me.EntityCollection._repr_html_details_script("root", open_state=False)
 
-    assert re.search(
-        r"--mammos-repr-primary:\s*var\(\s*--jp-content-font-color0,",
-        css,
+    for script in (expanding, collapsing):
+        assert "const root = document.getElementById('root');" in script
+        assert "if (!root || root.dataset.busy === 'true') return;" in script
+        assert "const status = root.querySelector('.collection-status');" in script
+        assert (
+            "const buttons = root.querySelectorAll('.collection-toolbar button');"
+            in script
+        )
+        assert (
+            "const details = Array.from(root.querySelectorAll('details.branch-item'));"
+            in script
+        )
+        assert "root.dataset.busy = 'true';" in script
+        assert "root.setAttribute('aria-busy', 'true');" in script
+        assert "buttons.forEach((button) => { button.disabled = true; });" in script
+        assert "const batchSize = 50;" in script
+        assert (
+            "if (index < details.length) { requestAnimationFrame(step); return; }"
+            in script
+        )
+        assert (
+            "requestAnimationFrame(() => { requestAnimationFrame(step); });" in script
+        )
+
+    assert "if (status) status.textContent = 'Expanding...';" in expanding
+    assert "element.open = true;" in expanding
+    assert "if (status) status.textContent = 'Collapsing...';" in collapsing
+    assert "element.open = false;" in collapsing
+
+
+def test_repr_css_wraps_shared_stylesheet():
+    css_file = importlib.resources.files("mammos_entity").joinpath(
+        "_entity_collection_repr.css"
     )
-    assert re.search(
-        r"--mammos-repr-secondary:\s*var\(\s*--jp-content-font-color1,",
-        css,
-    )
-    assert re.search(
-        r"--mammos-repr-muted:\s*var\(\s*--jp-content-font-color2,",
-        css,
-    )
-    assert re.search(
-        r"--mammos-repr-soft-label:\s*var\(--mammos-repr-secondary\);",
-        css,
-    )
-    assert re.search(
-        r"--mammos-repr-soft-label:\s*color-mix\(\s*in srgb,\s*"
-        r"var\(--mammos-repr-secondary\) 55%,\s*"
-        r"var\(--mammos-repr-muted\)\s*\);",
-        css,
-        re.S,
-    )
-    assert re.search(
-        r"\.mammos-entity-inline-v2 \.entity-toggle \{\s*font: inherit;\s*"
-        r"color: var\(--mammos-repr-secondary\);",
-        css,
-        re.S,
-    )
-    assert re.search(
-        r"\.mammos-entity-collection-v2 \.collection-toolbar button \{\s*"
-        r"font: inherit;\s*color: var\(--mammos-repr-secondary\);",
-        css,
-        re.S,
-    )
-    assert re.search(
-        r"\.mammos-entity-inline-v2 \.entity-label \{\s*font-weight: 600;\s*"
-        r"color: var\(--mammos-repr-soft-label\);",
-        css,
-        re.S,
-    )
-    assert re.search(
-        r"\.mammos-entity-collection-v2 \.entity-key \{\s*"
-        r"color: var\(--mammos-repr-primary\);",
-        css,
-        re.S,
-    )
-    assert re.search(
-        r"\.mammos-entity-inline-v2 \.entity-summary-preview \{\s*"
-        r"color: var\(--mammos-repr-primary\);",
-        css,
-        re.S,
-    )
-    assert re.search(
-        r"\.mammos-entity-inline-v2 \.entity-meta,\s*"
-        r"\.mammos-entity-collection-v2 \.collection-status \{\s*"
-        r"color: var\(--mammos-repr-muted\);",
-        css,
-        re.S,
-    )
+    assert _repr_css() == f"<style>{css_file.read_text(encoding='utf-8')}</style>"
 
 
 def test_repr_html_uses_value_repr_html_when_available():
@@ -273,7 +257,8 @@ def test_repr_html_falls_back_when_value_repr_html_returns_none():
     )
 
 
-def test_repr_html_nested_collection_keeps_content_in_details():
+def test_repr_html_nested_collection_exact_snapshot():
+    """Freeze the nested collection HTML structure while ignoring JS formatting."""
     inner = me.EntityCollection("inner descr", T=me.T(2))
     expected_nested = (
         "<details class='branch-item'>"
@@ -302,13 +287,18 @@ def test_repr_html_nested_collection_keeps_content_in_details():
     assert inner._repr_html_nested("inner") == expected_nested
 
     ec = me.EntityCollection(outer=1, inner=inner)
-    controls_html = me.EntityCollection._repr_html_controls("root")
-    assert ec._repr_html_block(root_id="root") == (
+    assert _strip_html_event_handlers(ec._repr_html_block(root_id="root")) == (
         "<div id='root' class='mammos-entity-collection-v2' "
         "data-busy='false' aria-busy='false'>"
         "<div class='collection-header'>"
         "<div class='collection-title'><span>EntityCollection</span></div>"
-        f"{controls_html}"
+        "<div class='collection-toolbar'>"
+        "<button type='button' title='Collapse all' aria-label='Collapse all' "
+        'onclick="...">▸</button>'
+        "<button type='button' title='Expand all' aria-label='Expand all' "
+        'onclick="...">▾</button>'
+        "<span class='collection-status' aria-live='polite'></span>"
+        "</div>"
         "</div>"
         "<div class='collection-body'>"
         "<div class='collection-children'>"

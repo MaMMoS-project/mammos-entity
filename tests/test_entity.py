@@ -1,5 +1,6 @@
 import html
 import math
+import re
 
 import astropy
 import mammos_units as u
@@ -10,6 +11,11 @@ from numpy import array  # noqa: F401  # required for repr eval
 import mammos_entity as me
 from mammos_entity import Entity  # noqa: F401  # required for repr eval
 from mammos_entity._repr import _repr_css
+
+
+def _strip_html_event_handlers(fragment: str) -> str:
+    """Normalize inline event handlers in HTML repr snapshots."""
+    return re.sub(r'(onclick|onkeydown)="[^"]*"', r'\1="..."', fragment)
 
 
 def test_init_float():
@@ -181,8 +187,8 @@ def test_repr():
     assert eval(repr(e)) == e
 
 
-def test_repr_html():
-    """Test compact HTML repr for standalone entity display."""
+def test_repr_html_short_entity_exact_snapshot():
+    """Freeze the short-entity HTML structure."""
     e = me.Entity("CurieTemperature", 300, description="measured <carefully>")
 
     fragment = e._repr_html_fragment_()
@@ -268,35 +274,53 @@ def test_format_array_repr_expanded_shows_large_1d_context():
     assert "250." in tail
 
 
-def test_repr_html_long_value_uses_inline_toggle():
-    """Test HTML repr for long values."""
+def test_repr_html_toggle_script():
+    """Lock the inline expand/collapse script separately from the HTML snapshot."""
+    assert me.Entity._repr_html_toggle_script(expanded=True) == (
+        "const root = this.closest('.mammos-entity-inline-v2');"
+        "if (!root) return;"
+        "root.dataset.expanded = 'true';"
+    )
+    assert me.Entity._repr_html_toggle_script(expanded=False) == (
+        "const root = this.closest('.mammos-entity-inline-v2');"
+        "if (!root) return;"
+        "root.dataset.expanded = 'false';"
+    )
+
+
+def test_repr_html_long_value_exact_snapshot():
+    """Freeze the long-value HTML structure while ignoring JS formatting details."""
     e = me.Entity("ExternalMagneticField", np.arange(24).reshape(4, 6), "A/m")
 
-    fragment = e._repr_html_fragment_()
-    preview_html = (
+    fragment = _strip_html_event_handlers(e._repr_html_fragment_())
+    expanded_html = html.escape(me._entity._format_array_repr_expanded(e.value))
+
+    assert fragment == (
+        "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
+        "<span class='entity-label'>ExternalMagneticField</span>"
+        "&nbsp;<span class='entity-meta'>·&nbsp;shape=(4,&nbsp;6)</span>"
+        "<br>"
+        "<span class='entity-collapsed entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Expand value' "
+        'onclick="..." onkeydown="...">[+]</span>'
         "<span class='entity-summary-preview'>"
         "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
         "</span><span>&nbsp;A&nbsp;/&nbsp;m</span>"
+        "</span>"
+        "<span class='entity-expanded entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Collapse value' "
+        'onclick="..." onkeydown="...">[−]</span>'
+        "<span class='entity-summary-preview'>"
+        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
+        "</span><span>&nbsp;A&nbsp;/&nbsp;m</span>"
+        "</span>"
+        "<span class='entity-expanded-details'>"
+        f"<span class='entity-full-value'>{expanded_html}</span>"
+        "</span>"
+        "</samp>"
     )
-    expanded_html = html.escape(me._entity._format_array_repr_expanded(e.value))
-
-    assert "class='entity-collapsed entity-summary'" in fragment
-    assert "class='entity-expanded entity-summary'" in fragment
-    assert "class='entity-expanded-details'" in fragment
-    assert fragment.count("class='entity-toggle'") == 2
-    assert fragment.count("role='button'") == 2
-    assert fragment.count("tabindex='0'") == 2
-    assert "aria-label='Expand value'" in fragment
-    assert "aria-label='Collapse value'" in fragment
-    assert "data-expanded='false'" in fragment
-    assert "<span class='entity-label'>ExternalMagneticField</span>" in fragment
-    assert "class='entity-meta'>·&nbsp;shape=(4,&nbsp;6)</span>" in fragment
-    assert fragment.count(preview_html) == 2
-    assert f"<span class='entity-full-value'>{expanded_html}</span>" in fragment
-    assert "23.]])</span>" in fragment
-    assert "23.]]) A / m</span>" not in fragment
-    assert "this.closest('.mammos-entity-inline-v2')" in fragment
-    assert "event.key==='Enter'" in fragment
 
 
 def test_repr_html_large_1d_array_uses_summary_and_bounded_numpy_expansion():

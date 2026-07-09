@@ -272,25 +272,18 @@ class EntityCollection:
         if isinstance(value, EntityCollection):
             return value._repr_html_nested(key)
         fallback_html = cls._format_html_text(repr(value))
-        repr_html_fragment = getattr(value, "_repr_html_fragment_", None)
-        if callable(repr_html_fragment):
-            try:
-                value_html = repr_html_fragment()
-            except Exception:
-                value_html = fallback_html
-            if not value_html:
-                value_html = fallback_html
-            return cls._repr_html_row(key, value_html)
-        repr_html = getattr(value, "_repr_html_", None)
-        if callable(repr_html):
+        value_html = fallback_html
+        for attr_name in ("_repr_html_fragment_", "_repr_html_"):
+            repr_html = getattr(value, attr_name, None)
+            if not callable(repr_html):
+                continue
             try:
                 value_html = repr_html()
             except Exception:
                 value_html = fallback_html
-        else:
-            value_html = fallback_html
-        if not value_html:
-            value_html = fallback_html
+            if not value_html:
+                value_html = fallback_html
+            break
         return cls._repr_html_row(key, value_html)
 
     def _repr_html_summary_preview(self) -> str:
@@ -387,6 +380,7 @@ class EntityCollection:
             "if (index < details.length) { requestAnimationFrame(step); return; }"
             "finish();"
             "};"
+            # Use a second frame before the first batch so the busy UI can paint first.
             "requestAnimationFrame(() => { requestAnimationFrame(step); });"
         )
 

@@ -12,6 +12,7 @@
     --jp-content-font-color2,
     var(--vscode-descriptionForeground, var(--mammos-repr-secondary))
   );
+  /* Fall back to the secondary tier when color-mix() is unavailable. */
   --mammos-repr-soft-label: var(--mammos-repr-secondary);
   --mammos-repr-soft-label: color-mix(
     in srgb,

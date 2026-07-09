@@ -34,6 +34,7 @@ mammos_equivalencies = u.temperature()
 
 _ENTITY_REPR_SUMMARY_EDGE_ITEMS = 3
 _ENTITY_REPR_EXPANDED_THRESHOLD = 100
+_ENTITY_REPR_MAX_INLINE_CHARS = 80
 
 
 def _strip_array_repr_brackets(text: str) -> str:
@@ -609,10 +610,14 @@ class Entity:
                 f"&nbsp;<span class='entity-meta'>"
                 f"{format_html_text(shape_text, preserve_spaces=True)}</span>"
             )
-        elif len(preview_value_text) > 80:
-            preview_value_text = f"{preview_value_text[:77].rstrip()}..."
+        elif len(preview_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
+            preview_limit = _ENTITY_REPR_MAX_INLINE_CHARS - len("...")
+            preview_value_text = f"{preview_value_text[:preview_limit].rstrip()}..."
 
-        show_value_details = len(f"{single_line_value_text} {self.unit!s}".strip()) > 80
+        show_value_details = (
+            len(f"{single_line_value_text} {self.unit!s}".strip())
+            > _ENTITY_REPR_MAX_INLINE_CHARS
+        )
         if shape not in [(), None]:
             show_value_details = show_value_details or "..." in value_text
 
