@@ -6,6 +6,8 @@ import copy
 import csv
 import html
 import os
+import pprint
+import reprlib
 import textwrap
 import uuid
 from typing import TYPE_CHECKING
@@ -20,6 +22,7 @@ import mammos_entity as me
 from mammos_entity._repr import (
     _ENTITY_REPR_EXPANDED_THRESHOLD,
     _ENTITY_REPR_MAX_INLINE_CHARS,
+    _ENTITY_REPR_SUMMARY_EDGE_ITEMS,
     _array_repr_expanded_edgeitems,
     _format_array_repr_expanded,
     _format_array_repr_summary,
@@ -35,6 +38,16 @@ if TYPE_CHECKING:
 
     import mammos_entity
     import mammos_entity.typing
+
+
+class _ReprEllipsis:
+    """Sentinel rendering as ``...`` inside pprint-based container reprs."""
+
+    def __repr__(self) -> str:
+        return "..."
+
+
+_REPR_ELLIPSIS = _ReprEllipsis()
 
 
 class EntityCollection:
@@ -288,6 +301,86 @@ class EntityCollection:
         ):
             return repr(value)
 
+    @staticmethod
+    def _format_sequence_repr_summary(value: list | tuple) -> str:
+        """Format a compact head/tail preview for Python list and tuple values."""
+
+        def element_repr(element: object) -> str:
+            return reprlib.repr(element)
+
+        opener, closer = ("[", "]") if isinstance(value, list) else ("(", ")")
+        if len(value) <= 2 * _ENTITY_REPR_SUMMARY_EDGE_ITEMS:
+            items = [element_repr(element) for element in value]
+        else:
+            items = [
+                *(
+                    element_repr(element)
+                    for element in value[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]
+                ),
+                "...",
+                *(
+                    element_repr(element)
+                    for element in value[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]
+                ),
+            ]
+        return f"{opener}{', '.join(items)}{closer}"
+
+    @staticmethod
+    def _format_sequence_repr_expanded(value: list | tuple) -> str:
+        """Format a wrapped, bounded expanded representation for list/tuple values."""
+        edge_items = _ENTITY_REPR_EXPANDED_THRESHOLD // 2
+        if len(value) <= _ENTITY_REPR_EXPANDED_THRESHOLD:
+            truncated = value
+        elif isinstance(value, list):
+            truncated = [*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:]]
+        else:
+            truncated = (*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:])
+        return pprint.pformat(truncated, width=88, compact=True)
+
+    @staticmethod
+    def _format_dict_repr_summary(value: dict[object, object]) -> str:
+        """Format a compact head/tail preview for Python dict values."""
+
+        def item_repr(key: object, item_value: object) -> str:
+            return f"{reprlib.repr(key)}: {reprlib.repr(item_value)}"
+
+        items = list(value.items())
+        if len(items) <= 2 * _ENTITY_REPR_SUMMARY_EDGE_ITEMS:
+            preview_items = [item_repr(key, item_value) for key, item_value in items]
+        else:
+            preview_items = [
+                *(
+                    item_repr(key, item_value)
+                    for key, item_value in items[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]
+                ),
+                "...",
+                *(
+                    item_repr(key, item_value)
+                    for key, item_value in items[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]
+                ),
+            ]
+        return "{" + ", ".join(preview_items) + "}"
+
+    @staticmethod
+    def _format_dict_repr_expanded(value: dict[object, object]) -> str:
+        """Format a wrapped, bounded expanded representation for Python dict values."""
+        edge_items = _ENTITY_REPR_EXPANDED_THRESHOLD // 2
+        items = list(value.items())
+        if len(items) <= _ENTITY_REPR_EXPANDED_THRESHOLD:
+            truncated_items = items
+        else:
+            truncated_items = [
+                *items[:edge_items],
+                (_REPR_ELLIPSIS, _REPR_ELLIPSIS),
+                *items[-edge_items:],
+            ]
+        return pprint.pformat(
+            dict(truncated_items),
+            width=88,
+            compact=True,
+            sort_dicts=False,
+        )
+
     @classmethod
     def _repr_html_compact_value(
         cls,
@@ -295,6 +388,7 @@ class EntityCollection:
         expanded_text: str,
         *,
         unit_html: str = "",
+        meta_html: str = "",
     ) -> str:
         """Render a collapsible preview for long plain values in collection rows."""
         expand = cls._repr_html_value_toggle_script(expanded=True)
@@ -312,6 +406,7 @@ class EntityCollection:
             f'onclick="{expand}" onkeydown="{toggle_onkeydown}">[+]</span>'
             f"<span class='entity-summary-preview'>{preview_html}</span>"
             f"{unit_span_html}"
+            f"{meta_html}"
             "</span>"
         )
         expanded_summary_html = (
@@ -321,6 +416,7 @@ class EntityCollection:
             f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
             f"<span class='entity-summary-preview'>{preview_html}</span>"
             f"{unit_span_html}"
+            f"{meta_html}"
             "</span>"
         )
         expanded_details_html = (
@@ -337,9 +433,34 @@ class EntityCollection:
         )
 
     @classmethod
+    def _repr_html_compact_value_meta_html(
+        cls,
+        value: mammos_units.Quantity
+        | numpy.typing.ArrayLike
+        | list
+        | tuple
+        | dict[object, object],
+    ) -> str:
+        """Render metadata shown next to compact previews for supported plain values."""
+        if isinstance(value, u.Quantity | np.ndarray):
+            meta_text = f"shape={value.shape}"
+        elif isinstance(value, list | tuple | dict):
+            meta_text = f"len={len(value)}"
+        else:
+            return ""
+        return (
+            f"&nbsp;<span class='entity-meta'>"
+            f"{cls._format_html_text(f'· {meta_text}')}</span>"
+        )
+
+    @classmethod
     def _repr_html_compact_supported_value(
         cls,
-        value: mammos_units.Quantity | numpy.typing.ArrayLike,
+        value: mammos_units.Quantity
+        | numpy.typing.ArrayLike
+        | list
+        | tuple
+        | dict[object, object],
     ) -> str | None:
         """Render compact previews for supported long plain values."""
         if isinstance(value, u.Quantity) and getattr(value, "shape", ()) not in [
@@ -350,11 +471,25 @@ class EntityCollection:
                 _format_array_repr_summary(value.value),
                 cls._format_quantity_repr_expanded(value),
                 unit_html=f"&nbsp;{cls._format_html_text(str(value.unit))}",
+                meta_html=cls._repr_html_compact_value_meta_html(value),
             )
         if isinstance(value, np.ndarray):
             return cls._repr_html_compact_value(
                 _format_array_repr_summary(value),
                 _format_array_repr_expanded(value),
+                meta_html=cls._repr_html_compact_value_meta_html(value),
+            )
+        if isinstance(value, list | tuple):
+            return cls._repr_html_compact_value(
+                cls._format_sequence_repr_summary(value),
+                cls._format_sequence_repr_expanded(value),
+                meta_html=cls._repr_html_compact_value_meta_html(value),
+            )
+        if isinstance(value, dict):
+            return cls._repr_html_compact_value(
+                cls._format_dict_repr_summary(value),
+                cls._format_dict_repr_expanded(value),
+                meta_html=cls._repr_html_compact_value_meta_html(value),
             )
         return None
 
@@ -362,7 +497,10 @@ class EntityCollection:
     def _repr_html_value(
         cls,
         key: str,
-        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+        value: mammos_entity.Entity
+        | mammos_units.Quantity
+        | numpy.typing.ArrayLike
+        | dict[object, object],
     ) -> str:
         """Render one stored value, using HTML reprs when available."""
         if isinstance(value, EntityCollection):

@@ -176,6 +176,7 @@
 }
 
 .mammos-entity-inline-v2 .entity-meta,
+.mammos-compact-value-v2 .entity-meta,
 .mammos-entity-collection-v2 .collection-status {
   color: var(--mammos-repr-muted);
   font-size: 0.9em;
