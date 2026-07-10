@@ -17,7 +17,14 @@ import pandas as pd
 import yaml
 
 import mammos_entity as me
-from mammos_entity._repr import _repr_css
+from mammos_entity._repr import (
+    _ENTITY_REPR_EXPANDED_THRESHOLD,
+    _ENTITY_REPR_MAX_INLINE_CHARS,
+    _array_repr_expanded_edgeitems,
+    _format_array_repr_expanded,
+    _format_array_repr_summary,
+    _repr_css,
+)
 
 if TYPE_CHECKING:
     import collections.abc
@@ -262,6 +269,95 @@ class EntityCollection:
             "</div>"
         )
 
+    @staticmethod
+    def _repr_html_value_toggle_script(*, expanded: bool) -> str:
+        """Build the inline script for compact row-value expand/collapse."""
+        state = "true" if expanded else "false"
+        return (
+            "const root = this.closest('.mammos-compact-value-v2');"
+            "if (!root) return;"
+            f"root.dataset.expanded = '{state}';"
+        )
+
+    @staticmethod
+    def _format_quantity_repr_expanded(value: mammos_units.Quantity) -> str:
+        """Format a bounded expanded representation for array-valued quantities."""
+        with np.printoptions(
+            threshold=_ENTITY_REPR_EXPANDED_THRESHOLD,
+            edgeitems=_array_repr_expanded_edgeitems(value.value),
+        ):
+            return repr(value)
+
+    @classmethod
+    def _repr_html_compact_value(
+        cls,
+        preview_text: str,
+        expanded_text: str,
+        *,
+        unit_html: str = "",
+    ) -> str:
+        """Render a collapsible preview for long plain values in collection rows."""
+        expand = cls._repr_html_value_toggle_script(expanded=True)
+        collapse = cls._repr_html_value_toggle_script(expanded=False)
+        toggle_onkeydown = (
+            "if(event.key==='Enter'||event.key===' '){"
+            "event.preventDefault();this.click();}"
+        )
+        preview_html = cls._format_html_text(preview_text)
+        unit_span_html = f"<span>{unit_html}</span>" if unit_html else ""
+        collapsed_html = (
+            "<span class='entity-collapsed entity-summary'>"
+            "<span role='button' tabindex='0' class='entity-toggle' "
+            "aria-label='Expand value' "
+            f'onclick="{expand}" onkeydown="{toggle_onkeydown}">[+]</span>'
+            f"<span class='entity-summary-preview'>{preview_html}</span>"
+            f"{unit_span_html}"
+            "</span>"
+        )
+        expanded_summary_html = (
+            "<span class='entity-expanded entity-summary'>"
+            "<span role='button' tabindex='0' class='entity-toggle' "
+            "aria-label='Collapse value' "
+            f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
+            f"<span class='entity-summary-preview'>{preview_html}</span>"
+            f"{unit_span_html}"
+            "</span>"
+        )
+        expanded_details_html = (
+            "<span class='entity-expanded-details'>"
+            f"<span class='entity-full-value'>{html.escape(expanded_text)}</span>"
+            "</span>"
+        )
+        return (
+            "<span class='mammos-compact-value-v2' data-expanded='false'>"
+            f"{collapsed_html}"
+            f"{expanded_summary_html}"
+            f"{expanded_details_html}"
+            "</span>"
+        )
+
+    @classmethod
+    def _repr_html_compact_supported_value(
+        cls,
+        value: mammos_units.Quantity | numpy.typing.ArrayLike,
+    ) -> str | None:
+        """Render compact previews for supported long plain values."""
+        if isinstance(value, u.Quantity) and getattr(value, "shape", ()) not in [
+            (),
+            None,
+        ]:
+            return cls._repr_html_compact_value(
+                _format_array_repr_summary(value.value),
+                cls._format_quantity_repr_expanded(value),
+                unit_html=f"&nbsp;{cls._format_html_text(str(value.unit))}",
+            )
+        if isinstance(value, np.ndarray):
+            return cls._repr_html_compact_value(
+                _format_array_repr_summary(value),
+                _format_array_repr_expanded(value),
+            )
+        return None
+
     @classmethod
     def _repr_html_value(
         cls,
@@ -271,12 +367,15 @@ class EntityCollection:
         """Render one stored value, using HTML reprs when available."""
         if isinstance(value, EntityCollection):
             return value._repr_html_nested(key)
-        fallback_html = cls._format_html_text(repr(value))
+        repr_value_text = repr(value)
+        fallback_html = cls._format_html_text(repr_value_text)
         value_html = fallback_html
+        used_custom_html = False
         for attr_name in ("_repr_html_fragment_", "_repr_html_"):
             repr_html = getattr(value, attr_name, None)
             if not callable(repr_html):
                 continue
+            used_custom_html = True
             try:
                 value_html = repr_html()
             except Exception:
@@ -284,6 +383,13 @@ class EntityCollection:
             if not value_html:
                 value_html = fallback_html
             break
+        if (
+            not used_custom_html
+            and len(repr_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS
+        ):
+            compact_html = cls._repr_html_compact_supported_value(value)
+            if compact_html is not None:
+                value_html = compact_html
         return cls._repr_html_row(key, value_html)
 
     def _repr_html_summary_preview(self) -> str:

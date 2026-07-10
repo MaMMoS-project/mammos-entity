@@ -1,3 +1,4 @@
+import html
 import importlib.resources
 import re
 
@@ -253,6 +254,109 @@ def test_repr_html_falls_back_when_value_repr_html_returns_none():
         "<div class='branch-item entity-row'>"
         "<div class='entity-key'>missing</div>"
         "<div class='entity-value'>NoneHtmlValue()</div>"
+        "</div>"
+    )
+
+
+def test_repr_html_value_toggle_script():
+    """Lock the inline expand/collapse script for compact row values."""
+    assert me.EntityCollection._repr_html_value_toggle_script(expanded=True) == (
+        "const root = this.closest('.mammos-compact-value-v2');"
+        "if (!root) return;"
+        "root.dataset.expanded = 'true';"
+    )
+    assert me.EntityCollection._repr_html_value_toggle_script(expanded=False) == (
+        "const root = this.closest('.mammos-compact-value-v2');"
+        "if (!root) return;"
+        "root.dataset.expanded = 'false';"
+    )
+
+
+def test_repr_html_long_numpy_array_compact_preview_snapshot():
+    array = np.arange(24).reshape(4, 6)
+
+    row_html = _strip_html_event_handlers(
+        me.EntityCollection._repr_html_value("M", array)
+    )
+    expanded_html = html.escape(me._entity._format_array_repr_expanded(array))
+
+    assert row_html == (
+        "<div class='branch-item entity-row'>"
+        "<div class='entity-key'>M</div>"
+        "<div class='entity-value'>"
+        "<span class='mammos-compact-value-v2' data-expanded='false'>"
+        "<span class='entity-collapsed entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Expand value' "
+        'onclick="..." onkeydown="...">[+]</span>'
+        "<span class='entity-summary-preview'>"
+        "0&nbsp;1&nbsp;2&nbsp;...&nbsp;21&nbsp;22&nbsp;23"
+        "</span>"
+        "</span>"
+        "<span class='entity-expanded entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Collapse value' "
+        'onclick="..." onkeydown="...">[−]</span>'
+        "<span class='entity-summary-preview'>"
+        "0&nbsp;1&nbsp;2&nbsp;...&nbsp;21&nbsp;22&nbsp;23"
+        "</span>"
+        "</span>"
+        "<span class='entity-expanded-details'>"
+        f"<span class='entity-full-value'>{expanded_html}</span>"
+        "</span>"
+        "</span>"
+        "</div>"
+        "</div>"
+    )
+
+
+def test_repr_html_long_quantity_compact_preview_snapshot():
+    quantity = me.M(np.arange(24).reshape(4, 6), "A/m").quantity
+
+    row_html = _strip_html_event_handlers(
+        me.EntityCollection._repr_html_value("M_q", quantity)
+    )
+    expanded_html = html.escape(
+        me.EntityCollection._format_quantity_repr_expanded(quantity)
+    )
+
+    assert row_html == (
+        "<div class='branch-item entity-row'>"
+        "<div class='entity-key'>M_q</div>"
+        "<div class='entity-value'>"
+        "<span class='mammos-compact-value-v2' data-expanded='false'>"
+        "<span class='entity-collapsed entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Expand value' "
+        'onclick="..." onkeydown="...">[+]</span>'
+        "<span class='entity-summary-preview'>"
+        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
+        "</span><span>&nbsp;A&nbsp;/&nbsp;m</span>"
+        "</span>"
+        "<span class='entity-expanded entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Collapse value' "
+        'onclick="..." onkeydown="...">[−]</span>'
+        "<span class='entity-summary-preview'>"
+        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
+        "</span><span>&nbsp;A&nbsp;/&nbsp;m</span>"
+        "</span>"
+        "<span class='entity-expanded-details'>"
+        f"<span class='entity-full-value'>{expanded_html}</span>"
+        "</span>"
+        "</span>"
+        "</div>"
+        "</div>"
+    )
+
+
+def test_repr_html_short_quantity_stays_inline():
+    quantity = u.Quantity(3, "A/m")
+
+    assert me.EntityCollection._repr_html_value("H_q", quantity) == (
+        "<div class='branch-item entity-row'>"
+        "<div class='entity-key'>H_q</div>"
+        "<div class='entity-value'>&lt;Quantity&nbsp;3.&nbsp;A&nbsp;/&nbsp;m&gt;</div>"
         "</div>"
     )
 
