@@ -90,6 +90,40 @@ def _format_array_repr_expanded(value: numpy.typing.ArrayLike) -> str:
         return repr(array)
 
 
+def _repr_html_meta_text(text: str) -> str:
+    """Render muted metadata text used by notebook HTML reprs."""
+    return (
+        "<span class='entity-meta'>"
+        f"{_format_html_text(text, preserve_spaces=True)}"
+        "</span>"
+    )
+
+
+def _repr_html_meta_separator() -> str:
+    """Render the gray dot separator used by notebook HTML reprs."""
+    return "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
+
+
+def _repr_html_meta_suffix(text: str) -> str:
+    """Render muted metadata preceded by the shared gray dot separator."""
+    return f"{_repr_html_meta_separator()}{_repr_html_meta_text(text)}"
+
+
+def _repr_html_summary_content(
+    preview_html: str,
+    *,
+    unit_html: str = "",
+    meta_html: str = "",
+) -> str:
+    """Render inline summary content without flex gaps between its parts."""
+    return (
+        "<span class='entity-summary-content'>"
+        f"<span>{preview_html}{unit_html}</span>"
+        f"{meta_html}"
+        "</span>"
+    )
+
+
 class _ReprEllipsis:
     """Sentinel rendering as ``...`` inside pprint-based container reprs."""
 
@@ -144,11 +178,7 @@ class _EntityReprHtml:
         if shape not in [(), None]:
             preview_value_text = _format_array_repr_summary(self.value)
             expanded_content_text = _format_array_repr_expanded(self.value)
-            shape_text = f"· shape={shape}"
-            shape_html = (
-                f"&nbsp;<span class='entity-meta'>"
-                f"{_format_html_text(shape_text, preserve_spaces=True)}</span>"
-            )
+            shape_html = _repr_html_meta_suffix(f"shape={shape}")
         elif len(preview_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
             preview_limit = _ENTITY_REPR_MAX_INLINE_CHARS - len("...")
             preview_value_text = f"{preview_value_text[:preview_limit].rstrip()}..."
@@ -163,12 +193,8 @@ class _EntityReprHtml:
         if not show_value_details:
             compact_shape_html = ""
             if shape not in [(), None] and self.value.size > 3:
-                compact_shape_html = (
-                    f"&nbsp;<span class='entity-meta'>"
-                    f"{_format_html_text(f'· shape={shape}', preserve_spaces=True)}"
-                    "</span>"
-                )
-            compact_separator_html = "&nbsp;<span class='entity-meta'>·</span>"
+                compact_shape_html = _repr_html_meta_suffix(f"shape={shape}")
+            compact_separator_html = _repr_html_meta_separator()
             value_html = _format_html_text(
                 single_line_value_text,
                 preserve_spaces=True,
@@ -176,7 +202,7 @@ class _EntityReprHtml:
             return (
                 "<samp class='mammos-entity-inline-v2'>"
                 f"{label_html}"
-                f"{compact_separator_html}&nbsp;"
+                f"{compact_separator_html}"
                 f"<span>{value_html}{unit_html_collapsed}</span>"
                 f"{compact_shape_html}"
                 f"{'<br>' if description_html else ''}{description_html}"
@@ -191,13 +217,16 @@ class _EntityReprHtml:
         )
         preview_html = _format_html_text(preview_value_text, preserve_spaces=True)
         header_html = f"{header_html}{shape_html}"
+        summary_content_html = _repr_html_summary_content(
+            preview_html,
+            unit_html=f"<span>{unit_html_collapsed}</span>",
+        )
         summary_html_collapsed = (
             "<span class='entity-collapsed entity-summary'>"
             "<span role='button' tabindex='0' class='entity-toggle' "
             "aria-label='Expand value' "
             f'onclick="{expand}" onkeydown="{toggle_onkeydown}">[+]</span>'
-            f"<span class='entity-summary-preview'>{preview_html}</span>"
-            f"<span>{unit_html_collapsed}</span>"
+            f"{summary_content_html}"
             "</span>"
         )
         summary_html_expanded = (
@@ -205,8 +234,7 @@ class _EntityReprHtml:
             "<span role='button' tabindex='0' class='entity-toggle' "
             "aria-label='Collapse value' "
             f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
-            f"<span class='entity-summary-preview'>{preview_html}</span>"
-            f"<span>{unit_html_collapsed}</span>"
+            f"{summary_content_html}"
             "</span>"
         )
         expanded_html = (
@@ -375,14 +403,17 @@ class _EntityCollectionReprHtml:
         )
         preview_html = cls._format_html_text(preview_text)
         unit_span_html = f"<span>{unit_html}</span>" if unit_html else ""
+        summary_content_html = _repr_html_summary_content(
+            preview_html,
+            unit_html=unit_span_html,
+            meta_html=meta_html,
+        )
         collapsed_html = (
             "<span class='entity-collapsed entity-summary'>"
             "<span role='button' tabindex='0' class='entity-toggle' "
             "aria-label='Expand value' "
             f'onclick="{expand}" onkeydown="{toggle_onkeydown}">[+]</span>'
-            f"<span class='entity-summary-preview'>{preview_html}</span>"
-            f"{unit_span_html}"
-            f"{meta_html}"
+            f"{summary_content_html}"
             "</span>"
         )
         expanded_summary_html = (
@@ -390,9 +421,7 @@ class _EntityCollectionReprHtml:
             "<span role='button' tabindex='0' class='entity-toggle' "
             "aria-label='Collapse value' "
             f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
-            f"<span class='entity-summary-preview'>{preview_html}</span>"
-            f"{unit_span_html}"
-            f"{meta_html}"
+            f"{summary_content_html}"
             "</span>"
         )
         expanded_details_html = (
@@ -401,11 +430,12 @@ class _EntityCollectionReprHtml:
             "</span>"
         )
         return (
-            "<span class='mammos-compact-value-v2' data-expanded='false'>"
+            "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
+            "data-expanded='false'>"
             f"{collapsed_html}"
             f"{expanded_summary_html}"
             f"{expanded_details_html}"
-            "</span>"
+            "</samp>"
         )
 
     @classmethod
@@ -424,10 +454,7 @@ class _EntityCollectionReprHtml:
             meta_text = f"len={len(value)}"
         else:
             return ""
-        return (
-            f"&nbsp;<span class='entity-meta'>"
-            f"{cls._format_html_text(f'· {meta_text}')}</span>"
-        )
+        return _repr_html_meta_suffix(meta_text)
 
     @classmethod
     def _repr_html_compact_supported_value(

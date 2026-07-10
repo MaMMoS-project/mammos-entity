@@ -51,7 +51,8 @@ def test_repr_html_small_array_stays_single_line():
         "<span class='entity-label'>ThermodynamicTemperature</span>"
         "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
         "<span>[[1.&nbsp;2.]&nbsp;[3.&nbsp;4.]]&nbsp;K</span>"
-        "&nbsp;<span class='entity-meta'>·&nbsp;shape=(2,&nbsp;2)</span>"
+        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
+        "<span class='entity-meta'>shape=(2,&nbsp;2)</span>"
         "</samp>"
     )
 
@@ -123,23 +124,28 @@ def test_repr_html_long_value_exact_snapshot():
     assert fragment == (
         "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
         "<span class='entity-label'>ExternalMagneticField</span>"
-        "&nbsp;<span class='entity-meta'>·&nbsp;shape=(4,&nbsp;6)</span>"
+        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
+        "<span class='entity-meta'>shape=(4,&nbsp;6)</span>"
         "<br>"
         "<span class='entity-collapsed entity-summary'>"
         "<span role='button' tabindex='0' class='entity-toggle' "
         "aria-label='Expand value' "
         'onclick="..." onkeydown="...">[+]</span>'
-        "<span class='entity-summary-preview'>"
+        "<span class='entity-summary-content'>"
+        "<span>"
         "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
-        "</span><span>&nbsp;A&nbsp;/&nbsp;m</span>"
+        "<span>&nbsp;A&nbsp;/&nbsp;m</span></span>"
+        "</span>"
         "</span>"
         "<span class='entity-expanded entity-summary'>"
         "<span role='button' tabindex='0' class='entity-toggle' "
         "aria-label='Collapse value' "
         'onclick="..." onkeydown="...">[−]</span>'
-        "<span class='entity-summary-preview'>"
+        "<span class='entity-summary-content'>"
+        "<span>"
         "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
-        "</span><span>&nbsp;A&nbsp;/&nbsp;m</span>"
+        "<span>&nbsp;A&nbsp;/&nbsp;m</span></span>"
+        "</span>"
         "</span>"
         "<span class='entity-expanded-details'>"
         f"<span class='entity-full-value'>{expanded_html}</span>"
@@ -154,11 +160,16 @@ def test_repr_html_large_1d_array_uses_summary_and_bounded_numpy_expansion():
     fragment = e._repr_html_fragment_()
     expanded_html = html.escape(me._entity._format_array_repr_expanded(e.value))
 
-    assert "class='entity-meta'>·&nbsp;shape=(1001,)</span>" in fragment
     assert (
-        "<span class='entity-summary-preview'>"
+        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
+        "<span class='entity-meta'>shape=(1001,)</span>"
+    ) in fragment
+    assert (
+        "<span class='entity-summary-content'>"
+        "<span>"
         "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;998.&nbsp;999.&nbsp;1000."
-        "</span><span>&nbsp;A&nbsp;/&nbsp;m</span>"
+        "<span>&nbsp;A&nbsp;/&nbsp;m</span></span>"
+        "</span>"
     ) in fragment
     assert f"<span class='entity-full-value'>{expanded_html}</span>" in fragment
 
