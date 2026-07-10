@@ -7,7 +7,6 @@ includes helper functions for inferring the correct SI units from the ontology.
 
 from __future__ import annotations
 
-import html
 import os
 import re
 from typing import TYPE_CHECKING
@@ -18,12 +17,7 @@ import mammos_units as u
 import mammos_entity as me
 from mammos_entity import _repr as repr_utils
 from mammos_entity._ontology import mammos_ontology, search_labels
-from mammos_entity._repr import (
-    _ENTITY_REPR_MAX_INLINE_CHARS,
-    _format_array_repr_expanded,
-    _format_array_repr_summary,
-    _repr_css,
-)
+from mammos_entity._repr import _EntityReprHtml
 
 if TYPE_CHECKING:
     import astropy.units
@@ -38,8 +32,11 @@ base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
 
 _ENTITY_REPR_EXPANDED_THRESHOLD = repr_utils._ENTITY_REPR_EXPANDED_THRESHOLD
+_ENTITY_REPR_MAX_INLINE_CHARS = repr_utils._ENTITY_REPR_MAX_INLINE_CHARS
 _ENTITY_REPR_SUMMARY_EDGE_ITEMS = repr_utils._ENTITY_REPR_SUMMARY_EDGE_ITEMS
 _array_repr_expanded_edgeitems = repr_utils._array_repr_expanded_edgeitems
+_format_array_repr_expanded = repr_utils._format_array_repr_expanded
+_format_array_repr_summary = repr_utils._format_array_repr_summary
 _strip_array_repr_brackets = repr_utils._strip_array_repr_brackets
 
 
@@ -160,7 +157,7 @@ def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]
                 for sub_class in all_sub_classes:
                     # We extract only SI base units, coherent units and special units.
                     # See https://emmo-repo.github.io/emmo.html#siunit
-                    if isinstance(
+                    if isinstance(  # noqa: UP038
                         sub_class,
                         (
                             mammos_ontology.SIBaseUnit,
@@ -281,7 +278,7 @@ def _select_ontology_label(label: str) -> str:
         )
 
 
-class Entity:
+class Entity(_EntityReprHtml):
     """Create a quantity (a value and a unit) linked to the EMMO ontology.
 
     Represents a physical property or quantity that is linked to an ontology
@@ -507,139 +504,6 @@ class Entity:
         if self.description:
             repr_str += f",{new_line} description={self.description!r}"
         return repr_str + ")"
-
-    @staticmethod
-    def _repr_html_toggle_script(*, expanded: bool) -> str:
-        """Build the inline script for expanding or collapsing long values."""
-        state = "true" if expanded else "false"
-        return (
-            "const root = this.closest('.mammos-entity-inline-v2');"
-            "if (!root) return;"
-            f"root.dataset.expanded = '{state}';"
-        )
-
-    def _repr_html_fragment_(self) -> str:
-        """Render the entity HTML without injecting shared CSS."""
-
-        def format_html_text(text: str, *, preserve_spaces: bool = False) -> str:
-            escaped = html.escape(text).replace("\n", "<br>")
-            if preserve_spaces:
-                escaped = escaped.replace(" ", "&nbsp;")
-            return escaped
-
-        value_text = str(self.value)
-        expanded_value_text = value_text
-        compact_value_text = " ".join(value_text.split())
-        single_line_value_text = compact_value_text
-        label_html = (
-            f"<span class='entity-label'>{format_html_text(self.ontology_label)}</span>"
-        )
-        unit_html_collapsed = ""
-        unit_html_expanded = ""
-        if not self.unit.is_equivalent(u.dimensionless_unscaled):
-            unit_html_collapsed = (
-                f"&nbsp;{format_html_text(str(self.unit), preserve_spaces=True)}"
-            )
-            unit_html_expanded = f" {html.escape(str(self.unit))}"
-
-        description_html = ""
-        if self.description:
-            description_html = f"<em>{format_html_text(self.description)}</em>"
-
-        preview_value_text = compact_value_text
-        expanded_content_text = expanded_value_text
-        shape_html = ""
-        header_html = label_html
-        shape = getattr(self.value, "shape", ())
-        if shape not in [(), None]:
-            preview_value_text = _format_array_repr_summary(self.value)
-            expanded_content_text = _format_array_repr_expanded(self.value)
-            shape_text = f"· shape={shape}"
-            shape_html = (
-                f"&nbsp;<span class='entity-meta'>"
-                f"{format_html_text(shape_text, preserve_spaces=True)}</span>"
-            )
-        elif len(preview_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
-            preview_limit = _ENTITY_REPR_MAX_INLINE_CHARS - len("...")
-            preview_value_text = f"{preview_value_text[:preview_limit].rstrip()}..."
-
-        show_value_details = (
-            len(f"{single_line_value_text} {self.unit!s}".strip())
-            > _ENTITY_REPR_MAX_INLINE_CHARS
-        )
-        if shape not in [(), None]:
-            show_value_details = show_value_details or "..." in value_text
-
-        if not show_value_details:
-            compact_shape_html = ""
-            if shape not in [(), None] and self.value.size > 3:
-                compact_shape_html = (
-                    f"&nbsp;<span class='entity-meta'>"
-                    f"{format_html_text(f'· shape={shape}', preserve_spaces=True)}"
-                    "</span>"
-                )
-            compact_separator_html = "&nbsp;<span class='entity-meta'>·</span>"
-            value_html = format_html_text(single_line_value_text, preserve_spaces=True)
-            return (
-                "<samp class='mammos-entity-inline-v2'>"
-                f"{label_html}"
-                f"{compact_separator_html}&nbsp;"
-                f"<span>{value_html}{unit_html_collapsed}</span>"
-                f"{compact_shape_html}"
-                f"{'<br>' if description_html else ''}{description_html}"
-                "</samp>"
-            )
-
-        expand = self._repr_html_toggle_script(expanded=True)
-        collapse = self._repr_html_toggle_script(expanded=False)
-        toggle_onkeydown = (
-            "if(event.key==='Enter'||event.key===' '){"
-            "event.preventDefault();this.click();}"
-        )
-        preview_html = format_html_text(preview_value_text, preserve_spaces=True)
-        header_html = f"{header_html}{shape_html}"
-        summary_html_collapsed = (
-            "<span class='entity-collapsed entity-summary'>"
-            "<span role='button' tabindex='0' class='entity-toggle' "
-            "aria-label='Expand value' "
-            f'onclick="{expand}" onkeydown="{toggle_onkeydown}">[+]</span>'
-            f"<span class='entity-summary-preview'>{preview_html}</span>"
-            f"<span>{unit_html_collapsed}</span>"
-            "</span>"
-        )
-        summary_html_expanded = (
-            "<span class='entity-expanded entity-summary'>"
-            "<span role='button' tabindex='0' class='entity-toggle' "
-            "aria-label='Collapse value' "
-            f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
-            f"<span class='entity-summary-preview'>{preview_html}</span>"
-            f"<span>{unit_html_collapsed}</span>"
-            "</span>"
-        )
-        expanded_html = (
-            "<span class='entity-expanded-details'>"
-            "<span class='entity-full-value'>"
-            f"{html.escape(expanded_content_text)}"
-            f"{'' if shape not in [(), None] else unit_html_expanded}"
-            "</span>"
-            "</span>"
-        )
-
-        return (
-            "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
-            f"{header_html}"
-            "<br>"
-            f"{description_html}"
-            f"{'<br>' if description_html else ''}"
-            f"{summary_html_collapsed}"
-            f"{summary_html_expanded}"
-            f"{expanded_html}"
-            "</samp>"
-        )
-
-    def _repr_html_(self) -> str:
-        """Render the entity as compact notebook-friendly HTML."""
-        return f"{_repr_css()}{self._repr_html_fragment_()}"
 
     def to_hdf5(
         self,
