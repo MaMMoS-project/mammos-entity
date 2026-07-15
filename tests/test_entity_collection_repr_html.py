@@ -108,6 +108,14 @@ class BrokenReprList(list):
         raise RuntimeError("broken repr")
 
 
+class BrokenReprTuple(tuple):
+    """Test helper tuple subclass whose ``__repr__`` fails."""
+
+    def __repr__(self):
+        """Broken repr."""
+        raise RuntimeError("broken repr")
+
+
 class DerivedEntityCollection(me.EntityCollection):
     """Test helper subclass for nested collection HTML repr coverage."""
 
@@ -234,6 +242,21 @@ def test_repr_html_supported_long_container_subclasses_keep_compact_preview(key,
         meta_text_html="len=120",
         expanded_html=expanded_html,
     )
+
+
+@pytest.mark.parametrize(
+    ("key", "value", "value_html"),
+    [
+        ("list", BrokenReprList([1, 2, 3]), "[1,&nbsp;2,&nbsp;3]"),
+        ("tuple", BrokenReprTuple((1, 2, 3)), "(1,&nbsp;2,&nbsp;3)"),
+    ],
+)
+def test_repr_html_short_supported_sequence_subclasses_with_broken_repr_stay_inline(key, value, value_html):
+    row_html = me.EntityCollection._repr_html_value(key, value)
+
+    _assert_row_wrapper(row_html, key=key)
+    assert value_html in row_html
+    assert "mammos-compact-value" not in row_html
 
 
 def test_repr_html_value_toggle_script():

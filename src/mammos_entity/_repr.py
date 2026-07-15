@@ -234,7 +234,7 @@ def _format_sequence_repr_expanded(value: list | tuple) -> str:
     """Format a wrapped, bounded expanded representation for list/tuple values."""
     edge_items = _ENTITY_REPR_EXPANDED_THRESHOLD // 2
     if len(value) <= _ENTITY_REPR_EXPANDED_THRESHOLD:
-        truncated = value
+        truncated = list(value) if isinstance(value, list) else tuple(value)
     elif isinstance(value, list):
         truncated = [*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:]]
     else:
@@ -460,6 +460,9 @@ class _EntityCollectionReprHtml:
             compact_source_text = spec.expanded_text if repr_failed else repr_value_text
             if len(compact_source_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
                 return cls._repr_html_row(key, cls._repr_html_compact_value(spec))
+            if repr_failed:
+                fallback_html = _format_html_text(spec.expanded_text, preserve_spaces=True)
+                return cls._repr_html_row(key, fallback_html)
 
         fallback_html = _format_html_text(repr_value_text, preserve_spaces=True)
         return cls._repr_html_row(key, fallback_html)
