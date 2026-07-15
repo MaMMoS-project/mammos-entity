@@ -77,15 +77,8 @@ def test_format_array_repr_expanded_uses_numpy_repr_with_threshold():
 
 def test_array_repr_expanded_edgeitems_scale_with_rank():
     assert me._entity._array_repr_expanded_edgeitems(np.arange(300)) == 50
-    assert (
-        me._entity._array_repr_expanded_edgeitems(np.arange(400).reshape(20, 20)) == 5
-    )
-    assert (
-        me._entity._array_repr_expanded_edgeitems(
-            np.arange(10 * 500 * 20).reshape(10, 500, 20)
-        )
-        == 2
-    )
+    assert me._entity._array_repr_expanded_edgeitems(np.arange(400).reshape(20, 20)) == 5
+    assert me._entity._array_repr_expanded_edgeitems(np.arange(10 * 500 * 20).reshape(10, 500, 20)) == 2
 
 
 def test_format_array_repr_expanded_shows_large_1d_context():
@@ -103,14 +96,10 @@ def test_format_array_repr_expanded_shows_large_1d_context():
 def test_repr_html_toggle_script():
     """Lock the inline expand/collapse script separately from the HTML snapshot."""
     assert me.Entity._repr_html_toggle_script(expanded=True) == (
-        "const root = this.closest('.mammos-entity-inline-v2');"
-        "if (!root) return;"
-        "root.dataset.expanded = 'true';"
+        "const root = this.closest('.mammos-entity-inline-v2');if (!root) return;root.dataset.expanded = 'true';"
     )
     assert me.Entity._repr_html_toggle_script(expanded=False) == (
-        "const root = this.closest('.mammos-entity-inline-v2');"
-        "if (!root) return;"
-        "root.dataset.expanded = 'false';"
+        "const root = this.closest('.mammos-entity-inline-v2');if (!root) return;root.dataset.expanded = 'false';"
     )
 
 
@@ -160,10 +149,7 @@ def test_repr_html_large_1d_array_uses_summary_and_bounded_numpy_expansion():
     fragment = e._repr_html_fragment_()
     expanded_html = html.escape(me._entity._format_array_repr_expanded(e.value))
 
-    assert (
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>shape=(1001,)</span>"
-    ) in fragment
+    assert ("&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>shape=(1001,)</span>") in fragment
     assert (
         "<span class='entity-summary-content'>"
         "<span>"

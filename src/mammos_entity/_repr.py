@@ -48,11 +48,7 @@ def _format_array_repr_summary(value: numpy.typing.ArrayLike) -> str:
 
     flattened = np.ravel(value)
     if flattened.size <= 2 * _ENTITY_REPR_SUMMARY_EDGE_ITEMS:
-        return compact(
-            _strip_array_repr_brackets(
-                np.array2string(flattened, max_line_width=10_000)
-            )
-        )
+        return compact(_strip_array_repr_brackets(np.array2string(flattened, max_line_width=10_000)))
     head = compact(
         _strip_array_repr_brackets(
             np.array2string(
@@ -92,11 +88,7 @@ def _format_array_repr_expanded(value: numpy.typing.ArrayLike) -> str:
 
 def _repr_html_meta_text(text: str) -> str:
     """Render muted metadata text used by notebook HTML reprs."""
-    return (
-        "<span class='entity-meta'>"
-        f"{_format_html_text(text, preserve_spaces=True)}"
-        "</span>"
-    )
+    return f"<span class='entity-meta'>{_format_html_text(text, preserve_spaces=True)}</span>"
 
 
 def _repr_html_meta_separator() -> str:
@@ -116,12 +108,7 @@ def _repr_html_summary_content(
     meta_html: str = "",
 ) -> str:
     """Render inline summary content without flex gaps between its parts."""
-    return (
-        "<span class='entity-summary-content'>"
-        f"<span>{preview_html}{unit_html}</span>"
-        f"{meta_html}"
-        "</span>"
-    )
+    return f"<span class='entity-summary-content'><span>{preview_html}{unit_html}</span>{meta_html}</span>"
 
 
 class _ReprEllipsis:
@@ -153,17 +140,11 @@ class _EntityReprHtml:
         expanded_value_text = value_text
         compact_value_text = " ".join(value_text.split())
         single_line_value_text = compact_value_text
-        label_html = (
-            "<span class='entity-label'>"
-            f"{_format_html_text(self.ontology_label)}"
-            "</span>"
-        )
+        label_html = f"<span class='entity-label'>{_format_html_text(self.ontology_label)}</span>"
         unit_html_collapsed = ""
         unit_html_expanded = ""
         if not self.unit.is_equivalent(u.dimensionless_unscaled):
-            unit_html_collapsed = (
-                f"&nbsp;{_format_html_text(str(self.unit), preserve_spaces=True)}"
-            )
+            unit_html_collapsed = f"&nbsp;{_format_html_text(str(self.unit), preserve_spaces=True)}"
             unit_html_expanded = f" {html.escape(str(self.unit))}"
 
         description_html = ""
@@ -183,10 +164,7 @@ class _EntityReprHtml:
             preview_limit = _ENTITY_REPR_MAX_INLINE_CHARS - len("...")
             preview_value_text = f"{preview_value_text[:preview_limit].rstrip()}..."
 
-        show_value_details = (
-            len(f"{single_line_value_text} {self.unit!s}".strip())
-            > _ENTITY_REPR_MAX_INLINE_CHARS
-        )
+        show_value_details = len(f"{single_line_value_text} {self.unit!s}".strip()) > _ENTITY_REPR_MAX_INLINE_CHARS
         if shape not in [(), None]:
             show_value_details = show_value_details or "..." in value_text
 
@@ -211,10 +189,7 @@ class _EntityReprHtml:
 
         expand = self._repr_html_toggle_script(expanded=True)
         collapse = self._repr_html_toggle_script(expanded=False)
-        toggle_onkeydown = (
-            "if(event.key==='Enter'||event.key===' '){"
-            "event.preventDefault();this.click();}"
-        )
+        toggle_onkeydown = "if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
         preview_html = _format_html_text(preview_value_text, preserve_spaces=True)
         header_html = f"{header_html}{shape_html}"
         summary_content_html = _repr_html_summary_content(
@@ -317,15 +292,9 @@ class _EntityCollectionReprHtml:
             items = [element_repr(element) for element in value]
         else:
             items = [
-                *(
-                    element_repr(element)
-                    for element in value[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]
-                ),
+                *(element_repr(element) for element in value[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]),
                 "...",
-                *(
-                    element_repr(element)
-                    for element in value[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]
-                ),
+                *(element_repr(element) for element in value[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]),
             ]
         return f"{opener}{', '.join(items)}{closer}"
 
@@ -353,15 +322,9 @@ class _EntityCollectionReprHtml:
             preview_items = [item_repr(key, item_value) for key, item_value in items]
         else:
             preview_items = [
-                *(
-                    item_repr(key, item_value)
-                    for key, item_value in items[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]
-                ),
+                *(item_repr(key, item_value) for key, item_value in items[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]),
                 "...",
-                *(
-                    item_repr(key, item_value)
-                    for key, item_value in items[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]
-                ),
+                *(item_repr(key, item_value) for key, item_value in items[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]),
             ]
         return "{" + ", ".join(preview_items) + "}"
 
@@ -397,10 +360,7 @@ class _EntityCollectionReprHtml:
         """Render a collapsible preview for long plain values in collection rows."""
         expand = cls._repr_html_value_toggle_script(expanded=True)
         collapse = cls._repr_html_value_toggle_script(expanded=False)
-        toggle_onkeydown = (
-            "if(event.key==='Enter'||event.key===' '){"
-            "event.preventDefault();this.click();}"
-        )
+        toggle_onkeydown = "if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
         preview_html = cls._format_html_text(preview_text)
         unit_span_html = f"<span>{unit_html}</span>" if unit_html else ""
         summary_content_html = _repr_html_summary_content(
@@ -441,11 +401,7 @@ class _EntityCollectionReprHtml:
     @classmethod
     def _repr_html_compact_value_meta_html(
         cls,
-        value: mammos_units.Quantity
-        | numpy.typing.ArrayLike
-        | list
-        | tuple
-        | dict[object, object],
+        value: mammos_units.Quantity | numpy.typing.ArrayLike | list | tuple | dict[object, object],
     ) -> str:
         """Render metadata shown next to compact previews for supported plain values."""
         if isinstance(value, u.Quantity | np.ndarray):
@@ -459,11 +415,7 @@ class _EntityCollectionReprHtml:
     @classmethod
     def _repr_html_compact_supported_value(
         cls,
-        value: mammos_units.Quantity
-        | numpy.typing.ArrayLike
-        | list
-        | tuple
-        | dict[object, object],
+        value: mammos_units.Quantity | numpy.typing.ArrayLike | list | tuple | dict[object, object],
     ) -> str | None:
         """Render compact previews for supported long plain values."""
         if isinstance(value, u.Quantity) and getattr(value, "shape", ()) not in [
@@ -526,10 +478,7 @@ class _EntityCollectionReprHtml:
             if not value_html:
                 value_html = fallback_html
             break
-        if (
-            not used_custom_html
-            and len(repr_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS
-        ):
+        if not used_custom_html and len(repr_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
             compact_html = cls._repr_html_compact_supported_value(value)
             if compact_html is not None:
                 value_html = compact_html
@@ -557,9 +506,7 @@ class _EntityCollectionReprHtml:
         """Wrap rendered child rows in the right container."""
         if not children:
             return ""
-        child_class = (
-            "collection-children nested-children" if nested else "collection-children"
-        )
+        child_class = "collection-children nested-children" if nested else "collection-children"
         return f"<div class='{child_class}'>{''.join(children)}</div>"
 
     def _repr_html_nested(self, key: str) -> str:
@@ -658,15 +605,11 @@ class _EntityCollectionReprHtml:
         children = []
         if self.description:
             children.append(
-                "<div class='branch-item collection-description'>"
-                f"{self._format_html_text(self.description)}"
-                "</div>"
+                f"<div class='branch-item collection-description'>{self._format_html_text(self.description)}</div>"
             )
         has_nested_collections = False
         for key, value in self._entities.items():
-            has_nested_collections = has_nested_collections or isinstance(
-                value, _EntityCollectionReprHtml
-            )
+            has_nested_collections = has_nested_collections or isinstance(value, _EntityCollectionReprHtml)
             children.append(self._repr_html_value(key, value))
         child_html = self._repr_html_children(children, nested=nested)
         if nested:
@@ -695,7 +638,5 @@ class _EntityCollectionReprHtml:
 @cache
 def _repr_css() -> str:
     """Load the shared CSS used by entity HTML representations."""
-    css = importlib.resources.files("mammos_entity").joinpath(
-        "_entity_collection_repr.css"
-    )
+    css = importlib.resources.files("mammos_entity").joinpath("_entity_collection_repr.css")
     return f"<style>{css.read_text(encoding='utf-8')}</style>"

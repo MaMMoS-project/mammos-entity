@@ -87,9 +87,7 @@ def test_repr_html_plain_collection_exact_snapshot(monkeypatch):
         "uuid4",
         lambda: type("DummyUuid", (), {"hex": "root"})(),
     )
-    assert ec._repr_html_() == (
-        f"{_repr_css()}{ec._repr_html_block(root_id='mammos-entity-collection-v2-root')}"
-    )
+    assert ec._repr_html_() == (f"{_repr_css()}{ec._repr_html_block(root_id='mammos-entity-collection-v2-root')}")
 
 
 def test_repr_html_details_script():
@@ -101,25 +99,14 @@ def test_repr_html_details_script():
         assert "const root = document.getElementById('root');" in script
         assert "if (!root || root.dataset.busy === 'true') return;" in script
         assert "const status = root.querySelector('.collection-status');" in script
-        assert (
-            "const buttons = root.querySelectorAll('.collection-toolbar button');"
-            in script
-        )
-        assert (
-            "const details = Array.from(root.querySelectorAll('details.branch-item'));"
-            in script
-        )
+        assert "const buttons = root.querySelectorAll('.collection-toolbar button');" in script
+        assert "const details = Array.from(root.querySelectorAll('details.branch-item'));" in script
         assert "root.dataset.busy = 'true';" in script
         assert "root.setAttribute('aria-busy', 'true');" in script
         assert "buttons.forEach((button) => { button.disabled = true; });" in script
         assert "const batchSize = 50;" in script
-        assert (
-            "if (index < details.length) { requestAnimationFrame(step); return; }"
-            in script
-        )
-        assert (
-            "requestAnimationFrame(() => { requestAnimationFrame(step); });" in script
-        )
+        assert "if (index < details.length) { requestAnimationFrame(step); return; }" in script
+        assert "requestAnimationFrame(() => { requestAnimationFrame(step); });" in script
 
     assert "if (status) status.textContent = 'Expanding...';" in expanding
     assert "element.open = true;" in expanding
@@ -128,9 +115,7 @@ def test_repr_html_details_script():
 
 
 def test_repr_css_wraps_shared_stylesheet():
-    css_file = importlib.resources.files("mammos_entity").joinpath(
-        "_entity_collection_repr.css"
-    )
+    css_file = importlib.resources.files("mammos_entity").joinpath("_entity_collection_repr.css")
     assert _repr_css() == f"<style>{css_file.read_text(encoding='utf-8')}</style>"
 
 
@@ -164,23 +149,17 @@ def test_repr_html_falls_back_when_value_repr_html_returns_none():
 def test_repr_html_value_toggle_script():
     """Lock the inline expand/collapse script for compact row values."""
     assert me.EntityCollection._repr_html_value_toggle_script(expanded=True) == (
-        "const root = this.closest('.mammos-compact-value-v2');"
-        "if (!root) return;"
-        "root.dataset.expanded = 'true';"
+        "const root = this.closest('.mammos-compact-value-v2');if (!root) return;root.dataset.expanded = 'true';"
     )
     assert me.EntityCollection._repr_html_value_toggle_script(expanded=False) == (
-        "const root = this.closest('.mammos-compact-value-v2');"
-        "if (!root) return;"
-        "root.dataset.expanded = 'false';"
+        "const root = this.closest('.mammos-compact-value-v2');if (!root) return;root.dataset.expanded = 'false';"
     )
 
 
 def test_repr_html_long_numpy_array_compact_preview_snapshot():
     array = np.arange(24).reshape(4, 6)
 
-    row_html = _strip_html_event_handlers(
-        me.EntityCollection._repr_html_value("M", array)
-    )
+    row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("M", array))
     expanded_html = html.escape(me._entity._format_array_repr_expanded(array))
 
     assert row_html == (
@@ -223,12 +202,8 @@ def test_repr_html_long_numpy_array_compact_preview_snapshot():
 def test_repr_html_long_quantity_compact_preview_snapshot():
     quantity = me.M(np.arange(24).reshape(4, 6), "A/m").quantity
 
-    row_html = _strip_html_event_handlers(
-        me.EntityCollection._repr_html_value("M_q", quantity)
-    )
-    expanded_html = html.escape(
-        me.EntityCollection._format_quantity_repr_expanded(quantity)
-    )
+    row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("M_q", quantity))
+    expanded_html = html.escape(me.EntityCollection._format_quantity_repr_expanded(quantity))
 
     assert row_html == (
         "<div class='branch-item entity-row'>"
@@ -283,12 +258,8 @@ def test_repr_html_short_quantity_stays_inline():
 def test_repr_html_long_list_compact_preview_snapshot():
     value = list(range(120))
 
-    row_html = _strip_html_event_handlers(
-        me.EntityCollection._repr_html_value("L", value)
-    )
-    expanded_html = html.escape(
-        me.EntityCollection._format_sequence_repr_expanded(value)
-    )
+    row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("L", value))
+    expanded_html = html.escape(me.EntityCollection._format_sequence_repr_expanded(value))
 
     assert row_html == (
         "<div class='branch-item entity-row'>"
@@ -330,12 +301,8 @@ def test_repr_html_long_list_compact_preview_snapshot():
 def test_repr_html_long_tuple_compact_preview_snapshot():
     value = tuple(range(120))
 
-    row_html = _strip_html_event_handlers(
-        me.EntityCollection._repr_html_value("T", value)
-    )
-    expanded_html = html.escape(
-        me.EntityCollection._format_sequence_repr_expanded(value)
-    )
+    row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("T", value))
+    expanded_html = html.escape(me.EntityCollection._format_sequence_repr_expanded(value))
 
     assert row_html == (
         "<div class='branch-item entity-row'>"
@@ -386,31 +353,22 @@ def test_repr_html_short_list_stays_inline():
 def test_repr_html_long_mixed_list_uses_compact_preview():
     value = [1, "a", {"k": 3}, [4, 5], (6, 7)] * 30
 
-    row_html = _strip_html_event_handlers(
-        me.EntityCollection._repr_html_value("mixed", value)
-    )
+    row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("mixed", value))
 
-    assert (
-        "class='mammos-entity-inline-v2 mammos-compact-value-v2' data-expanded='false'"
-    ) in row_html
+    assert ("class='mammos-entity-inline-v2 mammos-compact-value-v2' data-expanded='false'") in row_html
     assert (
         "[1,&nbsp;&#x27;a&#x27;,&nbsp;{&#x27;k&#x27;:&nbsp;3},"
         "&nbsp;...,&nbsp;{&#x27;k&#x27;:&nbsp;3},&nbsp;[4,&nbsp;5],"
         "&nbsp;(6,&nbsp;7)]"
     ) in row_html
-    assert (
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>len=150</span>"
-    ) in row_html
+    assert ("&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>len=150</span>") in row_html
     assert "class='entity-full-value'>" in row_html
 
 
 def test_repr_html_long_dict_compact_preview_snapshot():
     value = {f"k{i}": i for i in range(120)}
 
-    row_html = _strip_html_event_handlers(
-        me.EntityCollection._repr_html_value("D", value)
-    )
+    row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("D", value))
     expanded_html = html.escape(me.EntityCollection._format_dict_repr_expanded(value))
 
     assert row_html == (
