@@ -161,21 +161,13 @@ def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]
                 if len(possible_units) == 0:
                     # Possible case: the abstract unit only points to non-SI
                     # concrete units. We use Astropy to read the dimension string.
-                    possible_units.append(
-                        _convert_dimension_string(
-                            ancestor.hasMeasurementUnit[0].hasDimensionString
-                        )
-                    )
+                    possible_units.append(_convert_dimension_string(ancestor.hasMeasurementUnit[0].hasDimensionString))
             else:
                 # Extreme case: the ancestor has the attribute `hasMeasurementUnit` (the
                 # abstract unit), but it defines to subclasses (the concrete units).
                 # In this case, we create a Astropy unit directly from the dimension
                 # string.
-                possible_units.append(
-                    _convert_dimension_string(
-                        ancestor.hasMeasurementUnit[0].hasDimensionString
-                    )
-                )
+                possible_units.append(_convert_dimension_string(ancestor.hasMeasurementUnit[0].hasDimensionString))
             break
     else:
         # The only alternative is that the ontology concept is not related
@@ -302,9 +294,7 @@ class Entity:
     def __init__(
         self,
         ontology_label: str,
-        value: mammos_entity.Entity
-        | mammos_units.Quantity
-        | numpy.typing.ArrayLike = 0,
+        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
         unit: str | None | mammos_units.UnitBase = None,
         description: str = "",
     ):
@@ -325,13 +315,7 @@ class Entity:
         ontology_units = _get_all_possible_units(label)
 
         if unit is None:
-            if isinstance(value, u.Quantity):
-                # No explicit unit is given, but `value` is a Quantity:
-                # we take the unit of `value`
-                unit = value.unit
-            else:
-                # the user does not specify a unit: we choose the most frequent unit.
-                unit = _get_preferred_unit(ontology_units)
+            unit = value.unit if isinstance(value, u.Quantity) else _get_preferred_unit(ontology_units)
         else:
             unit = u.Unit(unit)
 
@@ -361,10 +345,7 @@ class Entity:
         if isinstance(value, str):
             self._description = value
         else:
-            raise ValueError(
-                "Description must be a string. "
-                f"Received value: {value} of type: {type(value)}."
-            )
+            raise ValueError(f"Description must be a string. Received value: {value} of type: {type(value)}.")
 
     @property
     def ontology_label(self) -> str:
@@ -467,9 +448,7 @@ class Entity:
             >>> me.Entity("DemagnetizingFactor").axis_label
             'Demagnetizing Factor'
         """
-        return re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}") + (
-            f" ({self.unit})" if str(self.unit) else ""
-        )
+        return re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}") + (f" ({self.unit})" if str(self.unit) else "")
 
     def __eq__(self, other: mammos_entity.Entity) -> bool:
         """Check if two Entities are identical.
@@ -653,10 +632,7 @@ def from_compatible(
         ValueError: Argument temperature ...
     """
     if len(kwargs) != 1:
-        raise RuntimeError(
-            "Exactly one entity-like must be passed as keyword argument,"
-            f" got {len(kwargs)}."
-        )
+        raise RuntimeError(f"Exactly one entity-like must be passed as keyword argument, got {len(kwargs)}.")
     arg_name, value = kwargs.popitem()
 
     if isinstance(value, Entity):
@@ -672,12 +648,9 @@ def from_compatible(
     elif isinstance(value, u.Quantity):
         try:
             return _to_entity(ontology_label, value, fallback_unit, enforce_unit)
-        except (
-            ValueError
-        ) as exc:  # TODO a custom error only for wrong unit could be useful
+        except ValueError as exc:  # TODO a custom error only for wrong unit could be useful
             raise ValueError(
-                f"Argument {arg_name} = {value!r} cannot be interpreted as entity "
-                f"{ontology_label}."
+                f"Argument {arg_name} = {value!r} cannot be interpreted as entity {ontology_label}."
             ) from exc
     else:
         return Entity(ontology_label, value, fallback_unit)
@@ -699,9 +672,7 @@ def _to_entity(
 def ensure_entity(required_label: str, **kwargs: mammos_entity.Entity) -> None:
     """Ensure that object is an entity of the required type (ontology label)."""
     if len(kwargs) != 1:
-        raise RuntimeError(
-            f"Exactly one entity must be passed as keyword argument, got {len(kwargs)}."
-        )
+        raise RuntimeError(f"Exactly one entity must be passed as keyword argument, got {len(kwargs)}.")
     arg_name, entity = kwargs.popitem()
     if not isinstance(entity, Entity):
         raise TypeError(
@@ -709,7 +680,4 @@ def ensure_entity(required_label: str, **kwargs: mammos_entity.Entity) -> None:
             f"got '{type(entity).__module__}.{type(entity).__name__}'"
         )
     if entity.ontology_label != required_label:
-        raise ValueError(
-            f"Argument {arg_name}: expected entity '{required_label}', "
-            f"got '{entity.ontology_label}'"
-        )
+        raise ValueError(f"Argument {arg_name}: expected entity '{required_label}', got '{entity.ontology_label}'")

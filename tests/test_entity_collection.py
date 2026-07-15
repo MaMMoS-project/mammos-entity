@@ -7,9 +7,7 @@ import mammos_entity as me
 
 def test_entity_collection_with_description():
     """Check that the description of an EntityCollection is well defined."""
-    ec = me.EntityCollection(
-        "Magnetization on a grid.", x=[0, 0, 1, 1], y=[0, 1, 0, 1], M=me.M([1, 2, 3, 4])
-    )
+    ec = me.EntityCollection("Magnetization on a grid.", x=[0, 0, 1, 1], y=[0, 1, 0, 1], M=me.M([1, 2, 3, 4]))
     assert ec.description == "Magnetization on a grid."
     assert [name for name, _entity in ec] == ["x", "y", "M"]
 
@@ -186,9 +184,7 @@ def test_dataframe_roundtrip():
     col = me.EntityCollection("descr", M=M, Tq=Tq, V=V)
     col["name with spaces"] = [0, 0]
     col["description"] = [1, 1]
-    col_new = me.EntityCollection.from_dataframe(
-        col.to_dataframe(), col.metadata(), col.description
-    )
+    col_new = me.EntityCollection.from_dataframe(col.to_dataframe(), col.metadata(), col.description)
     assert col_new.M == M
     assert all(col_new.Tq == Tq)
     assert all(col_new.V == V)

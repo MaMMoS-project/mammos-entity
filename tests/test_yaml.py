@@ -89,9 +89,7 @@ def test_read_yaml_v1(tmp_path):
     assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
     assert me.T([1, 2, 3]) == read_data.T
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
-    assert read_data.demag_factor == me.Entity(
-        "DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]
-    )
+    assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     assert list(read_data.comment) == [
         "Some comment",
         "Some other comment",
@@ -140,9 +138,7 @@ def test_read_yaml_v2_flat(tmp_path):
     assert me.T([1, 2, 3]) == read_data.T
     assert read_data.T.description == "from experiment 1"
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
-    assert read_data.demag_factor == me.Entity(
-        "DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]
-    )
+    assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     assert list(read_data.comment) == [
         "Some comment",
         "Some other comment",
@@ -320,10 +316,7 @@ def test_read_yaml_error_includes_full_entity_path_with_dotted_key(tmp_path):
         me.from_yaml(filename)
 
     message = str(exc_info.value)
-    assert (
-        'Entry "outer.dotted.inner.Ms" is an invalid entity-like in mammos yaml v2'
-        in message
-    )
+    assert 'Entry "outer.dotted.inner.Ms" is an invalid entity-like in mammos yaml v2' in message
 
 
 def test_read_yaml_error_for_null_ontology_label(tmp_path):
@@ -348,10 +341,7 @@ def test_read_yaml_error_for_null_ontology_label(tmp_path):
         me.from_yaml(filename)
 
     message = str(exc_info.value)
-    assert (
-        'Entry "Ms" is an invalid entity-like in mammos yaml v2: key '
-        '"ontology_label" must be a string'
-    ) in message
+    assert ('Entry "Ms" is an invalid entity-like in mammos yaml v2: key "ontology_label" must be a string') in message
 
 
 def test_read_yaml_error_for_invalid_top_level_description_type(tmp_path):
@@ -372,10 +362,7 @@ def test_read_yaml_error_for_invalid_top_level_description_type(tmp_path):
         me.from_yaml(filename)
 
     message = str(exc_info.value)
-    assert (
-        'Entry "top-level collection" is an invalid collection in mammos yaml v2'
-        in message
-    )
+    assert 'Entry "top-level collection" is an invalid collection in mammos yaml v2' in message
     assert 'key "description" must be a string' in message
 
 
@@ -401,10 +388,7 @@ def test_read_yaml_error_for_non_string_entity_description(tmp_path):
         me.from_yaml(filename)
 
     message = str(exc_info.value)
-    assert (
-        'Entry "Ms" is an invalid entity-like in mammos yaml v2: key '
-        '"description" must be a string'
-    ) in message
+    assert ('Entry "Ms" is an invalid entity-like in mammos yaml v2: key "description" must be a string') in message
 
 
 def test_read_yaml_error_for_missing_metadata(tmp_path):
@@ -475,10 +459,7 @@ def test_read_yaml_error_for_empty_v2_top_level_data(tmp_path):
 
     with pytest.raises(RuntimeError) as exc_info:
         me.from_yaml(filename)
-    assert (
-        'Entry "top-level collection" is an invalid collection in mammos yaml v2'
-        in str(exc_info.value)
-    )
+    assert 'Entry "top-level collection" is an invalid collection in mammos yaml v2' in str(exc_info.value)
     assert 'key "data" does not contain anything.' in str(exc_info.value)
 
 
@@ -542,9 +523,7 @@ def test_read_yaml_error_for_mapping_without_collection_or_leaf_keys(tmp_path):
 
     with pytest.raises(RuntimeError) as exc_info:
         me.from_yaml(filename)
-    assert 'Entry "item" is an invalid entity-like in mammos yaml v2' in str(
-        exc_info.value
-    )
+    assert 'Entry "item" is an invalid entity-like in mammos yaml v2' in str(exc_info.value)
 
 
 def test_read_yaml_error_prefers_entity_like_when_leaf_hints_are_present(tmp_path):
@@ -566,9 +545,7 @@ def test_read_yaml_error_prefers_entity_like_when_leaf_hints_are_present(tmp_pat
 
     with pytest.raises(RuntimeError) as exc_info:
         me.from_yaml(filename)
-    assert 'Entry "item" is an invalid entity-like in mammos yaml v2' in str(
-        exc_info.value
-    )
+    assert 'Entry "item" is an invalid entity-like in mammos yaml v2' in str(exc_info.value)
 
 
 def test_write_read_yaml_multi_shape(tmp_path):
