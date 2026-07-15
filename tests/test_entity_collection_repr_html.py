@@ -93,6 +93,21 @@ class DualHtmlValue:
         return "<span>fragment html</span>"
 
 
+class NoneHtmlList(list):
+    """Test helper list subclass whose HTML repr declines to render."""
+
+    def _repr_html_(self):
+        return None
+
+
+class BrokenReprList(list):
+    """Test helper list subclass whose ``__repr__`` fails."""
+
+    def __repr__(self):
+        """Broken repr."""
+        raise RuntimeError("broken repr")
+
+
 class DerivedEntityCollection(me.EntityCollection):
     """Test helper subclass for nested collection HTML repr coverage."""
 
@@ -199,6 +214,26 @@ def test_repr_html_prefers_full_html_for_generic_values():
     _assert_row_wrapper(row_html, key="dual")
     assert "<div>full html</div>" in row_html
     assert "<span>fragment html</span>" not in row_html
+
+
+@pytest.mark.parametrize(
+    ("key", "value"),
+    [
+        ("missing", NoneHtmlList(range(120))),
+        ("broken", BrokenReprList(range(120))),
+    ],
+)
+def test_repr_html_supported_long_container_subclasses_keep_compact_preview(key, value):
+    row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value(key, value))
+    expanded_html = html.escape(repr_module._format_sequence_repr_expanded(value))
+
+    _assert_compact_row_behavior(
+        row_html,
+        key=key,
+        preview_html="[0,&nbsp;1,&nbsp;2,&nbsp;...,&nbsp;117,&nbsp;118,&nbsp;119]",
+        meta_text_html="len=120",
+        expanded_html=expanded_html,
+    )
 
 
 def test_repr_html_value_toggle_script():
@@ -355,6 +390,15 @@ def test_format_dict_repr_summary_truncates_long_members():
 
     assert f"'k2': {reprlib.repr(long_value)}" in summary
     assert f"'k2': {long_value!r}" not in summary
+
+
+def test_format_sequence_repr_expanded_preserves_nested_dict_order():
+    value = [{"b": 1, "a": 2}] * 120
+
+    expanded = repr_module._format_sequence_repr_expanded(value)
+
+    assert "{'b': 1, 'a': 2}" in expanded
+    assert "{'a': 2, 'b': 1}" not in expanded
 
 
 def test_repr_html_nested_collection_branch_exact_snapshot():

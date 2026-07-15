@@ -212,7 +212,7 @@ def _format_sequence_repr_expanded(value: list | tuple) -> str:
         truncated = [*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:]]
     else:
         truncated = (*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:])
-    return pprint.pformat(truncated, width=88, compact=True, sort_dicts=True)
+    return pprint.pformat(truncated, width=88, compact=True, sort_dicts=False)
 
 
 def _format_dict_repr_summary(value: dict[object, object]) -> str:
@@ -402,7 +402,6 @@ class _EntityCollectionReprHtml:
         """Render one stored value, using HTML reprs when available."""
         if isinstance(value, _EntityCollectionReprHtml):
             return value._repr_html_nested(key)
-        used_custom_html = False
         attr_names = (
             ("_repr_html_fragment_", "_repr_html_")
             if isinstance(value, _EntityReprHtml)
@@ -415,7 +414,6 @@ class _EntityCollectionReprHtml:
             repr_html = getattr(value, attr_name, None)
             if not callable(repr_html):
                 continue
-            used_custom_html = True
             try:
                 value_html = repr_html()
             except Exception:
@@ -424,13 +422,16 @@ class _EntityCollectionReprHtml:
                 continue
             return cls._repr_html_row(key, value_html)
 
+        repr_failed = False
         try:
             repr_value_text = repr(value)
         except Exception:
+            repr_failed = True
             repr_value_text = object.__repr__(value)
-        if not used_custom_html and len(repr_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
-            spec = _compact_value_text_spec(value)
-            if spec is not None:
+        spec = _compact_value_text_spec(value)
+        if spec is not None:
+            compact_source_text = spec.expanded_text if repr_failed else repr_value_text
+            if len(compact_source_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
                 return cls._repr_html_row(key, cls._repr_html_compact_value(spec))
 
         fallback_html = _format_html_text(repr_value_text, preserve_spaces=True)
