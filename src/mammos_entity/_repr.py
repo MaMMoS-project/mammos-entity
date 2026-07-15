@@ -160,6 +160,36 @@ class _ReprEllipsis:
 _REPR_ELLIPSIS = _ReprEllipsis()
 
 
+def _format_repr_summary(
+    items: list[object],
+    opener: str,
+    closer: str,
+    elem_repr: str | None = None,
+) -> str:
+    """Generic head/tail preview for a container with ``opener``/``closer`` delimiters."""
+    repr_fn = reprlib.repr if elem_repr is None else lambda item: elem_repr.format(key=item[0], value=item[1])
+
+    if len(items) <= 2 * _ENTITY_REPR_SUMMARY_EDGE_ITEMS:
+        elements = [repr_fn(item) for item in items]
+    else:
+        elements = [
+            *(repr_fn(item) for item in items[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]),
+            "...",
+            *(repr_fn(item) for item in items[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]),
+        ]
+    return f"{opener}{', '.join(elements)}{closer}"
+
+
+def _format_pprint_expanded(
+    truncated: object,
+    *,
+    width: int = 88,
+    sort_dicts: bool = True,
+) -> str:
+    """Bounded ``pprint.pformat`` of a truncated container."""
+    return pprint.pformat(truncated, width=width, compact=True, sort_dicts=sort_dicts)
+
+
 class _EntityReprHtml:
     """Private mixin containing notebook HTML repr methods for Entity."""
 
@@ -297,20 +327,8 @@ class _EntityCollectionReprHtml:
     @staticmethod
     def _format_sequence_repr_summary(value: list | tuple) -> str:
         """Format a compact head/tail preview for Python list and tuple values."""
-
-        def element_repr(element: object) -> str:
-            return reprlib.repr(element)
-
         opener, closer = ("[", "]") if isinstance(value, list) else ("(", ")")
-        if len(value) <= 2 * _ENTITY_REPR_SUMMARY_EDGE_ITEMS:
-            items = [element_repr(element) for element in value]
-        else:
-            items = [
-                *(element_repr(element) for element in value[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]),
-                "...",
-                *(element_repr(element) for element in value[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]),
-            ]
-        return f"{opener}{', '.join(items)}{closer}"
+        return _format_repr_summary(list(value), opener, closer)
 
     @staticmethod
     def _format_sequence_repr_expanded(value: list | tuple) -> str:
@@ -322,25 +340,17 @@ class _EntityCollectionReprHtml:
             truncated = [*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:]]
         else:
             truncated = (*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:])
-        return pprint.pformat(truncated, width=88, compact=True)
+        return _format_pprint_expanded(truncated)
 
     @staticmethod
     def _format_dict_repr_summary(value: dict[object, object]) -> str:
         """Format a compact head/tail preview for Python dict values."""
-
-        def item_repr(key: object, item_value: object) -> str:
-            return f"{reprlib.repr(key)}: {reprlib.repr(item_value)}"
-
-        items = list(value.items())
-        if len(items) <= 2 * _ENTITY_REPR_SUMMARY_EDGE_ITEMS:
-            preview_items = [item_repr(key, item_value) for key, item_value in items]
-        else:
-            preview_items = [
-                *(item_repr(key, item_value) for key, item_value in items[:_ENTITY_REPR_SUMMARY_EDGE_ITEMS]),
-                "...",
-                *(item_repr(key, item_value) for key, item_value in items[-_ENTITY_REPR_SUMMARY_EDGE_ITEMS:]),
-            ]
-        return "{" + ", ".join(preview_items) + "}"
+        return _format_repr_summary(
+            list(value.items()),
+            "{",
+            "}",
+            "{key!r}: {value!r}",
+        )
 
     @staticmethod
     def _format_dict_repr_expanded(value: dict[object, object]) -> str:
@@ -355,12 +365,7 @@ class _EntityCollectionReprHtml:
                 (_REPR_ELLIPSIS, _REPR_ELLIPSIS),
                 *items[-edge_items:],
             ]
-        return pprint.pformat(
-            dict(truncated_items),
-            width=88,
-            compact=True,
-            sort_dicts=False,
-        )
+        return _format_pprint_expanded(dict(truncated_items), sort_dicts=False)
 
     @classmethod
     def _repr_html_compact_value(
