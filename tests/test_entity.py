@@ -164,25 +164,18 @@ def test_repr():
     """
     e = me.Entity("CurieTemperature")
     zero_string = f"{np.float64(0.0)!r}"  # differs for NumPy 1 and NumPy 2.
-    assert (
-        e.__repr__()
-        == f"Entity(ontology_label='CurieTemperature', value={zero_string}, unit='K')"
-    )
+    assert e.__repr__() == f"Entity(ontology_label='CurieTemperature', value={zero_string}, unit='K')"
     assert eval(repr(e)) == e
 
     a = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     e = me.Entity("ExternalMagneticField", value=a)
     assert e.__repr__() == (
-        "Entity(ontology_label='ExternalMagneticField', "
-        + f"value={np.array(a, dtype=float)!r}, unit='A / m')"
+        "Entity(ontology_label='ExternalMagneticField', " + f"value={np.array(a, dtype=float)!r}, unit='A / m')"
     )
     assert eval(repr(e)) == e
 
     e = me.Entity("DemagnetizingFactor")
-    assert (
-        e.__repr__()
-        == f"Entity(ontology_label='DemagnetizingFactor', value={zero_string})"
-    )
+    assert e.__repr__() == f"Entity(ontology_label='DemagnetizingFactor', value={zero_string})"
     assert eval(repr(e)) == e
 
 
@@ -243,9 +236,7 @@ def test_label_without_concrete_units():
     """
     assert me.Entity("MagneticMoment").unit == u.A * u.m**2
     assert me.Entity("DiffusionCoefficient").unit == u.m**2 / u.s
-    assert (
-        me.Entity("DiffusionCoefficientForParticleNumberDensity").unit == u.m**2 / u.s
-    )
+    assert me.Entity("DiffusionCoefficientForParticleNumberDensity").unit == u.m**2 / u.s
     assert me.Entity("EffectiveDiffusionCoefficient").unit == u.m**2 / u.s
     assert me.Entity("ElectricDipoleMoment").unit == u.A * u.m * u.s
     assert me.Entity("EnergyDensityOfStates").unit == u.s**2 / u.m**5 / u.kg
@@ -267,10 +258,7 @@ def test_ontology_information_mammos():
     """Test ontology label and IRI for an Entity in the MaMMoS ontology."""
     e = me.Entity("ExternalMagneticField")
     assert e.ontology_label == "ExternalMagneticField"
-    assert (
-        e.ontology_iri
-        == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
-    )
+    assert e.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
     assert (
         e.ontology_label_with_iri
         == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
@@ -285,13 +273,9 @@ def test_ontology_information_EMMO():
     """Test ontology label and IRI for an Entity in the EMMO."""
     e = me.Entity("AngularVelocity")
     assert e.ontology_label == "AngularVelocity"
+    assert e.ontology_iri == "https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
     assert (
-        e.ontology_iri
-        == "https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
-    )
-    assert (
-        e.ontology_label_with_iri
-        == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
+        e.ontology_label_with_iri == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
     )
     assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
     assert e.ontology_label in me.mammos_ontology

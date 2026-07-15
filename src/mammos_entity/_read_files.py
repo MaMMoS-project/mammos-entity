@@ -46,9 +46,7 @@ def from_csv(filename: str | os.PathLike) -> mammos_entity.EntityCollection:
             )
 
         if version.group() not in [f"v{i}" for i in range(1, 4)]:
-            raise RuntimeError(
-                f"Reading mammos csv {version.group()} is not supported."
-            )
+            raise RuntimeError(f"Reading mammos csv {version.group()} is not supported.")
         version_number = int(version.group().lstrip("v"))
 
         collection_description = []
@@ -59,16 +57,11 @@ def from_csv(filename: str | os.PathLike) -> mammos_entity.EntityCollection:
             while True:
                 line = csvfile.readline()
                 if line == "":
-                    raise RuntimeError(
-                        "CSV description block is not terminated by a closing dashed "
-                        "line."
-                    )
+                    raise RuntimeError("CSV description block is not terminated by a closing dashed line.")
                 if line.startswith("#--"):
                     break
                 else:
-                    collection_description.append(
-                        line.removeprefix("# ").rstrip("\r\n")
-                    )
+                    collection_description.append(line.removeprefix("# ").rstrip("\r\n"))
         else:
             # reset the file position
             csvfile.seek(position)
@@ -88,16 +81,12 @@ def from_csv(filename: str | os.PathLike) -> mammos_entity.EntityCollection:
                 units = next(reader)
             except StopIteration as exc:
                 raise RuntimeError(
-                    "CSV metadata is incomplete. Expected four metadata rows before "
-                    "the data table."
+                    "CSV metadata is incomplete. Expected four metadata rows before the data table."
                 ) from exc
         else:
             metadata_rows = [csvfile.readline() for _ in range(3)]
             if any(row == "" for row in metadata_rows):
-                raise RuntimeError(
-                    "CSV metadata is incomplete. Expected three metadata rows before "
-                    "the data table."
-                )
+                raise RuntimeError("CSV metadata is incomplete. Expected three metadata rows before the data table.")
             ontology_labels = metadata_rows[0].strip().removeprefix("#").split(",")
             # ignore IRIs: metadata_rows[1]
             units = metadata_rows[2].strip().removeprefix("#").split(",")
@@ -113,9 +102,7 @@ def from_csv(filename: str | os.PathLike) -> mammos_entity.EntityCollection:
     try:
         columns = list(zip(names, ontology_labels, descriptions, units, strict=True))
     except ValueError as exc:
-        raise RuntimeError(
-            "CSV metadata columns and data columns do not match."
-        ) from exc
+        raise RuntimeError("CSV metadata columns and data columns do not match.") from exc
 
     collection = EntityCollection(description="\n".join(collection_description))
     for name, ontology_label, description, unit in columns:
@@ -168,10 +155,7 @@ def _from_yaml_v1(filename: str | os.PathLike) -> mammos_entity.EntityCollection
         raise RuntimeError("mammos yaml v1 files must contain a top-level mapping.")
 
     if set(file_content.keys()) != {"metadata", "data"}:
-        raise RuntimeError(
-            "mammos yaml v1 files must have exactly two top-level keys, "
-            "'metadata' and 'data'."
-        )
+        raise RuntimeError("mammos yaml v1 files must have exactly two top-level keys, 'metadata' and 'data'.")
 
     if not (
         "metadata" in file_content
@@ -179,10 +163,7 @@ def _from_yaml_v1(filename: str | os.PathLike) -> mammos_entity.EntityCollection
         and "version" in file_content["metadata"]
         and file_content["metadata"]["version"] == "v1"
     ):
-        raise RuntimeError(
-            "Wrong mammos yaml v1 syntax. Expected 'metadata' key with "
-            "the 'version' equal to 'v1'."
-        )
+        raise RuntimeError("Wrong mammos yaml v1 syntax. Expected 'metadata' key with the 'version' equal to 'v1'.")
 
     collection_description = file_content["metadata"].get("description") or ""
     if not isinstance(file_content.get("data"), Mapping):
@@ -205,8 +186,7 @@ def _from_yaml_v2(filename: str | os.PathLike) -> mammos_entity.EntityCollection
 
     if set(file_content.keys()) != {"metadata", "description", "data"}:
         raise RuntimeError(
-            "mammos yaml v2 files must have exactly three top-level keys, "
-            "'metadata', 'description' and 'data'."
+            "mammos yaml v2 files must have exactly three top-level keys, 'metadata', 'description' and 'data'."
         )
     root = {
         "description": file_content["description"],
@@ -217,18 +197,13 @@ def _from_yaml_v2(filename: str | os.PathLike) -> mammos_entity.EntityCollection
 
 def _parse_yaml_leaf_v1(item: Mapping, key: str):
     if not isinstance(item, Mapping):
-        raise RuntimeError(
-            f"Element '{key}' must be a mapping, found {type(item).__name__}."
-        )
+        raise RuntimeError(f"Element '{key}' must be a mapping, found {type(item).__name__}.")
 
     keys = set(item)
     v1_keys = {"ontology_label", "ontology_iri", "unit", "value"}
 
     if keys != v1_keys:
-        raise RuntimeError(
-            f"Element '{key}' has invalid keys: {sorted(keys)}."
-            f" Expected {sorted(v1_keys)}."
-        )
+        raise RuntimeError(f"Element '{key}' has invalid keys: {sorted(keys)}. Expected {sorted(v1_keys)}.")
 
     if item["ontology_label"] is not None:
         entity = Entity(
@@ -316,8 +291,7 @@ def _parse_yaml_collection_v2(node: Mapping, key: str) -> EntityCollection:
         )
     if key == "" and not node["data"]:
         raise RuntimeError(
-            f'Entry "{key_display}" is an invalid collection in mammos yaml v2: '
-            'key "data" does not contain anything.'
+            f'Entry "{key_display}" is an invalid collection in mammos yaml v2: key "data" does not contain anything.'
         )
 
     collection = EntityCollection(description=description)
@@ -352,12 +326,7 @@ def _join_path(parent_path: str, segment: str) -> str:
 def from_hdf5(
     element: h5py.File | h5py.Group | h5py.Dataset | str | os.PathLike,
     decode_bytes: bool = True,
-) -> (
-    mammos_entity.Entity
-    | mammos_units.Quantity
-    | numpy.typing.ArrayLike
-    | mammos_entity.EntityCollection
-):
+) -> mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike | mammos_entity.EntityCollection:
     """Read HDF5 file, group or dataset and convert to Entity or EntityCollection.
 
     Datasets are converted to :py:class:`~mammos_entity.Entity`,

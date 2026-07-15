@@ -121,9 +121,7 @@ class EntityCollection:
         self.description = description
         self._entities = kwargs
 
-    def __getitem__(
-        self, key: str
-    ) -> mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike:
+    def __getitem__(self, key: str) -> mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike:
         return self._entities[key]
 
     def __setitem__(
@@ -132,9 +130,7 @@ class EntityCollection:
         value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
     ):
         if not isinstance(key, str):
-            raise TypeError(
-                f"Name must be a string, received {key!r} ({type(key).__name__})."
-            )
+            raise TypeError(f"Name must be a string, received {key!r} ({type(key).__name__}).")
         self._entities[key] = value
 
     def __delitem__(self, key: str) -> None:
@@ -142,11 +138,7 @@ class EntityCollection:
 
     def __iter__(
         self,
-    ) -> collections.abc.Iterator[
-        tuple[
-            str, mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike
-        ]
-    ]:
+    ) -> collections.abc.Iterator[tuple[str, mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike]]:
         yield from self._entities.items()
 
     def __len__(self) -> int:
@@ -175,9 +167,7 @@ class EntityCollection:
         else:
             self[name] = value
 
-    def __getattr__(
-        self, name: str
-    ) -> mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike:
+    def __getattr__(self, name: str) -> mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike:
         """Access entities via dot notation.
 
         Allow access to entities using ``collection.name`` as a short-hand for
@@ -204,9 +194,7 @@ class EntityCollection:
         elif name in self:
             del self[name]
         else:
-            raise AttributeError(
-                f"'{self.__class__.__name__}' object has no attribute '{name}'"
-            )
+            raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
     def __dir__(self) -> list[str]:
         dir = super().__dir__()
@@ -243,10 +231,7 @@ class EntityCollection:
         if isinstance(value, str):
             self._description = value
         else:
-            raise ValueError(
-                f"Description must be a string. "
-                f"Received value: {value} of type: {type(value)}."
-            )
+            raise ValueError(f"Description must be a string. Received value: {value} of type: {type(value)}.")
 
     def __repr__(self) -> str:
         """Show container elements."""
@@ -277,9 +262,7 @@ class EntityCollection:
 
         return pd.DataFrame(
             {
-                f"{key}{unit(key) if include_units else ''}": np.atleast_1d(
-                    getattr(val, "value", val)
-                )
+                f"{key}{unit(key) if include_units else ''}": np.atleast_1d(getattr(val, "value", val))
                 for key, val in self
             }
         )
@@ -351,13 +334,9 @@ class EntityCollection:
         """
         metadata = copy.deepcopy(metadata)  # do not modify the user's metadata dict
         if missing_keys := set(dataframe.columns) - set(metadata):
-            raise ValueError(
-                f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}"
-            )
+            raise ValueError(f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}")
         if missing_keys := set(metadata) - set(dataframe.columns):
-            raise ValueError(
-                f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}"
-            )
+            raise ValueError(f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}")
 
         collection = cls(description=description)
         for name in metadata:
@@ -717,9 +696,7 @@ class EntityCollection:
         """  # noqa: E501
 
         def _serialize_entity_like(
-            element: mammos_entity.Entity
-            | mammos_units.Quantity
-            | numpy.typing.ArrayLike,
+            element: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
         ) -> dict:
             if isinstance(element, me.Entity):
                 return {
@@ -770,9 +747,7 @@ class EntityCollection:
                 - 3
 
             """
-            return dumper.represent_sequence(
-                "tag:yaml.org,2002:seq", value, flow_style=True
-            )
+            return dumper.represent_sequence("tag:yaml.org,2002:seq", value, flow_style=True)
 
         def _represent_string(dumper, value):
             """Control style of single-line and multi-line strings.
@@ -805,9 +780,7 @@ class EntityCollection:
                 sort_keys=False,
             )
 
-    def to_hdf5(
-        self, base: h5py.File | h5py.Group | str | os.PathLike, name: str | None = None
-    ) -> h5py.Group | None:
+    def to_hdf5(self, base: h5py.File | h5py.Group | str | os.PathLike, name: str | None = None) -> h5py.Group | None:
         """Write a collection to an HDF5 group.
 
         Entities of the collection become datasets in the group. The collection
@@ -832,10 +805,7 @@ class EntityCollection:
 
 
 def _to_hdf5(
-    data: mammos_entity.Entity
-    | mammos_units.Quantity
-    | numpy.typing.ArrayLike
-    | mammos_entity.EntityCollection,
+    data: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike | mammos_entity.EntityCollection,
     base: h5py.File | h5py.Group | str | os.PathLike,
     name: str | None,
     record_mammos_entity_version: bool = True,

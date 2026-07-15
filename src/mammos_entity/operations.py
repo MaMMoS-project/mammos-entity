@@ -85,6 +85,4 @@ def concat_flat(
                 stacklevel=1,
             )
         description = "|".join(_descriptions)
-    return Entity(
-        ontology_labels[0], np.concatenate(values), unit, description=description
-    )
+    return Entity(ontology_labels[0], np.concatenate(values), unit, description=description)

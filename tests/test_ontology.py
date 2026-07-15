@@ -28,9 +28,7 @@ def test_search_labels_whole_match():
     This search would give multiple results without the flag activated.
     """
     assert search_labels("Polarization", auto_wildcard=False) == []
-    assert search_labels("*Polarization*", auto_wildcard=False) == search_labels(
-        "*Polarization*"
-    )
+    assert search_labels("*Polarization*", auto_wildcard=False) == search_labels("*Polarization*")
 
 
 def test_problematic_labels():

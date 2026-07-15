@@ -84,9 +84,7 @@ def B(
     return Entity("MagneticFluxDensity", value, unit, **kwargs)
 
 
-def H(
-    value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None, **kwargs
-) -> mammos_entity.Entity:
+def H(value: int | float | numpy.typing.ArrayLike = 0, unit: None | str = None, **kwargs) -> mammos_entity.Entity:
     """Create an Entity representing the external magnetic field (H).
 
     Args:

@@ -140,9 +140,9 @@ def test_nested_entity_collection_to_hdf5_roundtrip():
         assert isinstance(sample_read.edge_length, u.Quantity)
         assert isinstance(sample_read.measurement_device, str)
 
-        assert me.from_hdf5(
-            f["sample1/measurement_device"], decode_bytes=False
-        ) == sample.measurement_device.encode("utf8")
+        assert me.from_hdf5(f["sample1/measurement_device"], decode_bytes=False) == sample.measurement_device.encode(
+            "utf8"
+        )
 
 
 def test_nested_entity_collection_to_hdf5_full_file_read():

@@ -45,10 +45,7 @@ def test_concat_flat_description():
             "Entity 2.|Entity 1.",
         )
     assert concat_flat(e_1, e_3).description == "Entity 1."
-    assert (
-        concat_flat(e_1, e_2, description="Concatenated.").description
-        == "Concatenated."
-    )
+    assert concat_flat(e_1, e_2, description="Concatenated.").description == "Concatenated."
 
     q = [5, 6] * u.A / u.m
     assert concat_flat(e_1, q).description == "Entity 1."

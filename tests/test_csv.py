@@ -99,9 +99,7 @@ def test_read_csv_v1(tmp_path):
     assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
     assert me.T([1, 2, 3]) == read_data.T
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
-    assert read_data.demag_factor == me.Entity(
-        "DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]
-    )
+    assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     assert list(read_data.comment) == [
         "Some comment",
         "Some other comment",
@@ -132,9 +130,7 @@ def test_read_csv_v2(tmp_path):
     assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
     assert me.T([1, 2, 3]) == read_data.T
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
-    assert read_data.demag_factor == me.Entity(
-        "DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]
-    )
+    assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     assert list(read_data.comment) == [
         "Some comment",
         "Some other comment",
@@ -255,9 +251,7 @@ def test_read_csv_error_for_metadata_data_column_mismatch(tmp_path):
     )
     (tmp_path / "data.csv").write_text(file_content)
 
-    with pytest.raises(
-        RuntimeError, match="CSV metadata columns and data columns do not match."
-    ):
+    with pytest.raises(RuntimeError, match="CSV metadata columns and data columns do not match."):
         me.from_csv(tmp_path / "data.csv")
 
 
