@@ -7,6 +7,7 @@ import importlib.resources
 import pprint
 import reprlib
 import uuid
+from collections.abc import Callable
 from functools import cache
 from typing import TYPE_CHECKING
 
@@ -164,10 +165,10 @@ def _format_repr_summary(
     items: list[object],
     opener: str,
     closer: str,
-    elem_repr: str | None = None,
+    format_item: Callable[[object], str] | None = None,
 ) -> str:
     """Generic head/tail preview for a container with ``opener``/``closer`` delimiters."""
-    repr_fn = reprlib.repr if elem_repr is None else lambda item: elem_repr.format(key=item[0], value=item[1])
+    repr_fn = reprlib.repr if format_item is None else format_item
 
     if len(items) <= 2 * _ENTITY_REPR_SUMMARY_EDGE_ITEMS:
         elements = [repr_fn(item) for item in items]
@@ -311,6 +312,21 @@ class _EntityCollectionReprHtml:
         )
 
     @staticmethod
+    def _repr_html_value_protocols(value: object) -> tuple[str, ...]:
+        """Choose HTML repr methods in the right order for a stored value."""
+        if isinstance(value, _EntityReprHtml):
+            return ("_repr_html_fragment_", "_repr_html_")
+        return ("_repr_html_", "_repr_html_fragment_")
+
+    @staticmethod
+    def _repr_html_value_fallback_text(value: object) -> str:
+        """Return fallback text even if a custom ``__repr__`` implementation fails."""
+        try:
+            return repr(value)
+        except Exception:
+            return object.__repr__(value)
+
+    @staticmethod
     def _repr_html_value_toggle_script(*, expanded: bool) -> str:
         """Build the inline script for compact row-value expand/collapse."""
         return _repr_html_toggle_script("mammos-compact-value-v2", expanded=expanded)
@@ -345,11 +361,16 @@ class _EntityCollectionReprHtml:
     @staticmethod
     def _format_dict_repr_summary(value: dict[object, object]) -> str:
         """Format a compact head/tail preview for Python dict values."""
+
+        def format_item(item: tuple[object, object]) -> str:
+            key, item_value = item
+            return f"{reprlib.repr(key)}: {reprlib.repr(item_value)}"
+
         return _format_repr_summary(
             list(value.items()),
             "{",
             "}",
-            "{key!r}: {value!r}",
+            format_item,
         )
 
     @staticmethod
@@ -461,11 +482,8 @@ class _EntityCollectionReprHtml:
         """Render one stored value, using HTML reprs when available."""
         if isinstance(value, _EntityCollectionReprHtml):
             return value._repr_html_nested(key)
-        repr_value_text = repr(value)
-        fallback_html = cls._format_html_text(repr_value_text)
-        value_html = fallback_html
         used_custom_html = False
-        for attr_name in ("_repr_html_fragment_", "_repr_html_"):
+        for attr_name in cls._repr_html_value_protocols(value):
             repr_html = getattr(value, attr_name, None)
             if not callable(repr_html):
                 continue
@@ -473,15 +491,19 @@ class _EntityCollectionReprHtml:
             try:
                 value_html = repr_html()
             except Exception:
-                value_html = fallback_html
+                continue
             if not value_html:
-                value_html = fallback_html
-            break
+                continue
+            return cls._repr_html_row(key, value_html)
+
+        repr_value_text = cls._repr_html_value_fallback_text(value)
         if not used_custom_html and len(repr_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
             compact_html = cls._repr_html_compact_supported_value(value)
             if compact_html is not None:
-                value_html = compact_html
-        return cls._repr_html_row(key, value_html)
+                return cls._repr_html_row(key, compact_html)
+
+        fallback_html = cls._format_html_text(repr_value_text)
+        return cls._repr_html_row(key, fallback_html)
 
     def _repr_html_summary_preview(self) -> str:
         """Build the compact preview text for nested collections."""

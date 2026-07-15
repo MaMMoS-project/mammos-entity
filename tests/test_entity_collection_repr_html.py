@@ -1,6 +1,7 @@
 import html
 import importlib.resources
 import re
+import reprlib
 
 import mammos_units as u
 import numpy as np
@@ -42,6 +43,27 @@ class NoneHtmlValue:
     def __repr__(self):
         """Return a stable repr for fallback assertions."""
         return "NoneHtmlValue()"
+
+
+class HtmlButBrokenRepr:
+    """Test helper whose HTML repr works even though ``__repr__`` fails."""
+
+    def _repr_html_(self):
+        return "<span>working html</span>"
+
+    def __repr__(self):
+        """Broken repr."""
+        raise RuntimeError("broken repr")
+
+
+class DualHtmlValue:
+    """Test helper exposing both full and fragment HTML repr methods."""
+
+    def _repr_html_(self):
+        return "<div>full html</div>"
+
+    def _repr_html_fragment_(self):
+        return "<span>fragment html</span>"
 
 
 class DerivedEntityCollection(me.EntityCollection):
@@ -142,6 +164,24 @@ def test_repr_html_falls_back_when_value_repr_html_returns_none():
         "<div class='branch-item entity-row'>"
         "<div class='entity-key'>missing</div>"
         "<div class='entity-value'>NoneHtmlValue()</div>"
+        "</div>"
+    )
+
+
+def test_repr_html_uses_working_html_even_if_repr_is_broken():
+    assert me.EntityCollection._repr_html_value("working", HtmlButBrokenRepr()) == (
+        "<div class='branch-item entity-row'>"
+        "<div class='entity-key'>working</div>"
+        "<div class='entity-value'><span>working html</span></div>"
+        "</div>"
+    )
+
+
+def test_repr_html_prefers_full_html_for_generic_values():
+    assert me.EntityCollection._repr_html_value("dual", DualHtmlValue()) == (
+        "<div class='branch-item entity-row'>"
+        "<div class='entity-key'>dual</div>"
+        "<div class='entity-value'><div>full html</div></div>"
         "</div>"
     )
 
@@ -410,6 +450,24 @@ def test_repr_html_long_dict_compact_preview_snapshot():
         "</div>"
         "</div>"
     )
+
+
+def test_format_dict_repr_summary_truncates_long_members():
+    long_value = "x" * 200
+    value = {
+        "k0": 0,
+        "k1": 1,
+        "k2": long_value,
+        "k3": 3,
+        "k4": 4,
+        "k5": 5,
+        "k6": 6,
+    }
+
+    summary = me.EntityCollection._format_dict_repr_summary(value)
+
+    assert f"'k2': {reprlib.repr(long_value)}" in summary
+    assert f"'k2': {long_value!r}" not in summary
 
 
 def test_repr_html_short_dict_stays_inline():
