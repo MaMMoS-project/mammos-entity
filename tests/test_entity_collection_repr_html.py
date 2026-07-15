@@ -287,6 +287,17 @@ def test_repr_html_long_numpy_array_compact_preview_snapshot():
     )
 
 
+def test_repr_html_long_string_object_array_preserves_internal_spaces_in_preview():
+    value = np.array(["a   b"] * 120, dtype=object)
+
+    row_html = me.EntityCollection._repr_html_value("strings", value)
+
+    _assert_row_wrapper(row_html, key="strings")
+    assert "mammos-compact-value" in row_html
+    assert "&#x27;a&nbsp;&nbsp;&nbsp;b&#x27;" in row_html
+    assert "&#x27;a&nbsp;b&#x27;" not in row_html
+
+
 @pytest.mark.parametrize(
     ("key", "value", "preview_html", "meta_text_html", "expanded_formatter"),
     [

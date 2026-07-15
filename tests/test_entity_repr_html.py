@@ -118,6 +118,12 @@ def test_format_array_repr_summary_flattens_preview():
     assert me._repr._format_array_repr_summary(e.value) == "0. 1. 2. ... 21. 22. 23."
 
 
+def test_format_array_repr_summary_preserves_spaces_inside_string_elements():
+    value = np.array(["a   b", "c"])
+
+    assert me._repr._format_array_repr_summary(value) == "'a   b' 'c'"
+
+
 def test_format_array_repr_expanded_uses_numpy_repr_with_threshold():
     e = me.Entity("ExternalMagneticField", np.arange(1001), "A/m")
 

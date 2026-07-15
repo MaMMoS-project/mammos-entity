@@ -46,6 +46,33 @@ def _format_html_text(text: str, *, preserve_spaces: bool = False) -> str:
     return escaped
 
 
+def _compact_repr_whitespace(text: str) -> str:
+    """Collapse separator whitespace while preserving spaces inside quoted reprs."""
+    compact = []
+    quote = ""
+    escaped = False
+    for char in text:
+        if quote:
+            compact.append(char)
+            if escaped:
+                escaped = False
+            elif char == "\\":
+                escaped = True
+            elif char == quote:
+                quote = ""
+            continue
+
+        if char in {"'", '"'}:
+            quote = char
+            compact.append(char)
+        elif char.isspace():
+            if compact and compact[-1] != " ":
+                compact.append(" ")
+        else:
+            compact.append(char)
+    return "".join(compact).strip()
+
+
 def _format_array_repr_summary(value: numpy.typing.ArrayLike) -> str:
     """Format a flattened preview for array values in HTML reprs."""
     flattened = np.ravel(value)
@@ -62,7 +89,7 @@ def _format_array_repr_summary(value: numpy.typing.ArrayLike) -> str:
         text = np.array2string(part, max_line_width=10_000)
         if text.startswith("[") and text.endswith("]"):
             text = text[1:-1]
-        formatted_parts.append(" ".join(text.split()))
+        formatted_parts.append(_compact_repr_whitespace(text))
 
     if len(formatted_parts) == 1:
         return formatted_parts[0]
