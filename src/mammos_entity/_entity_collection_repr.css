@@ -30,9 +30,6 @@
       var(--vscode-panel-border, var(--mammos-repr-disabled))
     )
   );
-}
-
-.mammos-entity-collection {
   font-family: inherit;
   font-size: inherit;
   line-height: 1.45;
@@ -64,13 +61,6 @@
   gap: 0.22rem;
 }
 
-.mammos-entity-inline {
-  font-family: inherit;
-  font-size: inherit;
-  line-height: 1.45;
-  color: var(--mammos-repr-primary);
-}
-
 .mammos-entity-inline .entity-label {
   font-weight: 600;
   color: var(--mammos-repr-soft-label);
@@ -91,10 +81,6 @@
 .mammos-entity-inline .entity-summary {
   align-items: baseline;
   gap: 0.45rem;
-}
-
-.mammos-entity-inline .entity-summary-preview {
-  color: var(--mammos-repr-primary);
 }
 
 .mammos-entity-inline .entity-collapsed.entity-summary {
@@ -155,13 +141,9 @@
   cursor: progress;
 }
 
-.mammos-entity-inline .entity-meta,
 .mammos-entity-collection .collection-status {
   color: var(--mammos-repr-muted);
   font-size: 0.9em;
-}
-
-.mammos-entity-collection .collection-status {
   opacity: 0;
   transition: opacity 120ms ease;
   white-space: nowrap;

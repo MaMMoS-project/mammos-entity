@@ -67,37 +67,36 @@ def _expected_details_script(root_id: str, *, open_state: bool) -> str:
     """Render the exact inline JS expected for expand/collapse-all controls."""
     state = "true" if open_state else "false"
     label = "Expanding..." if open_state else "Collapsing..."
-    finish_statements = (
-        "root.dataset.busy = 'false';",
-        "root.setAttribute('aria-busy', 'false');",
-        "if (status) status.textContent = '';",
-        "buttons.forEach((button) => { button.disabled = false; });",
+    return "".join(
+        (
+            f"const root = document.getElementById('{root_id}');",
+            "if (!root || root.dataset.busy === 'true') return;",
+            "const status = root.querySelector('.collection-status');",
+            "const buttons = root.querySelectorAll('.collection-toolbar button');",
+            "const details = Array.from(root.querySelectorAll('details.branch-item'));",
+            "root.dataset.busy = 'true';",
+            "root.setAttribute('aria-busy', 'true');",
+            f"if (status) status.textContent = '{label}';",
+            "buttons.forEach((button) => { button.disabled = true; });",
+            "const batchSize = 50;",
+            "let index = 0;",
+            "const finish = () => {"
+            "root.dataset.busy = 'false';"
+            "root.setAttribute('aria-busy', 'false');"
+            "if (status) status.textContent = '';"
+            "buttons.forEach((button) => { button.disabled = false; });"
+            "};",
+            "const step = () => {"
+            "details.slice(index, index + batchSize).forEach((element) => {"
+            f"element.open = {state};"
+            "});"
+            "index += batchSize;"
+            "if (index < details.length) { requestAnimationFrame(step); return; }"
+            "finish();"
+            "};",
+            "requestAnimationFrame(() => { requestAnimationFrame(step); });",
+        )
     )
-    step_statements = (
-        "details.slice(index, index + batchSize).forEach((element) => {",
-        f"element.open = {state};",
-        "});",
-        "index += batchSize;",
-        "if (index < details.length) { requestAnimationFrame(step); return; }",
-        "finish();",
-    )
-    script_statements = (
-        f"const root = document.getElementById('{root_id}');",
-        "if (!root || root.dataset.busy === 'true') return;",
-        "const status = root.querySelector('.collection-status');",
-        "const buttons = root.querySelectorAll('.collection-toolbar button');",
-        "const details = Array.from(root.querySelectorAll('details.branch-item'));",
-        "root.dataset.busy = 'true';",
-        "root.setAttribute('aria-busy', 'true');",
-        f"if (status) status.textContent = '{label}';",
-        "buttons.forEach((button) => { button.disabled = true; });",
-        "const batchSize = 50;",
-        "let index = 0;",
-        f"const finish = () => {{{''.join(finish_statements)}}};",
-        f"const step = () => {{{''.join(step_statements)}}};",
-        "requestAnimationFrame(() => { requestAnimationFrame(step); });",
-    )
-    return "".join(script_statements)
 
 
 class HtmlValue:
@@ -247,10 +246,10 @@ def test_repr_html_prefers_full_html_for_generic_values():
 
 def test_repr_html_value_toggle_script():
     """Lock the inline expand/collapse script for compact row values."""
-    assert me.EntityCollection._repr_html_value_toggle_script(expanded=True) == (
+    assert repr_module._repr_html_toggle_script("mammos-compact-value", expanded=True) == (
         "const root = this.closest('.mammos-compact-value');if (!root) return;root.dataset.expanded = 'true';"
     )
-    assert me.EntityCollection._repr_html_value_toggle_script(expanded=False) == (
+    assert repr_module._repr_html_toggle_script("mammos-compact-value", expanded=False) == (
         "const root = this.closest('.mammos-compact-value');if (!root) return;root.dataset.expanded = 'false';"
     )
 
@@ -273,7 +272,7 @@ def test_repr_html_long_quantity_compact_preview_snapshot():
     quantity = me.M(np.arange(24).reshape(4, 6), "A/m").quantity
 
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("M_q", quantity))
-    expanded_html = html.escape(me.EntityCollection._format_quantity_repr_expanded(quantity))
+    expanded_html = html.escape(repr_module._format_quantity_repr_expanded(quantity))
 
     assert row_html == _expected_compact_row(
         "M_q",
@@ -296,7 +295,7 @@ def test_repr_html_long_list_compact_preview_snapshot():
     value = list(range(120))
 
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("L", value))
-    expanded_html = html.escape(me.EntityCollection._format_sequence_repr_expanded(value))
+    expanded_html = html.escape(repr_module._format_sequence_repr_expanded(value))
 
     assert row_html == _expected_compact_row(
         "L",
@@ -310,7 +309,7 @@ def test_repr_html_long_tuple_compact_preview_snapshot():
     value = tuple(range(120))
 
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("T", value))
-    expanded_html = html.escape(me.EntityCollection._format_sequence_repr_expanded(value))
+    expanded_html = html.escape(repr_module._format_sequence_repr_expanded(value))
 
     assert row_html == _expected_compact_row(
         "T",
@@ -343,7 +342,7 @@ def test_repr_html_long_dict_compact_preview_snapshot():
     value = {f"k{i}": i for i in range(120)}
 
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("D", value))
-    expanded_html = html.escape(me.EntityCollection._format_dict_repr_expanded(value))
+    expanded_html = html.escape(repr_module._format_dict_repr_expanded(value))
 
     assert row_html == _expected_compact_row(
         "D",
@@ -367,7 +366,7 @@ def test_format_dict_repr_summary_truncates_long_members():
         "k6": 6,
     }
 
-    summary = me.EntityCollection._format_dict_repr_summary(value)
+    summary = repr_module._format_dict_repr_summary(value)
 
     assert f"'k2': {reprlib.repr(long_value)}" in summary
     assert f"'k2': {long_value!r}" not in summary

@@ -4,6 +4,7 @@ import re
 import numpy as np
 
 import mammos_entity as me
+import mammos_entity._repr as repr_module
 from mammos_entity._repr import _repr_css
 
 
@@ -145,10 +146,10 @@ def test_format_array_repr_expanded_shows_large_1d_context():
 
 def test_repr_html_toggle_script():
     """Lock the inline expand/collapse script separately from the HTML snapshot."""
-    assert me.Entity._repr_html_toggle_script(expanded=True) == (
+    assert repr_module._repr_html_toggle_script("mammos-entity-inline", expanded=True) == (
         "const root = this.closest('.mammos-entity-inline');if (!root) return;root.dataset.expanded = 'true';"
     )
-    assert me.Entity._repr_html_toggle_script(expanded=False) == (
+    assert repr_module._repr_html_toggle_script("mammos-entity-inline", expanded=False) == (
         "const root = this.closest('.mammos-entity-inline');if (!root) return;root.dataset.expanded = 'false';"
     )
 
