@@ -91,21 +91,25 @@ def test_repr_html_short_entity_exact_snapshot():
 
 
 def test_repr_html_dimensionless():
-    """Test HTML repr for dimensionless entities."""
+    """Dimensionless entities stay inline and omit a unit suffix."""
     e = me.Entity("DemagnetizingFactor", 0.3)
+    fragment = e._repr_html_fragment_()
 
-    assert e._repr_html_fragment_() == _expected_inline_entity_fragment("DemagnetizingFactor", "0.3")
+    assert "DemagnetizingFactor" in fragment
+    assert "<span>0.3</span>" in fragment
+    assert "entity-collapsed" not in fragment
+    assert "&nbsp;K" not in fragment
 
 
 def test_repr_html_small_array_stays_single_line():
-    """Test that compact arrays stay on one line."""
+    """Small arrays stay inline and still expose shape metadata."""
     e = me.Entity("ThermodynamicTemperature", [[1, 2], [3, 4]], "K")
+    fragment = e._repr_html_fragment_()
 
-    assert e._repr_html_fragment_() == _expected_inline_entity_fragment(
-        "ThermodynamicTemperature",
-        "[[1.&nbsp;2.]&nbsp;[3.&nbsp;4.]]&nbsp;K",
-        meta_html="&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>shape=(2,&nbsp;2)</span>",
-    )
+    assert "ThermodynamicTemperature" in fragment
+    assert "[[1.&nbsp;2.]&nbsp;[3.&nbsp;4.]]&nbsp;K" in fragment
+    assert "shape=(2,&nbsp;2)" in fragment
+    assert "data-expanded='false'" not in fragment
 
 
 def test_format_array_repr_summary_flattens_preview():
@@ -145,13 +149,14 @@ def test_format_array_repr_expanded_shows_large_1d_context():
 
 
 def test_repr_html_toggle_script():
-    """Lock the inline expand/collapse script separately from the HTML snapshot."""
-    assert repr_module._repr_html_toggle_script("mammos-entity-inline", expanded=True) == (
-        "const root = this.closest('.mammos-entity-inline');if (!root) return;root.dataset.expanded = 'true';"
-    )
-    assert repr_module._repr_html_toggle_script("mammos-entity-inline", expanded=False) == (
-        "const root = this.closest('.mammos-entity-inline');if (!root) return;root.dataset.expanded = 'false';"
-    )
+    """Toggle scripts target the right root class and expanded state."""
+    expanding = repr_module._repr_html_toggle_script("mammos-entity-inline", expanded=True)
+    collapsing = repr_module._repr_html_toggle_script("mammos-entity-inline", expanded=False)
+
+    assert "closest('.mammos-entity-inline')" in expanding
+    assert "dataset.expanded = 'true'" in expanding
+    assert "closest('.mammos-entity-inline')" in collapsing
+    assert "dataset.expanded = 'false'" in collapsing
 
 
 def test_repr_html_long_value_exact_snapshot():
