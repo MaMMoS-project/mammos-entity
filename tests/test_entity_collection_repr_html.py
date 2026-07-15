@@ -30,7 +30,7 @@ def _expected_compact_value_html(summary_inner_html: str, expanded_html: str, *,
     """Render the shared expected HTML shell for compact collection values."""
     summary_content_html = f"<span class='entity-summary-content'><span>{summary_inner_html}</span>{meta_html}</span>"
     return (
-        "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
+        "<samp class='mammos-entity-inline mammos-compact-value' "
         "data-expanded='false'>"
         "<span class='entity-collapsed entity-summary'>"
         "<span role='button' tabindex='0' class='entity-toggle' "
@@ -159,7 +159,7 @@ def test_repr_html_plain_collection_exact_snapshot(monkeypatch):
     ec = me.EntityCollection("descr", M=me.M(1, "A/m"), a=[1, 2])
 
     expected_block = (
-        "<div id='root' class='mammos-entity-collection-v2' "
+        "<div id='root' class='mammos-entity-collection' "
         "data-busy='false' aria-busy='false'>"
         "<div class='collection-header'>"
         "<div class='collection-title'><span>EntityCollection</span></div>"
@@ -170,7 +170,7 @@ def test_repr_html_plain_collection_exact_snapshot(monkeypatch):
         "<div class='branch-item entity-row'>"
         "<div class='entity-key'>M</div>"
         "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline-v2'>"
+        "<samp class='mammos-entity-inline'>"
         "<span class='entity-label'>Magnetization</span>"
         "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
         "<span>1.0&nbsp;A&nbsp;/&nbsp;m</span>"
@@ -193,7 +193,7 @@ def test_repr_html_plain_collection_exact_snapshot(monkeypatch):
         "uuid4",
         lambda: type("DummyUuid", (), {"hex": "root"})(),
     )
-    assert ec._repr_html_() == (f"{_repr_css()}{ec._repr_html_block(root_id='mammos-entity-collection-v2-root')}")
+    assert ec._repr_html_() == (f"{_repr_css()}{ec._repr_html_block(root_id='mammos-entity-collection-root')}")
 
 
 def test_repr_html_details_script():
@@ -248,10 +248,10 @@ def test_repr_html_prefers_full_html_for_generic_values():
 def test_repr_html_value_toggle_script():
     """Lock the inline expand/collapse script for compact row values."""
     assert me.EntityCollection._repr_html_value_toggle_script(expanded=True) == (
-        "const root = this.closest('.mammos-compact-value-v2');if (!root) return;root.dataset.expanded = 'true';"
+        "const root = this.closest('.mammos-compact-value');if (!root) return;root.dataset.expanded = 'true';"
     )
     assert me.EntityCollection._repr_html_value_toggle_script(expanded=False) == (
-        "const root = this.closest('.mammos-compact-value-v2');if (!root) return;root.dataset.expanded = 'false';"
+        "const root = this.closest('.mammos-compact-value');if (!root) return;root.dataset.expanded = 'false';"
     )
 
 
@@ -329,7 +329,7 @@ def test_repr_html_long_mixed_list_uses_compact_preview():
 
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("mixed", value))
 
-    assert ("class='mammos-entity-inline-v2 mammos-compact-value-v2' data-expanded='false'") in row_html
+    assert ("class='mammos-entity-inline mammos-compact-value' data-expanded='false'") in row_html
     assert (
         "[1,&nbsp;&#x27;a&#x27;,&nbsp;{&#x27;k&#x27;:&nbsp;3},"
         "&nbsp;...,&nbsp;{&#x27;k&#x27;:&nbsp;3},&nbsp;[4,&nbsp;5],"
@@ -396,7 +396,7 @@ def test_repr_html_nested_collection_exact_snapshot():
         "<div class='branch-item entity-row'>"
         "<div class='entity-key'>T</div>"
         "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline-v2'>"
+        "<samp class='mammos-entity-inline'>"
         "<span class='entity-label'>ThermodynamicTemperature</span>"
         "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
         "<span>2.0&nbsp;K</span>"
@@ -411,7 +411,7 @@ def test_repr_html_nested_collection_exact_snapshot():
 
     ec = me.EntityCollection(outer=1, inner=inner)
     assert _strip_html_event_handlers(ec._repr_html_block(root_id="root")) == (
-        "<div id='root' class='mammos-entity-collection-v2' "
+        "<div id='root' class='mammos-entity-collection' "
         "data-busy='false' aria-busy='false'>"
         "<div class='collection-header'>"
         "<div class='collection-title'><span>EntityCollection</span></div>"
@@ -448,7 +448,7 @@ def test_repr_html_subclass_treats_base_collection_values_as_nested():
     ec = DerivedEntityCollection(inner=inner)
 
     assert ec._repr_html_block(root_id="root") == (
-        "<div id='root' class='mammos-entity-collection-v2' "
+        "<div id='root' class='mammos-entity-collection' "
         "data-busy='false' aria-busy='false'>"
         "<div class='collection-header'>"
         "<div class='collection-title'><span>DerivedEntityCollection</span></div>"

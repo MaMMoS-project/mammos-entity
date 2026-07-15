@@ -1,5 +1,5 @@
-.mammos-entity-collection-v2,
-.mammos-entity-inline-v2 {
+.mammos-entity-collection,
+.mammos-entity-inline {
   --mammos-repr-primary: var(
     --jp-content-font-color0,
     var(--vscode-editor-foreground, var(--vscode-foreground, currentColor))
@@ -32,20 +32,20 @@
   );
 }
 
-.mammos-entity-collection-v2 {
+.mammos-entity-collection {
   font-family: inherit;
   font-size: inherit;
   line-height: 1.45;
   color: var(--mammos-repr-primary);
 }
 
-.mammos-entity-collection-v2 samp {
+.mammos-entity-collection samp {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
 }
 
-.mammos-entity-collection-v2 .collection-header {
+.mammos-entity-collection .collection-header {
   display: flex;
   align-items: baseline;
   justify-content: flex-start;
@@ -53,71 +53,71 @@
   margin-bottom: 0.15em;
 }
 
-.mammos-entity-collection-v2 .collection-title {
+.mammos-entity-collection .collection-title {
   font-weight: 600;
 }
 
-.mammos-entity-collection-v2 .collection-toolbar {
+.mammos-entity-collection .collection-toolbar {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
   gap: 0.22rem;
 }
 
-.mammos-entity-inline-v2 {
+.mammos-entity-inline {
   font-family: inherit;
   font-size: inherit;
   line-height: 1.45;
   color: var(--mammos-repr-primary);
 }
 
-.mammos-entity-inline-v2 .entity-label {
+.mammos-entity-inline .entity-label {
   font-weight: 600;
   color: var(--mammos-repr-soft-label);
 }
 
-.mammos-entity-inline-v2 .entity-collapsed {
+.mammos-entity-inline .entity-collapsed {
   display: inline;
 }
 
-.mammos-entity-inline-v2 .entity-expanded {
+.mammos-entity-inline .entity-expanded {
   display: none;
 }
 
-.mammos-entity-inline-v2 .entity-expanded-details {
+.mammos-entity-inline .entity-expanded-details {
   display: none;
 }
 
-.mammos-entity-inline-v2 .entity-summary {
+.mammos-entity-inline .entity-summary {
   align-items: baseline;
   gap: 0.45rem;
 }
 
-.mammos-entity-inline-v2 .entity-summary-preview {
+.mammos-entity-inline .entity-summary-preview {
   color: var(--mammos-repr-primary);
 }
 
-.mammos-entity-inline-v2 .entity-collapsed.entity-summary {
+.mammos-entity-inline .entity-collapsed.entity-summary {
   display: inline-flex;
 }
 
-.mammos-entity-inline-v2[data-expanded="true"] .entity-collapsed {
+.mammos-entity-inline[data-expanded="true"] .entity-collapsed {
   display: none;
 }
 
-.mammos-entity-inline-v2[data-expanded="true"] .entity-expanded {
+.mammos-entity-inline[data-expanded="true"] .entity-expanded {
   display: inline;
 }
 
-.mammos-entity-inline-v2[data-expanded="true"] .entity-expanded.entity-summary {
+.mammos-entity-inline[data-expanded="true"] .entity-expanded.entity-summary {
   display: inline-flex;
 }
 
-.mammos-entity-inline-v2[data-expanded="true"] .entity-expanded-details {
+.mammos-entity-inline[data-expanded="true"] .entity-expanded-details {
   display: block;
 }
 
-.mammos-entity-inline-v2 .entity-toggle {
+.mammos-entity-inline .entity-toggle {
   font: inherit;
   color: var(--mammos-repr-secondary);
   cursor: pointer;
@@ -127,7 +127,7 @@
   white-space: nowrap;
 }
 
-.mammos-entity-collection-v2 .collection-toolbar button {
+.mammos-entity-collection .collection-toolbar button {
   font: inherit;
   color: var(--mammos-repr-secondary);
   background: none;
@@ -140,52 +140,52 @@
   text-decoration: none;
 }
 
-.mammos-entity-inline-v2 .entity-toggle:hover,
-.mammos-entity-collection-v2 .collection-toolbar button:hover {
+.mammos-entity-inline .entity-toggle:hover,
+.mammos-entity-collection .collection-toolbar button:hover {
   color: var(--mammos-repr-primary);
 }
 
-.mammos-entity-inline-v2 .entity-toggle:focus-visible {
+.mammos-entity-inline .entity-toggle:focus-visible {
   outline: 1px solid currentColor;
   outline-offset: 1px;
 }
 
-.mammos-entity-collection-v2 .collection-toolbar button:disabled {
+.mammos-entity-collection .collection-toolbar button:disabled {
   color: var(--mammos-repr-disabled);
   cursor: progress;
 }
 
-.mammos-entity-inline-v2 .entity-meta,
-.mammos-entity-collection-v2 .collection-status {
+.mammos-entity-inline .entity-meta,
+.mammos-entity-collection .collection-status {
   color: var(--mammos-repr-muted);
   font-size: 0.9em;
 }
 
-.mammos-entity-collection-v2 .collection-status {
+.mammos-entity-collection .collection-status {
   opacity: 0;
   transition: opacity 120ms ease;
   white-space: nowrap;
 }
 
-.mammos-entity-collection-v2[data-busy="true"] .collection-status {
+.mammos-entity-collection[data-busy="true"] .collection-status {
   opacity: 1;
 }
 
-.mammos-entity-collection-v2 .collection-description {
+.mammos-entity-collection .collection-description {
   color: inherit;
   font-style: italic;
 }
 
-.mammos-entity-collection-v2 .collection-body {
+.mammos-entity-collection .collection-body {
   padding-left: 0;
 }
 
-.mammos-entity-collection-v2 .collection-children {
+.mammos-entity-collection .collection-children {
   margin-left: 0.68rem;
   padding-left: 1rem;
 }
 
-.mammos-entity-collection-v2 .collection-children > .branch-item {
+.mammos-entity-collection .collection-children > .branch-item {
   position: relative;
   margin: 0.14em 0;
   --branch-join: 0.82em;
@@ -194,7 +194,7 @@
   --branch-trunk: calc(var(--branch-gap) + var(--branch-tick));
 }
 
-.mammos-entity-collection-v2 .collection-children > .branch-item::before {
+.mammos-entity-collection .collection-children > .branch-item::before {
   content: "";
   position: absolute;
   top: var(--branch-join);
@@ -204,11 +204,11 @@
   border-top: 1px solid var(--mammos-repr-border);
 }
 
-.mammos-entity-collection-v2 .collection-children > .collection-description::before {
+.mammos-entity-collection .collection-children > .collection-description::before {
   display: none;
 }
 
-.mammos-entity-collection-v2 .collection-children > .branch-item::after {
+.mammos-entity-collection .collection-children > .branch-item::after {
   content: "";
   position: absolute;
   top: -0.14em;
@@ -217,69 +217,69 @@
   border-left: 1px solid var(--mammos-repr-border);
 }
 
-.mammos-entity-collection-v2 .collection-children > .branch-item:first-child::after {
+.mammos-entity-collection .collection-children > .branch-item:first-child::after {
   top: 0;
 }
 
-.mammos-entity-collection-v2 .collection-children > .branch-item:last-child::after {
+.mammos-entity-collection .collection-children > .branch-item:last-child::after {
   bottom: calc(100% - var(--branch-join));
 }
 
-.mammos-entity-collection-v2 .collection-children > .branch-item:only-child::after {
+.mammos-entity-collection .collection-children > .branch-item:only-child::after {
   top: 0;
   bottom: calc(100% - var(--branch-join));
 }
 
-.mammos-entity-collection-v2 .entity-row {
+.mammos-entity-collection .entity-row {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   column-gap: 0.75rem;
   align-items: start;
 }
 
-.mammos-entity-collection-v2 .entity-key {
+.mammos-entity-collection .entity-key {
   color: var(--mammos-repr-primary);
   font-weight: 600;
   white-space: nowrap;
 }
 
-.mammos-entity-collection-v2 .entity-value {
+.mammos-entity-collection .entity-value {
   min-width: 0;
 }
 
-.mammos-entity-inline-v2 .entity-full-value {
+.mammos-entity-inline .entity-full-value {
   display: inline;
   white-space: pre;
 }
 
-.mammos-entity-collection-v2 summary {
+.mammos-entity-collection summary {
   color: inherit;
   cursor: pointer;
   margin: 0.18em 0;
 }
 
-.mammos-entity-collection-v2 .summary-preview,
-.mammos-entity-inline-v2 .entity-meta {
+.mammos-entity-collection .summary-preview,
+.mammos-entity-inline .entity-meta {
   color: var(--mammos-repr-muted);
   font-size: 0.95em;
 }
 
-.mammos-entity-collection-v2 summary::marker {
+.mammos-entity-collection summary::marker {
   color: var(--mammos-repr-muted);
 }
 
-.mammos-entity-collection-v2 .summary-key {
+.mammos-entity-collection .summary-key {
   font-weight: 400;
 }
 
-.mammos-entity-collection-v2 .summary-preview {
+.mammos-entity-collection .summary-preview {
   margin-left: 0.45rem;
 }
 
-.mammos-entity-collection-v2 details {
+.mammos-entity-collection details {
   margin: 0.2em 0 0.35em 0;
 }
 
-.mammos-entity-collection-v2 .nested-children {
+.mammos-entity-collection .nested-children {
   margin-top: 0.2rem;
 }

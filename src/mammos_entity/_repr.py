@@ -414,7 +414,7 @@ class _EntityReprHtml:
     @staticmethod
     def _repr_html_toggle_script(*, expanded: bool) -> str:
         """Build the inline script for expanding or collapsing long values."""
-        return _repr_html_toggle_script("mammos-entity-inline-v2", expanded=expanded)
+        return _repr_html_toggle_script("mammos-entity-inline", expanded=expanded)
 
     def _repr_html_fragment_(self) -> str:
         """Render the entity HTML without injecting shared CSS."""
@@ -448,7 +448,7 @@ class _EntityReprHtml:
                 preserve_spaces=True,
             )
             return (
-                "<samp class='mammos-entity-inline-v2'>"
+                "<samp class='mammos-entity-inline'>"
                 f"{label_html}"
                 f"{compact_separator_html}"
                 f"<span>{value_html}{_repr_html_inline_unit_html(unit_text)}</span>"
@@ -474,7 +474,7 @@ class _EntityReprHtml:
         )
 
         return (
-            "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
+            "<samp class='mammos-entity-inline' data-expanded='false'>"
             f"{label_html}{_repr_html_optional_meta_suffix(shape_meta_text)}"
             "<br>"
             f"{description_html}"
@@ -493,7 +493,7 @@ class _EntityCollectionReprHtml:
 
     def _repr_html_(self) -> str:
         """Render the collection as notebook-friendly HTML."""
-        root_id = f"mammos-entity-collection-v2-{uuid.uuid4().hex}"
+        root_id = f"mammos-entity-collection-{uuid.uuid4().hex}"
         return f"{_repr_css()}{self._repr_html_block(root_id=root_id)}"
 
     @staticmethod
@@ -529,7 +529,7 @@ class _EntityCollectionReprHtml:
     @staticmethod
     def _repr_html_value_toggle_script(*, expanded: bool) -> str:
         """Build the inline script for compact row-value expand/collapse."""
-        return _repr_html_toggle_script("mammos-compact-value-v2", expanded=expanded)
+        return _repr_html_toggle_script("mammos-compact-value", expanded=expanded)
 
     @staticmethod
     def _format_quantity_repr_expanded(value: mammos_units.Quantity) -> str:
@@ -569,9 +569,7 @@ class _EntityCollectionReprHtml:
             expand_script=expand,
             collapse_script=collapse,
         )
-        return (
-            f"<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' data-expanded='false'>{collapsible}</samp>"
-        )
+        return f"<samp class='mammos-entity-inline mammos-compact-value' data-expanded='false'>{collapsible}</samp>"
 
     @classmethod
     def _repr_html_value(
@@ -749,7 +747,7 @@ class _EntityCollectionReprHtml:
                 raise ValueError("root_id is required for top-level HTML controls.")
             controls = self._repr_html_controls(root_id)
         return (
-            f"<div id='{root_id}' class='mammos-entity-collection-v2' "
+            f"<div id='{root_id}' class='mammos-entity-collection' "
             "data-busy='false' aria-busy='false'>"
             "<div class='collection-header'>"
             "<div class='collection-title'>"

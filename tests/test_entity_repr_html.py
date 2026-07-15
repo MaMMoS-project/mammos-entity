@@ -22,7 +22,7 @@ def _expected_inline_entity_fragment(
     """Render the expected HTML for a non-collapsible entity repr."""
     description_suffix = f"<br>{description_html}" if description_html else ""
     return (
-        "<samp class='mammos-entity-inline-v2'>"
+        "<samp class='mammos-entity-inline'>"
         f"<span class='entity-label'>{label}</span>"
         "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
         f"<span>{value_html}</span>"
@@ -65,7 +65,7 @@ def _expected_collapsible_entity_fragment(
     """Render the expected HTML for a collapsible entity repr."""
     description_prefix = f"{description_html}<br>" if description_html else ""
     return (
-        "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
+        "<samp class='mammos-entity-inline' data-expanded='false'>"
         f"<span class='entity-label'>{label}</span>"
         f"{meta_html}"
         "<br>"
@@ -146,10 +146,10 @@ def test_format_array_repr_expanded_shows_large_1d_context():
 def test_repr_html_toggle_script():
     """Lock the inline expand/collapse script separately from the HTML snapshot."""
     assert me.Entity._repr_html_toggle_script(expanded=True) == (
-        "const root = this.closest('.mammos-entity-inline-v2');if (!root) return;root.dataset.expanded = 'true';"
+        "const root = this.closest('.mammos-entity-inline');if (!root) return;root.dataset.expanded = 'true';"
     )
     assert me.Entity._repr_html_toggle_script(expanded=False) == (
-        "const root = this.closest('.mammos-entity-inline-v2');if (!root) return;root.dataset.expanded = 'false';"
+        "const root = this.closest('.mammos-entity-inline');if (!root) return;root.dataset.expanded = 'false';"
     )
 
 
