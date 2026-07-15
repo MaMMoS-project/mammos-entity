@@ -8,6 +8,7 @@ import pprint
 import reprlib
 import uuid
 from collections.abc import Callable
+from dataclasses import dataclass
 from functools import cache
 from typing import TYPE_CHECKING
 
@@ -24,6 +25,17 @@ if TYPE_CHECKING:
 _ENTITY_REPR_SUMMARY_EDGE_ITEMS = 3
 _ENTITY_REPR_EXPANDED_THRESHOLD = 100
 _ENTITY_REPR_MAX_INLINE_CHARS = 80
+
+
+@dataclass(frozen=True, slots=True)
+class _CollapsibleTextSpec:
+    """Text fragments needed to render a collapsible value preview."""
+
+    preview_text: str
+    expanded_text: str
+    summary_unit_text: str = ""
+    meta_text: str = ""
+    expanded_suffix_text: str = ""
 
 
 def _strip_array_repr_brackets(text: str) -> str:
@@ -102,6 +114,27 @@ def _repr_html_meta_suffix(text: str) -> str:
     return f"{_repr_html_meta_separator()}{_repr_html_meta_text(text)}"
 
 
+def _repr_html_optional_meta_suffix(text: str) -> str:
+    """Render optional metadata using the shared muted suffix style."""
+    if not text:
+        return ""
+    return _repr_html_meta_suffix(text)
+
+
+def _repr_html_summary_unit_html(unit_text: str) -> str:
+    """Render optional summary units with a leading non-breaking space."""
+    if not unit_text:
+        return ""
+    return f"<span>{_format_html_text(f' {unit_text}', preserve_spaces=True)}</span>"
+
+
+def _repr_html_inline_unit_html(unit_text: str) -> str:
+    """Render optional inline units without adding an extra wrapper element."""
+    if not unit_text:
+        return ""
+    return _format_html_text(f" {unit_text}", preserve_spaces=True)
+
+
 def _repr_html_toggle_script(css_class: str, *, expanded: bool) -> str:
     """Build an inline script that toggles ``data-expanded`` on the nearest parent."""
     state = "true" if expanded else "false"
@@ -141,6 +174,32 @@ def _repr_html_collapsible(
     return f"{collapsed_html}{expanded_summary_html}{expanded_details}"
 
 
+def _repr_html_collapsible_text(
+    spec: _CollapsibleTextSpec,
+    *,
+    expand_script: str,
+    collapse_script: str,
+) -> str:
+    """Render a collapsible value from shared preview/expanded text parts."""
+    summary_content_html = _repr_html_summary_content(
+        _format_html_text(spec.preview_text, preserve_spaces=True),
+        unit_html=_repr_html_summary_unit_html(spec.summary_unit_text),
+        meta_html=_repr_html_optional_meta_suffix(spec.meta_text),
+    )
+    expanded_details_html = (
+        "<span class='entity-full-value'>"
+        f"{html.escape(spec.expanded_text)}"
+        f"{html.escape(spec.expanded_suffix_text)}"
+        "</span>"
+    )
+    return _repr_html_collapsible(
+        summary_content_html,
+        expanded_details_html,
+        expand_script,
+        collapse_script,
+    )
+
+
 def _repr_html_summary_content(
     preview_html: str,
     *,
@@ -159,6 +218,24 @@ class _ReprEllipsis:
 
 
 _REPR_ELLIPSIS = _ReprEllipsis()
+
+
+def _truncate_preview_text(text: str, max_inline_chars: int = _ENTITY_REPR_MAX_INLINE_CHARS) -> str:
+    """Trim long preview text while reserving space for an ellipsis."""
+    if len(text) <= max_inline_chars:
+        return text
+    preview_limit = max_inline_chars - len("...")
+    return f"{text[:preview_limit].rstrip()}..."
+
+
+def _shape_meta_text(value: mammos_units.Quantity | numpy.typing.ArrayLike) -> str:
+    """Return the compact shape metadata text for array-like values."""
+    return f"shape={value.shape}"
+
+
+def _length_meta_text(value: list | tuple | dict[object, object]) -> str:
+    """Return the compact length metadata text for sized Python containers."""
+    return f"len={len(value)}"
 
 
 def _format_repr_summary(
@@ -191,6 +268,146 @@ def _format_pprint_expanded(
     return pprint.pformat(truncated, width=width, compact=True, sort_dicts=sort_dicts)
 
 
+def _format_quantity_repr_expanded(value: mammos_units.Quantity) -> str:
+    """Format a bounded expanded representation for array-valued quantities."""
+    with np.printoptions(
+        threshold=_ENTITY_REPR_EXPANDED_THRESHOLD,
+        edgeitems=_array_repr_expanded_edgeitems(value.value),
+    ):
+        return repr(value)
+
+
+def _format_sequence_repr_summary(value: list | tuple) -> str:
+    """Format a compact head/tail preview for Python list and tuple values."""
+    opener, closer = ("[", "]") if isinstance(value, list) else ("(", ")")
+    return _format_repr_summary(list(value), opener, closer)
+
+
+def _format_sequence_repr_expanded(value: list | tuple) -> str:
+    """Format a wrapped, bounded expanded representation for list/tuple values."""
+    edge_items = _ENTITY_REPR_EXPANDED_THRESHOLD // 2
+    if len(value) <= _ENTITY_REPR_EXPANDED_THRESHOLD:
+        truncated = value
+    elif isinstance(value, list):
+        truncated = [*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:]]
+    else:
+        truncated = (*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:])
+    return _format_pprint_expanded(truncated)
+
+
+def _format_dict_repr_summary(value: dict[object, object]) -> str:
+    """Format a compact head/tail preview for Python dict values."""
+
+    def format_item(item: tuple[object, object]) -> str:
+        key, item_value = item
+        return f"{reprlib.repr(key)}: {reprlib.repr(item_value)}"
+
+    return _format_repr_summary(
+        list(value.items()),
+        "{",
+        "}",
+        format_item,
+    )
+
+
+def _format_dict_repr_expanded(value: dict[object, object]) -> str:
+    """Format a wrapped, bounded expanded representation for Python dict values."""
+    edge_items = _ENTITY_REPR_EXPANDED_THRESHOLD // 2
+    items = list(value.items())
+    if len(items) <= _ENTITY_REPR_EXPANDED_THRESHOLD:
+        truncated_items = items
+    else:
+        truncated_items = [
+            *items[:edge_items],
+            (_REPR_ELLIPSIS, _REPR_ELLIPSIS),
+            *items[-edge_items:],
+        ]
+    return _format_pprint_expanded(dict(truncated_items), sort_dicts=False)
+
+
+def _entity_value_needs_details(
+    value_text: str,
+    unit_text: str,
+    *,
+    raw_value_text: str = "",
+    is_array: bool = False,
+) -> bool:
+    """Decide whether an entity value should be rendered as collapsible HTML."""
+    show_value_details = len(f"{value_text} {unit_text}".strip()) > _ENTITY_REPR_MAX_INLINE_CHARS
+    if is_array:
+        show_value_details = show_value_details or "..." in raw_value_text
+    return show_value_details
+
+
+def _entity_scalar_collapsible_text_spec(value_text: str, unit_text: str) -> _CollapsibleTextSpec:
+    """Build a collapsible preview spec for a long scalar entity value."""
+    return _CollapsibleTextSpec(
+        preview_text=_truncate_preview_text(value_text),
+        expanded_text=value_text,
+        summary_unit_text=unit_text,
+        expanded_suffix_text=f" {unit_text}" if unit_text else "",
+    )
+
+
+def _array_collapsible_text_spec(
+    value: numpy.typing.ArrayLike,
+    *,
+    expanded_text: str | None = None,
+    summary_unit_text: str = "",
+    meta_text: str | None = None,
+) -> _CollapsibleTextSpec:
+    """Build a collapsible preview spec for array-like values."""
+    return _CollapsibleTextSpec(
+        preview_text=_format_array_repr_summary(value),
+        expanded_text=_format_array_repr_expanded(value) if expanded_text is None else expanded_text,
+        summary_unit_text=summary_unit_text,
+        meta_text=_shape_meta_text(value) if meta_text is None else meta_text,
+    )
+
+
+def _quantity_collapsible_text_spec(value: mammos_units.Quantity) -> _CollapsibleTextSpec:
+    """Build a collapsible preview spec for array-valued quantities."""
+    return _CollapsibleTextSpec(
+        preview_text=_format_array_repr_summary(value.value),
+        expanded_text=_format_quantity_repr_expanded(value),
+        summary_unit_text=str(value.unit),
+        meta_text=_shape_meta_text(value),
+    )
+
+
+def _sequence_collapsible_text_spec(value: list | tuple) -> _CollapsibleTextSpec:
+    """Build a collapsible preview spec for Python sequences."""
+    return _CollapsibleTextSpec(
+        preview_text=_format_sequence_repr_summary(value),
+        expanded_text=_format_sequence_repr_expanded(value),
+        meta_text=_length_meta_text(value),
+    )
+
+
+def _dict_collapsible_text_spec(value: dict[object, object]) -> _CollapsibleTextSpec:
+    """Build a collapsible preview spec for Python dict values."""
+    return _CollapsibleTextSpec(
+        preview_text=_format_dict_repr_summary(value),
+        expanded_text=_format_dict_repr_expanded(value),
+        meta_text=_length_meta_text(value),
+    )
+
+
+def _compact_value_text_spec(
+    value: mammos_units.Quantity | numpy.typing.ArrayLike | list | tuple | dict[object, object],
+) -> _CollapsibleTextSpec | None:
+    """Return the compact preview spec for supported long collection values."""
+    if isinstance(value, u.Quantity) and getattr(value, "shape", ()) not in [(), None]:
+        return _quantity_collapsible_text_spec(value)
+    if isinstance(value, np.ndarray):
+        return _array_collapsible_text_spec(value)
+    if isinstance(value, list | tuple):
+        return _sequence_collapsible_text_spec(value)
+    if isinstance(value, dict):
+        return _dict_collapsible_text_spec(value)
+    return None
+
+
 class _EntityReprHtml:
     """Private mixin containing notebook HTML repr methods for Entity."""
 
@@ -202,80 +419,63 @@ class _EntityReprHtml:
     def _repr_html_fragment_(self) -> str:
         """Render the entity HTML without injecting shared CSS."""
         value_text = str(self.value)
-        expanded_value_text = value_text
         compact_value_text = " ".join(value_text.split())
-        single_line_value_text = compact_value_text
         label_html = f"<span class='entity-label'>{_format_html_text(self.ontology_label)}</span>"
-        unit_html_collapsed = ""
-        unit_html_expanded = ""
+        unit_text = ""
         if not self.unit.is_equivalent(u.dimensionless_unscaled):
-            unit_html_collapsed = f"&nbsp;{_format_html_text(str(self.unit), preserve_spaces=True)}"
-            unit_html_expanded = f" {html.escape(str(self.unit))}"
+            unit_text = str(self.unit)
 
         description_html = ""
         if self.description:
             description_html = f"<em>{_format_html_text(self.description)}</em>"
 
-        preview_value_text = compact_value_text
-        expanded_content_text = expanded_value_text
-        shape_html = ""
-        header_html = label_html
         shape = getattr(self.value, "shape", ())
-        if shape not in [(), None]:
-            preview_value_text = _format_array_repr_summary(self.value)
-            expanded_content_text = _format_array_repr_expanded(self.value)
-            shape_html = _repr_html_meta_suffix(f"shape={shape}")
-        elif len(preview_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
-            preview_limit = _ENTITY_REPR_MAX_INLINE_CHARS - len("...")
-            preview_value_text = f"{preview_value_text[:preview_limit].rstrip()}..."
-
-        show_value_details = len(f"{single_line_value_text} {self.unit!s}".strip()) > _ENTITY_REPR_MAX_INLINE_CHARS
-        if shape not in [(), None]:
-            show_value_details = show_value_details or "..." in value_text
+        shape_meta_text = _shape_meta_text(self.value) if shape not in [(), None] else ""
+        show_value_details = _entity_value_needs_details(
+            compact_value_text,
+            unit_text,
+            raw_value_text=value_text,
+            is_array=shape not in [(), None],
+        )
 
         if not show_value_details:
             compact_shape_html = ""
             if shape not in [(), None] and self.value.size > 3:
-                compact_shape_html = _repr_html_meta_suffix(f"shape={shape}")
+                compact_shape_html = _repr_html_optional_meta_suffix(shape_meta_text)
             compact_separator_html = _repr_html_meta_separator()
             value_html = _format_html_text(
-                single_line_value_text,
+                compact_value_text,
                 preserve_spaces=True,
             )
             return (
                 "<samp class='mammos-entity-inline-v2'>"
                 f"{label_html}"
                 f"{compact_separator_html}"
-                f"<span>{value_html}{unit_html_collapsed}</span>"
+                f"<span>{value_html}{_repr_html_inline_unit_html(unit_text)}</span>"
                 f"{compact_shape_html}"
                 f"{'<br>' if description_html else ''}{description_html}"
                 "</samp>"
             )
 
+        spec = _entity_scalar_collapsible_text_spec(compact_value_text, unit_text)
+        if shape not in [(), None]:
+            spec = _array_collapsible_text_spec(
+                self.value,
+                summary_unit_text=unit_text,
+                meta_text="",
+            )
+
         expand = self._repr_html_toggle_script(expanded=True)
         collapse = self._repr_html_toggle_script(expanded=False)
-        preview_html = _format_html_text(preview_value_text, preserve_spaces=True)
-        header_html = f"{header_html}{shape_html}"
-        summary_content_html = _repr_html_summary_content(
-            preview_html,
-            unit_html=f"<span>{unit_html_collapsed}</span>",
-        )
-        expanded_details_inner = (
-            f"<span class='entity-full-value'>"
-            f"{html.escape(expanded_content_text)}"
-            f"{'' if shape not in [(), None] else unit_html_expanded}"
-            "</span>"
-        )
-        collapsible = _repr_html_collapsible(
-            summary_content_html,
-            expanded_details_inner,
-            expand,
-            collapse,
+        collapsible = _repr_html_collapsible_text(
+            spec,
+            expand_script=expand,
+            collapse_script=collapse,
         )
 
         return (
             "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
-            f"{header_html}"
+            f"{label_html}{_repr_html_optional_meta_suffix(shape_meta_text)}"
             "<br>"
             f"{description_html}"
             f"{'<br>' if description_html else ''}"
@@ -334,139 +534,44 @@ class _EntityCollectionReprHtml:
     @staticmethod
     def _format_quantity_repr_expanded(value: mammos_units.Quantity) -> str:
         """Format a bounded expanded representation for array-valued quantities."""
-        with np.printoptions(
-            threshold=_ENTITY_REPR_EXPANDED_THRESHOLD,
-            edgeitems=_array_repr_expanded_edgeitems(value.value),
-        ):
-            return repr(value)
+        return _format_quantity_repr_expanded(value)
 
     @staticmethod
     def _format_sequence_repr_summary(value: list | tuple) -> str:
         """Format a compact head/tail preview for Python list and tuple values."""
-        opener, closer = ("[", "]") if isinstance(value, list) else ("(", ")")
-        return _format_repr_summary(list(value), opener, closer)
+        return _format_sequence_repr_summary(value)
 
     @staticmethod
     def _format_sequence_repr_expanded(value: list | tuple) -> str:
         """Format a wrapped, bounded expanded representation for list/tuple values."""
-        edge_items = _ENTITY_REPR_EXPANDED_THRESHOLD // 2
-        if len(value) <= _ENTITY_REPR_EXPANDED_THRESHOLD:
-            truncated = value
-        elif isinstance(value, list):
-            truncated = [*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:]]
-        else:
-            truncated = (*value[:edge_items], _REPR_ELLIPSIS, *value[-edge_items:])
-        return _format_pprint_expanded(truncated)
+        return _format_sequence_repr_expanded(value)
 
     @staticmethod
     def _format_dict_repr_summary(value: dict[object, object]) -> str:
         """Format a compact head/tail preview for Python dict values."""
-
-        def format_item(item: tuple[object, object]) -> str:
-            key, item_value = item
-            return f"{reprlib.repr(key)}: {reprlib.repr(item_value)}"
-
-        return _format_repr_summary(
-            list(value.items()),
-            "{",
-            "}",
-            format_item,
-        )
+        return _format_dict_repr_summary(value)
 
     @staticmethod
     def _format_dict_repr_expanded(value: dict[object, object]) -> str:
         """Format a wrapped, bounded expanded representation for Python dict values."""
-        edge_items = _ENTITY_REPR_EXPANDED_THRESHOLD // 2
-        items = list(value.items())
-        if len(items) <= _ENTITY_REPR_EXPANDED_THRESHOLD:
-            truncated_items = items
-        else:
-            truncated_items = [
-                *items[:edge_items],
-                (_REPR_ELLIPSIS, _REPR_ELLIPSIS),
-                *items[-edge_items:],
-            ]
-        return _format_pprint_expanded(dict(truncated_items), sort_dicts=False)
+        return _format_dict_repr_expanded(value)
 
     @classmethod
     def _repr_html_compact_value(
         cls,
-        preview_text: str,
-        expanded_text: str,
-        *,
-        unit_html: str = "",
-        meta_html: str = "",
+        spec: _CollapsibleTextSpec,
     ) -> str:
         """Render a collapsible preview for long plain values in collection rows."""
         expand = cls._repr_html_value_toggle_script(expanded=True)
         collapse = cls._repr_html_value_toggle_script(expanded=False)
-        preview_html = cls._format_html_text(preview_text)
-        unit_span_html = f"<span>{unit_html}</span>" if unit_html else ""
-        summary_content_html = _repr_html_summary_content(
-            preview_html,
-            unit_html=unit_span_html,
-            meta_html=meta_html,
-        )
-        expanded_details_html = f"<span class='entity-full-value'>{html.escape(expanded_text)}</span>"
-        collapsible = _repr_html_collapsible(
-            summary_content_html,
-            expanded_details_html,
-            expand,
-            collapse,
+        collapsible = _repr_html_collapsible_text(
+            spec,
+            expand_script=expand,
+            collapse_script=collapse,
         )
         return (
             f"<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' data-expanded='false'>{collapsible}</samp>"
         )
-
-    @classmethod
-    def _repr_html_compact_value_meta_html(
-        cls,
-        value: mammos_units.Quantity | numpy.typing.ArrayLike | list | tuple | dict[object, object],
-    ) -> str:
-        """Render metadata shown next to compact previews for supported plain values."""
-        if isinstance(value, u.Quantity | np.ndarray):
-            meta_text = f"shape={value.shape}"
-        elif isinstance(value, list | tuple | dict):
-            meta_text = f"len={len(value)}"
-        else:
-            return ""
-        return _repr_html_meta_suffix(meta_text)
-
-    @classmethod
-    def _repr_html_compact_supported_value(
-        cls,
-        value: mammos_units.Quantity | numpy.typing.ArrayLike | list | tuple | dict[object, object],
-    ) -> str | None:
-        """Render compact previews for supported long plain values."""
-        if isinstance(value, u.Quantity) and getattr(value, "shape", ()) not in [
-            (),
-            None,
-        ]:
-            return cls._repr_html_compact_value(
-                _format_array_repr_summary(value.value),
-                cls._format_quantity_repr_expanded(value),
-                unit_html=f"&nbsp;{cls._format_html_text(str(value.unit))}",
-                meta_html=cls._repr_html_compact_value_meta_html(value),
-            )
-        if isinstance(value, np.ndarray):
-            return cls._repr_html_compact_value(
-                _format_array_repr_summary(value),
-                _format_array_repr_expanded(value),
-                meta_html=cls._repr_html_compact_value_meta_html(value),
-            )
-        if isinstance(value, list | tuple):
-            return cls._repr_html_compact_value(
-                cls._format_sequence_repr_summary(value),
-                cls._format_sequence_repr_expanded(value),
-                meta_html=cls._repr_html_compact_value_meta_html(value),
-            )
-        if isinstance(value, dict):
-            return cls._repr_html_compact_value(
-                cls._format_dict_repr_summary(value),
-                cls._format_dict_repr_expanded(value),
-                meta_html=cls._repr_html_compact_value_meta_html(value),
-            )
-        return None
 
     @classmethod
     def _repr_html_value(
@@ -498,9 +603,9 @@ class _EntityCollectionReprHtml:
 
         repr_value_text = cls._repr_html_value_fallback_text(value)
         if not used_custom_html and len(repr_value_text) > _ENTITY_REPR_MAX_INLINE_CHARS:
-            compact_html = cls._repr_html_compact_supported_value(value)
-            if compact_html is not None:
-                return cls._repr_html_row(key, compact_html)
+            spec = _compact_value_text_spec(value)
+            if spec is not None:
+                return cls._repr_html_row(key, cls._repr_html_compact_value(spec))
 
         fallback_html = cls._format_html_text(repr_value_text)
         return cls._repr_html_row(key, fallback_html)
@@ -570,36 +675,39 @@ class _EntityCollectionReprHtml:
         """
         state = "true" if open_state else "false"
         label = "Expanding..." if open_state else "Collapsing..."
-        return (
-            f"const root = document.getElementById('{root_id}');"
-            "if (!root || root.dataset.busy === 'true') return;"
-            "const status = root.querySelector('.collection-status');"
-            "const buttons = root.querySelectorAll('.collection-toolbar button');"
-            "const details = Array.from(root.querySelectorAll('details.branch-item'));"
-            "root.dataset.busy = 'true';"
-            "root.setAttribute('aria-busy', 'true');"
-            f"if (status) status.textContent = '{label}';"
-            "buttons.forEach((button) => { button.disabled = true; });"
-            "const batchSize = 50;"
-            "let index = 0;"
-            "const finish = () => {"
-            "root.dataset.busy = 'false';"
-            "root.setAttribute('aria-busy', 'false');"
-            "if (status) status.textContent = '';"
-            "buttons.forEach((button) => { button.disabled = false; });"
-            "};"
-            # Process the tree in batches so the busy state can repaint between frames.
-            "const step = () => {"
-            "details.slice(index, index + batchSize).forEach((element) => { "
-            f"element.open = {state};"
-            " });"
-            "index += batchSize;"
-            "if (index < details.length) { requestAnimationFrame(step); return; }"
-            "finish();"
-            "};"
-            # Use a second frame before the first batch so the busy UI can paint first.
-            "requestAnimationFrame(() => { requestAnimationFrame(step); });"
+        finish_statements = (
+            "root.dataset.busy = 'false';",
+            "root.setAttribute('aria-busy', 'false');",
+            "if (status) status.textContent = '';",
+            "buttons.forEach((button) => { button.disabled = false; });",
         )
+        step_statements = (
+            "details.slice(index, index + batchSize).forEach((element) => {",
+            f"element.open = {state};",
+            "});",
+            "index += batchSize;",
+            "if (index < details.length) { requestAnimationFrame(step); return; }",
+            "finish();",
+        )
+        script_statements = (
+            f"const root = document.getElementById('{root_id}');",
+            "if (!root || root.dataset.busy === 'true') return;",
+            "const status = root.querySelector('.collection-status');",
+            "const buttons = root.querySelectorAll('.collection-toolbar button');",
+            "const details = Array.from(root.querySelectorAll('details.branch-item'));",
+            "root.dataset.busy = 'true';",
+            "root.setAttribute('aria-busy', 'true');",
+            f"if (status) status.textContent = '{label}';",
+            "buttons.forEach((button) => { button.disabled = true; });",
+            "const batchSize = 50;",
+            "let index = 0;",
+            f"const finish = () => {{{''.join(finish_statements)}}};",
+            # Process the tree in batches so the busy state can repaint between frames.
+            f"const step = () => {{{''.join(step_statements)}}};",
+            # Use a second frame before the first batch so the busy UI can paint first.
+            "requestAnimationFrame(() => { requestAnimationFrame(step); });",
+        )
+        return "".join(script_statements)
 
     @classmethod
     def _repr_html_controls(cls, root_id: str) -> str:

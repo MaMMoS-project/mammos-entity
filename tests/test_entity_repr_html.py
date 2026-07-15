@@ -12,19 +12,79 @@ def _strip_html_event_handlers(fragment: str) -> str:
     return re.sub(r'(onclick|onkeydown)="[^"]*"', r'\1="..."', fragment)
 
 
+def _expected_inline_entity_fragment(
+    label: str,
+    value_html: str,
+    *,
+    description_html: str = "",
+    meta_html: str = "",
+) -> str:
+    """Render the expected HTML for a non-collapsible entity repr."""
+    description_suffix = f"<br>{description_html}" if description_html else ""
+    return (
+        "<samp class='mammos-entity-inline-v2'>"
+        f"<span class='entity-label'>{label}</span>"
+        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
+        f"<span>{value_html}</span>"
+        f"{meta_html}"
+        f"{description_suffix}"
+        "</samp>"
+    )
+
+
+def _expected_entity_collapsible_html(summary_inner_html: str, expanded_html: str) -> str:
+    """Render the shared expected HTML shell for long entity values."""
+    summary_content_html = f"<span class='entity-summary-content'><span>{summary_inner_html}</span></span>"
+    return (
+        "<span class='entity-collapsed entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Expand value' "
+        'onclick="..." onkeydown="...">[+]</span>'
+        f"{summary_content_html}"
+        "</span>"
+        "<span class='entity-expanded entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Collapse value' "
+        'onclick="..." onkeydown="...">[−]</span>'
+        f"{summary_content_html}"
+        "</span>"
+        "<span class='entity-expanded-details'>"
+        f"<span class='entity-full-value'>{expanded_html}</span>"
+        "</span>"
+    )
+
+
+def _expected_collapsible_entity_fragment(
+    label: str,
+    summary_inner_html: str,
+    expanded_html: str,
+    *,
+    description_html: str = "",
+    meta_html: str = "",
+) -> str:
+    """Render the expected HTML for a collapsible entity repr."""
+    description_prefix = f"{description_html}<br>" if description_html else ""
+    return (
+        "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
+        f"<span class='entity-label'>{label}</span>"
+        f"{meta_html}"
+        "<br>"
+        f"{description_prefix}"
+        f"{_expected_entity_collapsible_html(summary_inner_html, expanded_html)}"
+        "</samp>"
+    )
+
+
 def test_repr_html_short_entity_exact_snapshot():
     """Freeze the short-entity HTML structure."""
     e = me.Entity("CurieTemperature", 300, description="measured <carefully>")
 
     fragment = e._repr_html_fragment_()
 
-    assert fragment == (
-        "<samp class='mammos-entity-inline-v2'>"
-        "<span class='entity-label'>CurieTemperature</span>"
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span>300.0&nbsp;K</span>"
-        "<br><em>measured &lt;carefully&gt;</em>"
-        "</samp>"
+    assert fragment == _expected_inline_entity_fragment(
+        "CurieTemperature",
+        "300.0&nbsp;K",
+        description_html="<em>measured &lt;carefully&gt;</em>",
     )
     assert e._repr_html_() == f"{_repr_css()}{fragment}"
 
@@ -33,27 +93,17 @@ def test_repr_html_dimensionless():
     """Test HTML repr for dimensionless entities."""
     e = me.Entity("DemagnetizingFactor", 0.3)
 
-    assert e._repr_html_fragment_() == (
-        "<samp class='mammos-entity-inline-v2'>"
-        "<span class='entity-label'>DemagnetizingFactor</span>"
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span>0.3</span>"
-        "</samp>"
-    )
+    assert e._repr_html_fragment_() == _expected_inline_entity_fragment("DemagnetizingFactor", "0.3")
 
 
 def test_repr_html_small_array_stays_single_line():
     """Test that compact arrays stay on one line."""
     e = me.Entity("ThermodynamicTemperature", [[1, 2], [3, 4]], "K")
 
-    assert e._repr_html_fragment_() == (
-        "<samp class='mammos-entity-inline-v2'>"
-        "<span class='entity-label'>ThermodynamicTemperature</span>"
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span>[[1.&nbsp;2.]&nbsp;[3.&nbsp;4.]]&nbsp;K</span>"
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>shape=(2,&nbsp;2)</span>"
-        "</samp>"
+    assert e._repr_html_fragment_() == _expected_inline_entity_fragment(
+        "ThermodynamicTemperature",
+        "[[1.&nbsp;2.]&nbsp;[3.&nbsp;4.]]&nbsp;K",
+        meta_html="&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>shape=(2,&nbsp;2)</span>",
     )
 
 
@@ -110,36 +160,11 @@ def test_repr_html_long_value_exact_snapshot():
     fragment = _strip_html_event_handlers(e._repr_html_fragment_())
     expanded_html = html.escape(me._repr._format_array_repr_expanded(e.value))
 
-    assert fragment == (
-        "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
-        "<span class='entity-label'>ExternalMagneticField</span>"
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>shape=(4,&nbsp;6)</span>"
-        "<br>"
-        "<span class='entity-collapsed entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Expand value' "
-        'onclick="..." onkeydown="...">[+]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
-        "<span>&nbsp;A&nbsp;/&nbsp;m</span></span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Collapse value' "
-        'onclick="..." onkeydown="...">[−]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
-        "<span>&nbsp;A&nbsp;/&nbsp;m</span></span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded-details'>"
-        f"<span class='entity-full-value'>{expanded_html}</span>"
-        "</span>"
-        "</samp>"
+    assert fragment == _expected_collapsible_entity_fragment(
+        "ExternalMagneticField",
+        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23.<span>&nbsp;A&nbsp;/&nbsp;m</span>",
+        expanded_html,
+        meta_html="&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>shape=(4,&nbsp;6)</span>",
     )
 
 

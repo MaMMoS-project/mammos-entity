@@ -16,6 +16,90 @@ def _strip_html_event_handlers(fragment: str) -> str:
     return re.sub(r'(onclick|onkeydown)="[^"]*"', r'\1="..."', fragment)
 
 
+def _expected_row(key: str, value_html: str) -> str:
+    """Render the expected HTML for one collection row."""
+    return (
+        "<div class='branch-item entity-row'>"
+        f"<div class='entity-key'>{key}</div>"
+        f"<div class='entity-value'>{value_html}</div>"
+        "</div>"
+    )
+
+
+def _expected_compact_value_html(summary_inner_html: str, expanded_html: str, *, meta_html: str = "") -> str:
+    """Render the shared expected HTML shell for compact collection values."""
+    summary_content_html = f"<span class='entity-summary-content'><span>{summary_inner_html}</span>{meta_html}</span>"
+    return (
+        "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
+        "data-expanded='false'>"
+        "<span class='entity-collapsed entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Expand value' "
+        'onclick="..." onkeydown="...">[+]</span>'
+        f"{summary_content_html}"
+        "</span>"
+        "<span class='entity-expanded entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Collapse value' "
+        'onclick="..." onkeydown="...">[−]</span>'
+        f"{summary_content_html}"
+        "</span>"
+        "<span class='entity-expanded-details'>"
+        f"<span class='entity-full-value'>{expanded_html}</span>"
+        "</span>"
+        "</samp>"
+    )
+
+
+def _expected_compact_row(key: str, summary_inner_html: str, expanded_html: str, *, meta_html: str = "") -> str:
+    """Render the expected HTML for one compact collection row."""
+    return _expected_row(
+        key,
+        _expected_compact_value_html(
+            summary_inner_html,
+            expanded_html,
+            meta_html=meta_html,
+        ),
+    )
+
+
+def _expected_details_script(root_id: str, *, open_state: bool) -> str:
+    """Render the exact inline JS expected for expand/collapse-all controls."""
+    state = "true" if open_state else "false"
+    label = "Expanding..." if open_state else "Collapsing..."
+    finish_statements = (
+        "root.dataset.busy = 'false';",
+        "root.setAttribute('aria-busy', 'false');",
+        "if (status) status.textContent = '';",
+        "buttons.forEach((button) => { button.disabled = false; });",
+    )
+    step_statements = (
+        "details.slice(index, index + batchSize).forEach((element) => {",
+        f"element.open = {state};",
+        "});",
+        "index += batchSize;",
+        "if (index < details.length) { requestAnimationFrame(step); return; }",
+        "finish();",
+    )
+    script_statements = (
+        f"const root = document.getElementById('{root_id}');",
+        "if (!root || root.dataset.busy === 'true') return;",
+        "const status = root.querySelector('.collection-status');",
+        "const buttons = root.querySelectorAll('.collection-toolbar button');",
+        "const details = Array.from(root.querySelectorAll('details.branch-item'));",
+        "root.dataset.busy = 'true';",
+        "root.setAttribute('aria-busy', 'true');",
+        f"if (status) status.textContent = '{label}';",
+        "buttons.forEach((button) => { button.disabled = true; });",
+        "const batchSize = 50;",
+        "let index = 0;",
+        f"const finish = () => {{{''.join(finish_statements)}}};",
+        f"const step = () => {{{''.join(step_statements)}}};",
+        "requestAnimationFrame(() => { requestAnimationFrame(step); });",
+    )
+    return "".join(script_statements)
+
+
 class HtmlValue:
     """Test helper exposing a custom HTML repr."""
 
@@ -117,23 +201,8 @@ def test_repr_html_details_script():
     expanding = me.EntityCollection._repr_html_details_script("root", open_state=True)
     collapsing = me.EntityCollection._repr_html_details_script("root", open_state=False)
 
-    for script in (expanding, collapsing):
-        assert "const root = document.getElementById('root');" in script
-        assert "if (!root || root.dataset.busy === 'true') return;" in script
-        assert "const status = root.querySelector('.collection-status');" in script
-        assert "const buttons = root.querySelectorAll('.collection-toolbar button');" in script
-        assert "const details = Array.from(root.querySelectorAll('details.branch-item'));" in script
-        assert "root.dataset.busy = 'true';" in script
-        assert "root.setAttribute('aria-busy', 'true');" in script
-        assert "buttons.forEach((button) => { button.disabled = true; });" in script
-        assert "const batchSize = 50;" in script
-        assert "if (index < details.length) { requestAnimationFrame(step); return; }" in script
-        assert "requestAnimationFrame(() => { requestAnimationFrame(step); });" in script
-
-    assert "if (status) status.textContent = 'Expanding...';" in expanding
-    assert "element.open = true;" in expanding
-    assert "if (status) status.textContent = 'Collapsing...';" in collapsing
-    assert "element.open = false;" in collapsing
+    assert expanding == _expected_details_script("root", open_state=True)
+    assert collapsing == _expected_details_script("root", open_state=False)
 
 
 def test_repr_css_wraps_shared_stylesheet():
@@ -142,47 +211,37 @@ def test_repr_css_wraps_shared_stylesheet():
 
 
 def test_repr_html_uses_value_repr_html_when_available():
-    assert me.EntityCollection._repr_html_value("custom", HtmlValue()) == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>custom</div>"
-        "<div class='entity-value'><span>custom html</span></div>"
-        "</div>"
+    assert me.EntityCollection._repr_html_value("custom", HtmlValue()) == _expected_row(
+        "custom",
+        "<span>custom html</span>",
     )
 
 
 def test_repr_html_falls_back_when_value_repr_html_raises():
-    assert me.EntityCollection._repr_html_value("broken", BrokenHtmlValue()) == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>broken</div>"
-        "<div class='entity-value'>BrokenHtmlValue()</div>"
-        "</div>"
+    assert me.EntityCollection._repr_html_value("broken", BrokenHtmlValue()) == _expected_row(
+        "broken",
+        "BrokenHtmlValue()",
     )
 
 
 def test_repr_html_falls_back_when_value_repr_html_returns_none():
-    assert me.EntityCollection._repr_html_value("missing", NoneHtmlValue()) == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>missing</div>"
-        "<div class='entity-value'>NoneHtmlValue()</div>"
-        "</div>"
+    assert me.EntityCollection._repr_html_value("missing", NoneHtmlValue()) == _expected_row(
+        "missing",
+        "NoneHtmlValue()",
     )
 
 
 def test_repr_html_uses_working_html_even_if_repr_is_broken():
-    assert me.EntityCollection._repr_html_value("working", HtmlButBrokenRepr()) == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>working</div>"
-        "<div class='entity-value'><span>working html</span></div>"
-        "</div>"
+    assert me.EntityCollection._repr_html_value("working", HtmlButBrokenRepr()) == _expected_row(
+        "working",
+        "<span>working html</span>",
     )
 
 
 def test_repr_html_prefers_full_html_for_generic_values():
-    assert me.EntityCollection._repr_html_value("dual", DualHtmlValue()) == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>dual</div>"
-        "<div class='entity-value'><div>full html</div></div>"
-        "</div>"
+    assert me.EntityCollection._repr_html_value("dual", DualHtmlValue()) == _expected_row(
+        "dual",
+        "<div>full html</div>",
     )
 
 
@@ -202,40 +261,11 @@ def test_repr_html_long_numpy_array_compact_preview_snapshot():
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("M", array))
     expanded_html = html.escape(me._repr._format_array_repr_expanded(array))
 
-    assert row_html == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>M</div>"
-        "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
-        "data-expanded='false'>"
-        "<span class='entity-collapsed entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Expand value' "
-        'onclick="..." onkeydown="...">[+]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "0&nbsp;1&nbsp;2&nbsp;...&nbsp;21&nbsp;22&nbsp;23"
-        "</span>&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>shape=(4,&nbsp;6)</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Collapse value' "
-        'onclick="..." onkeydown="...">[−]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "0&nbsp;1&nbsp;2&nbsp;...&nbsp;21&nbsp;22&nbsp;23"
-        "</span>&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>shape=(4,&nbsp;6)</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded-details'>"
-        f"<span class='entity-full-value'>{expanded_html}</span>"
-        "</span>"
-        "</samp>"
-        "</div>"
-        "</div>"
+    assert row_html == _expected_compact_row(
+        "M",
+        "0&nbsp;1&nbsp;2&nbsp;...&nbsp;21&nbsp;22&nbsp;23",
+        expanded_html,
+        meta_html="&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>shape=(4,&nbsp;6)</span>",
     )
 
 
@@ -245,53 +275,20 @@ def test_repr_html_long_quantity_compact_preview_snapshot():
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("M_q", quantity))
     expanded_html = html.escape(me.EntityCollection._format_quantity_repr_expanded(quantity))
 
-    assert row_html == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>M_q</div>"
-        "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
-        "data-expanded='false'>"
-        "<span class='entity-collapsed entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Expand value' "
-        'onclick="..." onkeydown="...">[+]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
-        "<span>&nbsp;A&nbsp;/&nbsp;m</span></span>"
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>shape=(4,&nbsp;6)</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Collapse value' "
-        'onclick="..." onkeydown="...">[−]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23."
-        "<span>&nbsp;A&nbsp;/&nbsp;m</span></span>"
-        "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>shape=(4,&nbsp;6)</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded-details'>"
-        f"<span class='entity-full-value'>{expanded_html}</span>"
-        "</span>"
-        "</samp>"
-        "</div>"
-        "</div>"
+    assert row_html == _expected_compact_row(
+        "M_q",
+        "0.&nbsp;1.&nbsp;2.&nbsp;...&nbsp;21.&nbsp;22.&nbsp;23.<span>&nbsp;A&nbsp;/&nbsp;m</span>",
+        expanded_html,
+        meta_html="&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>shape=(4,&nbsp;6)</span>",
     )
 
 
 def test_repr_html_short_quantity_stays_inline():
     quantity = u.Quantity(3, "A/m")
 
-    assert me.EntityCollection._repr_html_value("H_q", quantity) == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>H_q</div>"
-        "<div class='entity-value'>&lt;Quantity&nbsp;3.&nbsp;A&nbsp;/&nbsp;m&gt;</div>"
-        "</div>"
+    assert me.EntityCollection._repr_html_value("H_q", quantity) == _expected_row(
+        "H_q",
+        "&lt;Quantity&nbsp;3.&nbsp;A&nbsp;/&nbsp;m&gt;",
     )
 
 
@@ -301,40 +298,11 @@ def test_repr_html_long_list_compact_preview_snapshot():
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("L", value))
     expanded_html = html.escape(me.EntityCollection._format_sequence_repr_expanded(value))
 
-    assert row_html == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>L</div>"
-        "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
-        "data-expanded='false'>"
-        "<span class='entity-collapsed entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Expand value' "
-        'onclick="..." onkeydown="...">[+]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "[0,&nbsp;1,&nbsp;2,&nbsp;...,&nbsp;117,&nbsp;118,&nbsp;119]"
-        "</span>&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>len=120</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Collapse value' "
-        'onclick="..." onkeydown="...">[−]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "[0,&nbsp;1,&nbsp;2,&nbsp;...,&nbsp;117,&nbsp;118,&nbsp;119]"
-        "</span>&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>len=120</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded-details'>"
-        f"<span class='entity-full-value'>{expanded_html}</span>"
-        "</span>"
-        "</samp>"
-        "</div>"
-        "</div>"
+    assert row_html == _expected_compact_row(
+        "L",
+        "[0,&nbsp;1,&nbsp;2,&nbsp;...,&nbsp;117,&nbsp;118,&nbsp;119]",
+        expanded_html,
+        meta_html="&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>len=120</span>",
     )
 
 
@@ -344,50 +312,16 @@ def test_repr_html_long_tuple_compact_preview_snapshot():
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("T", value))
     expanded_html = html.escape(me.EntityCollection._format_sequence_repr_expanded(value))
 
-    assert row_html == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>T</div>"
-        "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
-        "data-expanded='false'>"
-        "<span class='entity-collapsed entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Expand value' "
-        'onclick="..." onkeydown="...">[+]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "(0,&nbsp;1,&nbsp;2,&nbsp;...,&nbsp;117,&nbsp;118,&nbsp;119)"
-        "</span>&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>len=120</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Collapse value' "
-        'onclick="..." onkeydown="...">[−]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "(0,&nbsp;1,&nbsp;2,&nbsp;...,&nbsp;117,&nbsp;118,&nbsp;119)"
-        "</span>&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>len=120</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded-details'>"
-        f"<span class='entity-full-value'>{expanded_html}</span>"
-        "</span>"
-        "</samp>"
-        "</div>"
-        "</div>"
+    assert row_html == _expected_compact_row(
+        "T",
+        "(0,&nbsp;1,&nbsp;2,&nbsp;...,&nbsp;117,&nbsp;118,&nbsp;119)",
+        expanded_html,
+        meta_html="&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>len=120</span>",
     )
 
 
 def test_repr_html_short_list_stays_inline():
-    assert me.EntityCollection._repr_html_value("short", [1, 2, 3]) == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>short</div>"
-        "<div class='entity-value'>[1,&nbsp;2,&nbsp;3]</div>"
-        "</div>"
-    )
+    assert me.EntityCollection._repr_html_value("short", [1, 2, 3]) == _expected_row("short", "[1,&nbsp;2,&nbsp;3]")
 
 
 def test_repr_html_long_mixed_list_uses_compact_preview():
@@ -411,44 +345,13 @@ def test_repr_html_long_dict_compact_preview_snapshot():
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("D", value))
     expanded_html = html.escape(me.EntityCollection._format_dict_repr_expanded(value))
 
-    assert row_html == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>D</div>"
-        "<div class='entity-value'>"
-        "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
-        "data-expanded='false'>"
-        "<span class='entity-collapsed entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Expand value' "
-        'onclick="..." onkeydown="...">[+]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
+    assert row_html == _expected_compact_row(
+        "D",
         "{&#x27;k0&#x27;:&nbsp;0,&nbsp;&#x27;k1&#x27;:&nbsp;1,"
         "&nbsp;&#x27;k2&#x27;:&nbsp;2,&nbsp;...,&nbsp;&#x27;k117&#x27;:&nbsp;117,"
-        "&nbsp;&#x27;k118&#x27;:&nbsp;118,&nbsp;&#x27;k119&#x27;:&nbsp;119}"
-        "</span>&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>len=120</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded entity-summary'>"
-        "<span role='button' tabindex='0' class='entity-toggle' "
-        "aria-label='Collapse value' "
-        'onclick="..." onkeydown="...">[−]</span>'
-        "<span class='entity-summary-content'>"
-        "<span>"
-        "{&#x27;k0&#x27;:&nbsp;0,&nbsp;&#x27;k1&#x27;:&nbsp;1,"
-        "&nbsp;&#x27;k2&#x27;:&nbsp;2,&nbsp;...,&nbsp;&#x27;k117&#x27;:&nbsp;117,"
-        "&nbsp;&#x27;k118&#x27;:&nbsp;118,&nbsp;&#x27;k119&#x27;:&nbsp;119}"
-        "</span>&nbsp;<span class='entity-meta'>·</span>&nbsp;"
-        "<span class='entity-meta'>len=120</span>"
-        "</span>"
-        "</span>"
-        "<span class='entity-expanded-details'>"
-        f"<span class='entity-full-value'>{expanded_html}</span>"
-        "</span>"
-        "</samp>"
-        "</div>"
-        "</div>"
+        "&nbsp;&#x27;k118&#x27;:&nbsp;118,&nbsp;&#x27;k119&#x27;:&nbsp;119}",
+        expanded_html,
+        meta_html="&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>len=120</span>",
     )
 
 
@@ -471,13 +374,9 @@ def test_format_dict_repr_summary_truncates_long_members():
 
 
 def test_repr_html_short_dict_stays_inline():
-    assert me.EntityCollection._repr_html_value("short_d", {"a": 1, "b": 2}) == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>short_d</div>"
-        "<div class='entity-value'>"
-        "{&#x27;a&#x27;:&nbsp;1,&nbsp;&#x27;b&#x27;:&nbsp;2}"
-        "</div>"
-        "</div>"
+    assert me.EntityCollection._repr_html_value("short_d", {"a": 1, "b": 2}) == _expected_row(
+        "short_d",
+        "{&#x27;a&#x27;:&nbsp;1,&nbsp;&#x27;b&#x27;:&nbsp;2}",
     )
 
 
@@ -541,12 +440,7 @@ def test_repr_html_embeds_long_entity_value_preview():
     entity = me.M(np.arange(24).reshape(4, 6), "A/m")
     row_html = me.EntityCollection._repr_html_value("M", entity)
 
-    assert row_html == (
-        "<div class='branch-item entity-row'>"
-        "<div class='entity-key'>M</div>"
-        f"<div class='entity-value'>{entity._repr_html_fragment_()}</div>"
-        "</div>"
-    )
+    assert row_html == _expected_row("M", entity._repr_html_fragment_())
 
 
 def test_repr_html_subclass_treats_base_collection_values_as_nested():
