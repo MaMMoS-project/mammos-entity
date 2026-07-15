@@ -101,6 +101,45 @@ def _repr_html_meta_suffix(text: str) -> str:
     return f"{_repr_html_meta_separator()}{_repr_html_meta_text(text)}"
 
 
+def _repr_html_toggle_script(css_class: str, *, expanded: bool) -> str:
+    """Build an inline script that toggles ``data-expanded`` on the nearest parent."""
+    state = "true" if expanded else "false"
+    return f"const root = this.closest('.{css_class}');if (!root) return;root.dataset.expanded = '{state}';"
+
+
+def _repr_html_toggle_onkeydown() -> str:
+    """Return the shared onkeydown handler for toggle buttons."""
+    return "if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
+
+
+def _repr_html_collapsible(
+    summary_content_html: str,
+    expanded_details_html: str,
+    expand_script: str,
+    collapse_script: str,
+) -> str:
+    """Render the three collapsible sections: collapsed view, expanded view, and expanded details."""
+    onkeydown = _repr_html_toggle_onkeydown()
+    collapsed_html = (
+        "<span class='entity-collapsed entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Expand value' "
+        f'onclick="{expand_script}" onkeydown="{onkeydown}">[+]</span>'
+        f"{summary_content_html}"
+        "</span>"
+    )
+    expanded_summary_html = (
+        "<span class='entity-expanded entity-summary'>"
+        "<span role='button' tabindex='0' class='entity-toggle' "
+        "aria-label='Collapse value' "
+        f'onclick="{collapse_script}" onkeydown="{onkeydown}">[−]</span>'
+        f"{summary_content_html}"
+        "</span>"
+    )
+    expanded_details = f"<span class='entity-expanded-details'>{expanded_details_html}</span>"
+    return f"{collapsed_html}{expanded_summary_html}{expanded_details}"
+
+
 def _repr_html_summary_content(
     preview_html: str,
     *,
@@ -127,12 +166,7 @@ class _EntityReprHtml:
     @staticmethod
     def _repr_html_toggle_script(*, expanded: bool) -> str:
         """Build the inline script for expanding or collapsing long values."""
-        state = "true" if expanded else "false"
-        return (
-            "const root = this.closest('.mammos-entity-inline-v2');"
-            "if (!root) return;"
-            f"root.dataset.expanded = '{state}';"
-        )
+        return _repr_html_toggle_script("mammos-entity-inline-v2", expanded=expanded)
 
     def _repr_html_fragment_(self) -> str:
         """Render the entity HTML without injecting shared CSS."""
@@ -189,36 +223,23 @@ class _EntityReprHtml:
 
         expand = self._repr_html_toggle_script(expanded=True)
         collapse = self._repr_html_toggle_script(expanded=False)
-        toggle_onkeydown = "if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
         preview_html = _format_html_text(preview_value_text, preserve_spaces=True)
         header_html = f"{header_html}{shape_html}"
         summary_content_html = _repr_html_summary_content(
             preview_html,
             unit_html=f"<span>{unit_html_collapsed}</span>",
         )
-        summary_html_collapsed = (
-            "<span class='entity-collapsed entity-summary'>"
-            "<span role='button' tabindex='0' class='entity-toggle' "
-            "aria-label='Expand value' "
-            f'onclick="{expand}" onkeydown="{toggle_onkeydown}">[+]</span>'
-            f"{summary_content_html}"
-            "</span>"
-        )
-        summary_html_expanded = (
-            "<span class='entity-expanded entity-summary'>"
-            "<span role='button' tabindex='0' class='entity-toggle' "
-            "aria-label='Collapse value' "
-            f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
-            f"{summary_content_html}"
-            "</span>"
-        )
-        expanded_html = (
-            "<span class='entity-expanded-details'>"
-            "<span class='entity-full-value'>"
+        expanded_details_inner = (
+            f"<span class='entity-full-value'>"
             f"{html.escape(expanded_content_text)}"
             f"{'' if shape not in [(), None] else unit_html_expanded}"
             "</span>"
-            "</span>"
+        )
+        collapsible = _repr_html_collapsible(
+            summary_content_html,
+            expanded_details_inner,
+            expand,
+            collapse,
         )
 
         return (
@@ -227,9 +248,7 @@ class _EntityReprHtml:
             "<br>"
             f"{description_html}"
             f"{'<br>' if description_html else ''}"
-            f"{summary_html_collapsed}"
-            f"{summary_html_expanded}"
-            f"{expanded_html}"
+            f"{collapsible}"
             "</samp>"
         )
 
@@ -264,12 +283,7 @@ class _EntityCollectionReprHtml:
     @staticmethod
     def _repr_html_value_toggle_script(*, expanded: bool) -> str:
         """Build the inline script for compact row-value expand/collapse."""
-        state = "true" if expanded else "false"
-        return (
-            "const root = this.closest('.mammos-compact-value-v2');"
-            "if (!root) return;"
-            f"root.dataset.expanded = '{state}';"
-        )
+        return _repr_html_toggle_script("mammos-compact-value-v2", expanded=expanded)
 
     @staticmethod
     def _format_quantity_repr_expanded(value: mammos_units.Quantity) -> str:
@@ -360,7 +374,6 @@ class _EntityCollectionReprHtml:
         """Render a collapsible preview for long plain values in collection rows."""
         expand = cls._repr_html_value_toggle_script(expanded=True)
         collapse = cls._repr_html_value_toggle_script(expanded=False)
-        toggle_onkeydown = "if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
         preview_html = cls._format_html_text(preview_text)
         unit_span_html = f"<span>{unit_html}</span>" if unit_html else ""
         summary_content_html = _repr_html_summary_content(
@@ -368,34 +381,15 @@ class _EntityCollectionReprHtml:
             unit_html=unit_span_html,
             meta_html=meta_html,
         )
-        collapsed_html = (
-            "<span class='entity-collapsed entity-summary'>"
-            "<span role='button' tabindex='0' class='entity-toggle' "
-            "aria-label='Expand value' "
-            f'onclick="{expand}" onkeydown="{toggle_onkeydown}">[+]</span>'
-            f"{summary_content_html}"
-            "</span>"
-        )
-        expanded_summary_html = (
-            "<span class='entity-expanded entity-summary'>"
-            "<span role='button' tabindex='0' class='entity-toggle' "
-            "aria-label='Collapse value' "
-            f'onclick="{collapse}" onkeydown="{toggle_onkeydown}">[−]</span>'
-            f"{summary_content_html}"
-            "</span>"
-        )
-        expanded_details_html = (
-            "<span class='entity-expanded-details'>"
-            f"<span class='entity-full-value'>{html.escape(expanded_text)}</span>"
-            "</span>"
+        expanded_details_html = f"<span class='entity-full-value'>{html.escape(expanded_text)}</span>"
+        collapsible = _repr_html_collapsible(
+            summary_content_html,
+            expanded_details_html,
+            expand,
+            collapse,
         )
         return (
-            "<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' "
-            "data-expanded='false'>"
-            f"{collapsed_html}"
-            f"{expanded_summary_html}"
-            f"{expanded_details_html}"
-            "</samp>"
+            f"<samp class='mammos-entity-inline-v2 mammos-compact-value-v2' data-expanded='false'>{collapsible}</samp>"
         )
 
     @classmethod
