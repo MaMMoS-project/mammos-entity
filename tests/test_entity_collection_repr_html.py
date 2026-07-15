@@ -160,7 +160,7 @@ def test_repr_html_long_numpy_array_compact_preview_snapshot():
     array = np.arange(24).reshape(4, 6)
 
     row_html = _strip_html_event_handlers(me.EntityCollection._repr_html_value("M", array))
-    expanded_html = html.escape(me._entity._format_array_repr_expanded(array))
+    expanded_html = html.escape(me._repr._format_array_repr_expanded(array))
 
     assert row_html == (
         "<div class='branch-item entity-row'>"

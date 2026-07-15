@@ -15,7 +15,6 @@ import h5py
 import mammos_units as u
 
 import mammos_entity as me
-from mammos_entity import _repr as repr_utils
 from mammos_entity._ontology import mammos_ontology, search_labels
 from mammos_entity._repr import _EntityReprHtml
 
@@ -30,14 +29,6 @@ if TYPE_CHECKING:
 
 base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
-
-_ENTITY_REPR_EXPANDED_THRESHOLD = repr_utils._ENTITY_REPR_EXPANDED_THRESHOLD
-_ENTITY_REPR_MAX_INLINE_CHARS = repr_utils._ENTITY_REPR_MAX_INLINE_CHARS
-_ENTITY_REPR_SUMMARY_EDGE_ITEMS = repr_utils._ENTITY_REPR_SUMMARY_EDGE_ITEMS
-_array_repr_expanded_edgeitems = repr_utils._array_repr_expanded_edgeitems
-_format_array_repr_expanded = repr_utils._format_array_repr_expanded
-_format_array_repr_summary = repr_utils._format_array_repr_summary
-_strip_array_repr_brackets = repr_utils._strip_array_repr_brackets
 
 
 def _convert_unit(

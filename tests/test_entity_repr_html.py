@@ -60,7 +60,7 @@ def test_repr_html_small_array_stays_single_line():
 def test_format_array_repr_summary_flattens_preview():
     e = me.Entity("ExternalMagneticField", np.arange(24).reshape(4, 6), "A/m")
 
-    assert me._entity._format_array_repr_summary(e.value) == "0. 1. 2. ... 21. 22. 23."
+    assert me._repr._format_array_repr_summary(e.value) == "0. 1. 2. ... 21. 22. 23."
 
 
 def test_format_array_repr_expanded_uses_numpy_repr_with_threshold():
@@ -68,23 +68,23 @@ def test_format_array_repr_expanded_uses_numpy_repr_with_threshold():
 
     with np.printoptions(
         threshold=100,
-        edgeitems=me._entity._array_repr_expanded_edgeitems(e.value),
+        edgeitems=me._repr._array_repr_expanded_edgeitems(e.value),
     ):
         expected = repr(np.asarray(e.value))
 
-    assert me._entity._format_array_repr_expanded(e.value) == expected
+    assert me._repr._format_array_repr_expanded(e.value) == expected
 
 
 def test_array_repr_expanded_edgeitems_scale_with_rank():
-    assert me._entity._array_repr_expanded_edgeitems(np.arange(300)) == 50
-    assert me._entity._array_repr_expanded_edgeitems(np.arange(400).reshape(20, 20)) == 5
-    assert me._entity._array_repr_expanded_edgeitems(np.arange(10 * 500 * 20).reshape(10, 500, 20)) == 2
+    assert me._repr._array_repr_expanded_edgeitems(np.arange(300)) == 50
+    assert me._repr._array_repr_expanded_edgeitems(np.arange(400).reshape(20, 20)) == 5
+    assert me._repr._array_repr_expanded_edgeitems(np.arange(10 * 500 * 20).reshape(10, 500, 20)) == 2
 
 
 def test_format_array_repr_expanded_shows_large_1d_context():
     e = me.Entity("ExternalMagneticField", np.arange(300), "A/m")
 
-    expanded = me._entity._format_array_repr_expanded(e.value)
+    expanded = me._repr._format_array_repr_expanded(e.value)
     head, tail = expanded.split("...", maxsplit=1)
 
     assert "49." in head
@@ -108,7 +108,7 @@ def test_repr_html_long_value_exact_snapshot():
     e = me.Entity("ExternalMagneticField", np.arange(24).reshape(4, 6), "A/m")
 
     fragment = _strip_html_event_handlers(e._repr_html_fragment_())
-    expanded_html = html.escape(me._entity._format_array_repr_expanded(e.value))
+    expanded_html = html.escape(me._repr._format_array_repr_expanded(e.value))
 
     assert fragment == (
         "<samp class='mammos-entity-inline-v2' data-expanded='false'>"
@@ -147,7 +147,7 @@ def test_repr_html_large_1d_array_uses_summary_and_bounded_numpy_expansion():
     e = me.Entity("ExternalMagneticField", np.arange(1001), "A/m")
 
     fragment = e._repr_html_fragment_()
-    expanded_html = html.escape(me._entity._format_array_repr_expanded(e.value))
+    expanded_html = html.escape(me._repr._format_array_repr_expanded(e.value))
 
     assert ("&nbsp;<span class='entity-meta'>·</span>&nbsp;<span class='entity-meta'>shape=(1001,)</span>") in fragment
     assert (
