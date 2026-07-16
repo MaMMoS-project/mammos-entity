@@ -451,3 +451,95 @@ def test_from_compatible_wrong_kwarg():
             temperature=5,
             tc=5,
         )
+
+
+def test_getitem_int():
+    """Entity integer indexing returns scalar entity with label/unit preserved."""
+    ms = me.Ms([500, 600, 700], "kA/m", description="measured at 0 K")
+    result = ms[0]
+    assert result.ontology_label == "SpontaneousMagnetization"
+    assert result.unit == u.kA / u.m
+    assert result.description == "measured at 0 K"
+    assert math.isclose(result.value, 500.0)
+
+
+def test_getitem_slice():
+    """Entity slice indexing returns entity with subset of values."""
+    ms = me.Ms([500, 600, 700], "kA/m")
+    result = ms[1:3]
+    assert np.allclose(result.value, [600, 700])
+
+
+def test_getitem_step():
+    """Entity slice with step returns every Nth value."""
+    ms = me.Ms([500, 600, 700, 800], "kA/m")
+    result = ms[::2]
+    assert np.allclose(result.value, [500, 700])
+
+
+def test_getitem_negative():
+    """Negative integer indexing returns last element."""
+    ms = me.Ms([500, 600, 700], "kA/m")
+    result = ms[-1]
+    assert math.isclose(result.value, 700.0)
+
+
+def test_getitem_bool_array():
+    """Boolean array indexing selects values where mask is True."""
+    ms = me.Ms([500, 600, 700, 800], "kA/m")
+    result = ms[[True, False, True, False]]
+    assert np.allclose(result.value, [500, 700])
+
+
+def test_getitem_int_array():
+    """Integer array indexing selects values at given positions."""
+    ms = me.Ms([500, 600, 700, 800], "kA/m")
+    result = ms[[0, 2, 3]]
+    assert np.allclose(result.value, [500, 700, 800])
+
+
+def test_getitem_multidim():
+    """Multi-dimensional slicing works for 2D entity values."""
+    val = [[1, 2, 3], [4, 5, 6]]
+    ms = me.Ms(val, "A/m")
+    row = ms[0]
+    assert np.allclose(row.value, [1, 2, 3])
+    col = ms[:, 0]
+    assert np.allclose(col.value, [1, 4])
+
+
+def test_getitem_preserves_ontology_label():
+    """Slicing preserves ontology label."""
+    ms = me.Ms([500, 600, 700], "kA/m")
+    assert ms[0].ontology_label == "SpontaneousMagnetization"
+    assert ms[1:3].ontology_label == "SpontaneousMagnetization"
+    assert ms[[True, False, True]].ontology_label == "SpontaneousMagnetization"
+    assert ms[[0, 2]].ontology_label == "SpontaneousMagnetization"
+
+
+def test_getitem_preserves_unit():
+    """Slicing preserves unit."""
+    ms = me.Ms([500, 600, 700], "kA/m")
+    assert ms[0].unit == u.kA / u.m
+    assert ms[1:3].unit == u.kA / u.m
+
+
+def test_getitem_preserves_description():
+    """Slicing preserves description."""
+    ms = me.Ms([500, 600, 700], "kA/m", description="measured at 0 K")
+    assert ms[0].description == "measured at 0 K"
+    assert ms[1:3].description == "measured at 0 K"
+
+
+def test_getitem_scalar_entity_raises():
+    """Indexing a scalar entity raises TypeError."""
+    ms = me.Ms(500, "kA/m")
+    with pytest.raises(TypeError, match="scalar value does not support indexing"):
+        ms[0]
+
+
+def test_getitem_out_of_range():
+    """Index out of range raises IndexError."""
+    ms = me.Ms([500, 600, 700], "kA/m")
+    with pytest.raises(IndexError):
+        ms[999]
