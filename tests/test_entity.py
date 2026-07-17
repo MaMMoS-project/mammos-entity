@@ -318,6 +318,100 @@ def test_equality():
     assert e_1 == A()
 
 
+def test_entity_to_ordinary_conversions():
+    """Test ordinary Entity.to conversions for metric-prefix rescalings."""
+    ms = me.Ms(100_000, "A/m")
+    assert ms.to("kA/m") == ms
+    assert ms.to("mA/cm") == ms
+
+    b = me.B(1, "T")
+    assert b.to("mT") == b
+
+    exchange = me.A(1, "J/m")
+    assert exchange.to("kJ/mm") == exchange
+
+
+def test_metric_prefix_detection_does_not_confuse_composite_units():
+    """Test that products such as m s are not parsed like prefixed units."""
+    assert me._entity._is_scaled_version_of("mK", "K")
+    assert not me._entity._is_scaled_version_of("m K", "K")
+    assert me._entity._is_scaled_version_of("ms", "s")
+    assert not me._entity._is_scaled_version_of("m s", "s")
+
+
+def test_entity_to_preserves_metadata():
+    """Test that Entity.to preserves ontology label and description."""
+    ms = me.Ms(100_000, "A/m", description="test description")
+    out = ms.to("kA/m")
+
+    assert out.ontology_label == ms.ontology_label
+    assert out.description == ms.description
+    assert out == ms
+
+
+def test_entity_to_special_units_are_not_ordinary_except_identity():
+    """Test special units are not ordinary conversions, except identity."""
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.Ms(1, "A/m").to("Oe")
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.Ms(1, "Oe").to("A/m")
+
+    ms_oe = me.Ms(1, "Oe")
+    assert ms_oe.to("Oe") == ms_oe
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.B(1, "T").to("G")
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.B(1, "G").to("T")
+
+    b_g = me.B(1, "G")
+    assert b_g.to("G") == b_g
+
+
+def test_entity_to_affine_temperature_is_not_ordinary_except_identity():
+    """Test affine temperature conversions are not ordinary, except identity."""
+    with pytest.raises(ValueError, match="affine or offset-based"):
+        me.T(300, "K").to("deg_C")
+
+    with pytest.raises(ValueError, match="affine or offset-based"):
+        me.T(26.85, "deg_C").to("K")
+
+    temp_c = me.T(26.85, "deg_C")
+    assert temp_c.to("deg_C") == temp_c
+
+
+def test_entity_to_rejects_non_ordinary_conversions():
+    """Test Entity.to only accepts ordinary conversions."""
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.Ms(1, "A/m").to("Oe")
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.B(1, "T").to("G")
+
+    with pytest.raises(ValueError, match="affine or offset-based"):
+        me.T(300, "K").to("deg_C")
+
+    with pytest.raises(ValueError, match="Both source and target units"):
+        me.Entity("Energy", 1, "J").to("eV")
+
+
+def test_entity_to_rejects_conversion_type_keyword():
+    """Test Entity.to does not expose alternative conversion modes."""
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        me.B(1, "T").to("G", conversion_type="dimension_constrained")
+
+
+def test_entity_to_array_values():
+    """Test Entity.to scales array values elementwise."""
+    b = me.B(np.array([1, 2, 3]), "T")
+    out = b.to("mT")
+
+    assert out.unit == u.mT
+    assert np.allclose(out.value, [1000, 2000, 3000])
+
+
 @pytest.mark.parametrize(
     "function, expected_label",
     (

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING
 
 import h5py
 import mammos_units as u
+import numpy as np
 
 import mammos_entity as me
 from mammos_entity._ontology import mammos_ontology, search_labels
@@ -25,9 +26,141 @@ if TYPE_CHECKING:
 
     import mammos_entity
 
-
 base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
+
+
+_METRIC_PREFIXES = (
+    "Q",
+    "R",
+    "Y",
+    "Z",
+    "E",
+    "P",
+    "T",
+    "G",
+    "M",
+    "k",
+    "h",
+    "da",
+    "d",
+    "c",
+    "m",
+    "u",
+    "n",
+    "p",
+    "f",
+    "a",
+    "z",
+    "y",
+    "r",
+    "q",
+)
+
+
+def _is_metric_prefixed_symbol(unit, reference_unit) -> bool:
+    """Return True for simple metric-prefix spellings of a reference unit.
+
+    Examples:
+        mT -> T   True
+        kJ -> J   True
+        G  -> T   False
+        eV -> J   False
+        m s -> s  False
+    """
+    unit = u.Unit(unit)
+    reference_unit = u.Unit(reference_unit)
+
+    if (
+        not hasattr(unit, "bases")
+        or not hasattr(reference_unit, "bases")
+        or len(unit.bases) != 1
+        or len(reference_unit.bases) != 1
+        or unit.powers != [1]
+        or reference_unit.powers != [1]
+    ):
+        return False
+
+    unit_str = str(unit).replace(" ", "")
+    ref_str = str(reference_unit).replace(" ", "")
+
+    return any(unit_str == f"{prefix}{ref_str}" for prefix in _METRIC_PREFIXES)
+
+
+def _deprefix_unit(unit: mammos_units.UnitBase) -> mammos_units.UnitBase:
+    """Remove metric prefixes from a unit.
+
+    Examples:
+        kA / m -> A / m
+        mA / cm -> A / m
+    """
+    unit = u.Unit(unit)
+
+    if hasattr(unit, "bases") and hasattr(unit, "powers"):
+        bases = []
+        for base in unit.bases:
+            if hasattr(base, "represents"):
+                if (
+                    hasattr(base.represents, "bases")
+                    and hasattr(base.represents, "powers")
+                    and len(base.represents.bases) == 1
+                    and base.represents.powers == [1]
+                    and (
+                        base == base.represents.bases[0]
+                        or _is_metric_prefixed_symbol(base, base.represents.bases[0])
+                    )
+                ):
+                    bases.append(base.represents.bases[0])
+                    continue
+                decomposed = base.represents.decompose()
+                if len(decomposed.bases) == 1 and decomposed.powers == [1]:
+                    bases.append(decomposed.bases[0])
+                else:
+                    bases.append(base)
+            else:
+                bases.append(base)
+
+        return u.CompositeUnit(1, bases, unit.powers)
+
+    return unit
+
+
+def _is_scaled_version_of(unit, reference_unit) -> bool:
+    """Return True if unit is a metric-prefix variant of reference_unit.
+
+    Examples:
+        A / m  -> kA / m  True
+        T      -> mT      True
+        A / m  -> Oe      False
+        T      -> G       False
+    """
+    unit = u.Unit(unit)
+    reference_unit = u.Unit(reference_unit)
+
+    if _deprefix_unit(unit) == _deprefix_unit(reference_unit):
+        return True
+
+    return _is_metric_prefixed_symbol(unit, reference_unit)
+
+
+def _has_decimal_scale(source_unit, target_unit) -> bool:
+    """Return True if converting source to target is multiplication by 10**k."""
+    source_unit = u.Unit(source_unit)
+    target_unit = u.Unit(target_unit)
+
+    with u.set_enabled_equivalencies(mammos_equivalencies):
+        factor = u.Quantity(1, source_unit).to(target_unit).value
+
+    factor = np.asarray(factor)
+    if factor.shape != () or not np.isfinite(factor):
+        return False
+
+    factor = float(factor)
+    if factor == 0:
+        return False
+
+    exponent = np.log10(abs(factor))
+    return np.allclose(exponent, round(exponent))
 
 
 def _convert_unit(
@@ -449,6 +582,74 @@ class Entity:
             'Demagnetizing Factor'
         """
         return re.sub(r"(?<!^)(?=[A-Z])", " ", f"{self.ontology_label}") + (f" ({self.unit})" if str(self.unit) else "")
+
+    def _validate_ordinary_conversion(
+        self,
+        target_unit: mammos_units.UnitBase,
+    ) -> None:
+        target_unit = u.Unit(target_unit)
+
+        if self.unit == target_unit:
+            return
+
+        ontology_units = _get_all_possible_units(self.ontology_label)
+
+        source_is_ordinary_unit = any(
+            _is_scaled_version_of(self.unit, ou) for ou in ontology_units
+        )
+        target_is_ordinary_unit = any(
+            _is_scaled_version_of(target_unit, ou) for ou in ontology_units
+        )
+
+        if not source_is_ordinary_unit or not target_is_ordinary_unit:
+            raise ValueError(
+                f"Cannot perform ordinary conversion from {self.unit} to "
+                f"{target_unit} for entity {self.ontology_label}. "
+                "Both source and target units must be pure rescalings of an "
+                "ontology unit."
+            )
+
+        with u.set_enabled_equivalencies(mammos_equivalencies):
+            zero = u.Quantity(0, self.unit).to(target_unit).value
+
+        if not np.allclose(zero, 0):
+            raise ValueError(
+                f"Cannot perform ordinary conversion from {self.unit} to "
+                f"{target_unit} for entity {self.ontology_label}. "
+                "This conversion is affine or offset-based, not a pure linear "
+                "rescaling."
+            )
+
+        if not _has_decimal_scale(self.unit, target_unit):
+            raise ValueError(
+                f"Cannot perform ordinary conversion from {self.unit} to "
+                f"{target_unit} for entity {self.ontology_label}. "
+                "This conversion is linear, but its scale factor is not a decimal "
+                "metric-prefix factor 10**k."
+            )
+
+    def to(
+        self,
+        unit: str | mammos_units.UnitBase,
+    ) -> mammos_entity.Entity:
+        """Return a copy of the entity converted to a different unit.
+
+        This performs an ordinary conversion. Ordinary conversions are restricted
+        to pure rescalings of ontology-compatible units. They are intended for
+        representation changes that do not alter the relation structure.
+
+        System-level conversions that transform relation systems are outside the
+        scope of Entity.to().
+        """
+        target_unit = u.Unit(unit)
+        self._validate_ordinary_conversion(target_unit)
+
+        return self.__class__(
+            self.ontology_label,
+            self.quantity,
+            unit=target_unit,
+            description=self.description,
+        )
 
     def __eq__(self, other: mammos_entity.Entity) -> bool:
         """Check if two Entities are identical.
