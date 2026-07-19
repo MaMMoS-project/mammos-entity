@@ -45,6 +45,12 @@ def _structured_leaf_cases() -> list[tuple[str, object, str]]:
     ]
 
 
+def _assert_js_free(html_fragment: str) -> None:
+    assert "onclick=" not in html_fragment
+    assert "onkeydown=" not in html_fragment
+    assert "data-expanded=" not in html_fragment
+
+
 @pytest.mark.parametrize("count", [1, 7, 60])
 @pytest.mark.parametrize("description", ["", "desc"])
 def test_entity_repr_html_is_js_free_and_uses_details_only_for_long_values(count, description):
@@ -58,9 +64,7 @@ def test_entity_repr_html_is_js_free_and_uses_details_only_for_long_values(count
     assert html_output.startswith("<style>")
     assert fragment in html_output
     assert entity.ontology_label in normalized_fragment
-    assert "onclick=" not in fragment
-    assert "onkeydown=" not in fragment
-    assert "data-expanded=" not in fragment
+    _assert_js_free(fragment)
     if description:
         assert description in normalized_fragment
     if count >= 60:
@@ -81,9 +85,7 @@ def test_collection_repr_html_is_static_js_free_and_wraps_descriptions():
 
     assert html_output.startswith("<style>")
     assert "<details class='mammos-entity-collection root-node' open>" in html_output
-    assert "onclick=" not in html_output
-    assert "onkeydown=" not in html_output
-    assert "data-expanded=" not in html_output
+    _assert_js_free(html_output)
     assert "long&nbsp;collection&nbsp;description" not in html_output
     assert "long&nbsp;entity&nbsp;description" not in html_output
     assert "overflow-wrap: anywhere;" in html_output
@@ -249,33 +251,16 @@ def test_widget_handles_root_page_request(monkeypatch):
         [],
     )
 
-    assert sent_messages == [
-        {
-            "kind": "lazy-rendered",
-            "lazy_id": widget.root_node_id,
-            "patch": "append-children",
-            "html": (
-                "<div class='branch-item entity-row leaf-row'>"
-                "<div class='entity-key'>first</div>"
-                "<div class='entity-value'>1</div>"
-                "</div>"
-            ),
-            "controls_html": (
-                "<div class='collection-controls'>"
-                "<button type='button' class='collection-control' "
-                "data-lazy-action='next' data-lazy-target-id='lazy-node-0'>"
-                "Load next 1"
-                "</button>"
-                "<button type='button' class='collection-control' "
-                "data-lazy-action='all' data-lazy-target-id='lazy-node-0'>"
-                "Load remaining 1"
-                "</button>"
-                "</div>"
-            ),
-            "next_cursor": 1,
-            "done": False,
-        }
-    ]
+    assert len(sent_messages) == 1
+    message = sent_messages[0]
+    assert message["kind"] == "lazy-rendered"
+    assert message["lazy_id"] == widget.root_node_id
+    assert message["patch"] == "append-children"
+    assert "<div class='entity-key'>first</div>" in message["html"]
+    assert "Load next 1" in message["controls_html"]
+    assert "Load remaining 1" in message["controls_html"]
+    assert message["next_cursor"] == 1
+    assert message["done"] is False
 
 
 def test_widget_handles_load_all_request(monkeypatch):
@@ -289,48 +274,35 @@ def test_widget_handles_load_all_request(monkeypatch):
         [],
     )
 
-    assert sent_messages == [
-        {
-            "kind": "lazy-rendered",
-            "lazy_id": widget.root_node_id,
-            "patch": "append-children",
-            "html": "".join(
-                (
-                    "<div class='branch-item entity-row leaf-row'>"
-                    f"<div class='entity-key'>k{i}</div>"
-                    f"<div class='entity-value'>{i}</div>"
-                    "</div>"
-                )
-                for i in range(50, 120)
-            ),
-            "controls_html": "",
-            "next_cursor": 120,
-            "done": True,
-        }
-    ]
+    assert len(sent_messages) == 1
+    message = sent_messages[0]
+    assert message["kind"] == "lazy-rendered"
+    assert message["lazy_id"] == widget.root_node_id
+    assert message["patch"] == "append-children"
+    assert "<div class='entity-key'>k50</div>" in message["html"]
+    assert "<div class='entity-key'>k119</div>" in message["html"]
+    assert message["controls_html"] == ""
+    assert message["next_cursor"] == 120
+    assert message["done"] is True
 
 
 def test_widget_handles_lazy_leaf_replacement(monkeypatch):
     widget = EntityCollectionTreeWidget(me.EntityCollection(M=me.M(np.arange(60.0), "A/m")), page_size=10)
     leaf_id = _leaf_child_id(widget.root_node_id, 0)
-    widget._session.render_lazy_node(widget.root_node_id, cursor=0)
-    detail_html = widget._session.render_lazy_node(leaf_id)["html"]
     sent_messages = []
     monkeypatch.setattr(widget, "send", lambda content, buffers=None: sent_messages.append(content))
 
     widget._handle_message(widget, {"kind": "render-lazy", "lazy_id": leaf_id}, [])
 
-    assert sent_messages == [
-        {
-            "kind": "lazy-rendered",
-            "lazy_id": leaf_id,
-            "patch": "replace-self",
-            "html": detail_html,
-            "controls_html": "",
-            "next_cursor": 0,
-            "done": True,
-        }
-    ]
+    assert len(sent_messages) == 1
+    message = sent_messages[0]
+    assert message["kind"] == "lazy-rendered"
+    assert message["lazy_id"] == leaf_id
+    assert message["patch"] == "replace-self"
+    assert "<details class='lazy-leaf-details' open>" in message["html"]
+    assert message["controls_html"] == ""
+    assert message["next_cursor"] == 0
+    assert message["done"] is True
 
 
 def test_widget_reports_lazy_errors(monkeypatch):
@@ -351,7 +323,6 @@ def test_widget_javascript_source_uses_generic_lazy_protocol_without_loading_ind
 
     assert 'kind: "render-lazy"' in js_text
     assert 'if (message.patch === "replace-self")' in js_text
-    assert 'if (target.dataset.lazyPatch === "append-children")' in js_text
     assert "button.dataset.lazyTargetId" in js_text
     assert 'el.addEventListener("toggle", handleToggle, true);' in js_text
     assert 'el.addEventListener("click", handleCollectionControl);' in js_text

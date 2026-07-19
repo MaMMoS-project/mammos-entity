@@ -7,33 +7,25 @@ function findLazyNode(root, lazyId) {
   ) ?? null;
 }
 
-function hasClass(node, className) {
-  return typeof node.className === "string" && node.className.split(/\s+/).includes(className);
-}
-
-function directChildByClass(node, className) {
-  return Array.from(node.children).find((child) => hasClass(child, className)) ?? null;
-}
-
 function childrenContainer(node) {
-  return directChildByClass(node, "collection-children");
+  return node.children[1] ?? null;
 }
 
 function footerContainer(node) {
-  return directChildByClass(node, "collection-footer");
+  return node.children[2] ?? null;
 }
 
 function eventTargetElement(target) {
-  if (target instanceof HTMLElement) {
-    return target;
-  }
-  if (target && typeof target === "object" && "parentElement" in target) {
-    return target.parentElement;
-  }
-  return null;
+  return target instanceof HTMLElement ? target : target?.parentElement ?? null;
 }
 
-function requestLazyNode(model, root, lazyId, options = {}) {
+function htmlFragment(htmlText) {
+  const template = document.createElement("template");
+  template.innerHTML = htmlText ?? "";
+  return template.content;
+}
+
+function requestLazyNode(model, root, lazyId, { force = false, loadAll = false } = {}) {
   const node = findLazyNode(root, lazyId);
   if (!node) {
     return;
@@ -41,7 +33,7 @@ function requestLazyNode(model, root, lazyId, options = {}) {
   if (node instanceof HTMLDetailsElement && !node.open) {
     return;
   }
-  if (options.force !== true && node.dataset.lazyLoaded === "true") {
+  if (!force && node.dataset.lazyLoaded === "true") {
     return;
   }
   if (node.dataset.lazyLoading === "true" || node.dataset.lazyDone === "true") {
@@ -53,7 +45,7 @@ function requestLazyNode(model, root, lazyId, options = {}) {
     kind: "render-lazy",
     lazy_id: lazyId,
     cursor,
-    load_all: options.loadAll === true,
+    load_all: loadAll,
   });
 }
 
@@ -81,9 +73,7 @@ function appendChildren(node, htmlText) {
   if (!container) {
     return;
   }
-  const template = document.createElement("template");
-  template.innerHTML = htmlText;
-  container.append(template.content);
+  container.append(htmlFragment(htmlText));
 }
 
 function replaceControls(node, htmlText) {
@@ -154,9 +144,7 @@ export function render({ model, el }) {
         return;
       }
       if (message.patch === "replace-self") {
-        const template = document.createElement("template");
-        template.innerHTML = message.html ?? "";
-        const replacement = template.content.firstElementChild;
+        const replacement = htmlFragment(message.html).firstElementChild;
         if (replacement) {
           node.replaceWith(replacement);
         }

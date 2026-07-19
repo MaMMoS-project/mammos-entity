@@ -285,7 +285,7 @@ def _render_summary_content(spec: _CollapsibleTextSpec) -> str:
     if spec.summary_unit_text:
         summary_unit_html = f"<span>{_format_html_text(f' {spec.summary_unit_text}', preserve_spaces=True)}</span>"
     return (
-        "<span class='entity-summary-content'>"
+        "<span>"
         f"<span>{_format_html_text(spec.preview_text, preserve_spaces=True)}{summary_unit_html}</span>"
         f"{_render_meta_suffix(spec.meta_text)}"
         "</span>"
@@ -321,8 +321,8 @@ def _render_leaf_details(
     return (
         f"<details class='{css_classes}'{open_attr}{lazy_attrs}>"
         "<summary class='lazy-leaf-summary'>"
-        "<span class='entity-toggle lazy-toggle-collapsed'>[+]</span>"
-        "<span class='entity-toggle lazy-toggle-expanded'>[−]</span>"
+        "<span class='entity-toggle'>[+]</span>"
+        "<span class='entity-toggle'>[−]</span>"
         f"{_render_summary_content(spec)}"
         "</summary>"
         f"{body_html}"
@@ -382,6 +382,27 @@ def _render_collection_note(note: str) -> str:
 def _render_static_preview_note(note: str) -> str:
     """Render the static preview warning below the tree body."""
     return _render_text_block("static-preview-note", note, preserve_spaces=True)
+
+
+def _render_widget_collection_node(summary_html: str, node_id: str, description: str, *, root: bool) -> str:
+    """Render the shared lazy collection node markup used by root and nested branches."""
+    description_html = _render_collection_description(description) if description else ""
+    initial_children_html = html.escape(description_html, quote=True)
+    lazy_attrs = (
+        f"data-lazy-id='{node_id}' data-lazy-patch='append-children' "
+        "data-lazy-cursor='0' data-lazy-loading='false' "
+        "data-lazy-loaded='false' data-lazy-done='false' "
+        f"data-initial-children-html='{initial_children_html}'"
+    )
+    css_class = "mammos-entity-collection root-node" if root else "branch-item branch-node"
+    open_attr = " open" if root else ""
+    return (
+        f"<details class='{css_class}'{open_attr} {lazy_attrs}>"
+        f"{summary_html}"
+        f"<div class='collection-children'>{description_html}</div>"
+        "<div class='collection-footer'></div>"
+        "</details>"
+    )
 
 
 def _render_collection_controls(node_id: str, *, next_cursor: int, total: int, page_size: int) -> str:
@@ -611,7 +632,7 @@ def _render_branch_summary(key: str, collection: _EntityCollectionLike) -> str:
     """Render the shared summary markup for a nested collection branch."""
     return (
         "<summary>"
-        f"<span class='summary-key'>{_format_html_text(key, preserve_spaces=True)}</span>"
+        f"<span>{_format_html_text(key, preserve_spaces=True)}</span>"
         "<span class='summary-preview'>"
         f"{_format_html_text(collection.__class__.__name__)}"
         f"&nbsp;·&nbsp;{_format_html_text(_collection_preview(collection), preserve_spaces=True)}"
@@ -622,43 +643,21 @@ def _render_branch_summary(key: str, collection: _EntityCollectionLike) -> str:
 
 def _render_widget_branch(key: str, collection: _EntityCollectionLike, node_id: str) -> str:
     """Render a lazy branch placeholder for widget mode."""
-    children = ""
-    if collection.description:
-        children = _render_collection_description(collection.description)
-    initial_children_html = html.escape(children, quote=True)
-    lazy_attrs = (
-        f"data-lazy-id='{node_id}' data-lazy-patch='append-children' "
-        "data-lazy-cursor='0' data-lazy-loading='false' "
-        "data-lazy-loaded='false' data-lazy-done='false' "
-        f"data-initial-children-html='{initial_children_html}'"
-    )
-    return (
-        f"<details class='branch-item branch-node' {lazy_attrs}>"
-        f"{_render_branch_summary(key, collection)}"
-        f"<div class='collection-children'>{children}</div>"
-        "<div class='collection-footer'></div>"
-        "</details>"
+    return _render_widget_collection_node(
+        _render_branch_summary(key, collection),
+        node_id,
+        collection.description,
+        root=False,
     )
 
 
 def _render_widget_root(collection: _EntityCollectionLike, node_id: str) -> str:
     """Render the root widget container without eagerly rendering any members."""
-    description_html = ""
-    if collection.description:
-        description_html = _render_collection_description(collection.description)
-    initial_children_html = html.escape(description_html, quote=True)
-    lazy_attrs = (
-        f"data-lazy-id='{node_id}' data-lazy-patch='append-children' "
-        "data-lazy-cursor='0' data-lazy-loading='false' "
-        "data-lazy-loaded='false' data-lazy-done='false' "
-        f"data-initial-children-html='{initial_children_html}'"
-    )
-    return (
-        f"<details class='mammos-entity-collection root-node' open {lazy_attrs}>"
-        f"<summary>{_render_root_collection_summary(collection)}</summary>"
-        f"<div class='collection-children'>{description_html}</div>"
-        "<div class='collection-footer'></div>"
-        "</details>"
+    return _render_widget_collection_node(
+        f"<summary>{_render_root_collection_summary(collection)}</summary>",
+        node_id,
+        collection.description,
+        root=True,
     )
 
 
@@ -851,6 +850,27 @@ class EntityCollectionTreeSession:
         """Render the root widget container."""
         return _render_widget_root(self._root_collection, self._root_node_id)
 
+    def _render_widget_row(self, key: str, value: object, child_path: tuple[int, ...]) -> str:
+        """Render one widget row or nested branch for a collection item."""
+        if _is_collection_like(value):
+            return _render_widget_branch(key, value, self._collection_child_node_id(child_path))
+        if _is_entity_like(value) and _entity_requires_lazy_details(value):
+            return _render_row(key, _render_lazy_entity_value_html(value, self._replace_child_node_id(child_path)))
+        if _leaf_requires_lazy_details(value):
+            leaf_state = _leaf_render_state(value)
+            assert leaf_state.compact_spec is not None
+            return _render_row(
+                key,
+                _render_leaf_details(
+                    leaf_state.compact_spec,
+                    css_classes=_COMPACT_DETAILS_CSS_CLASSES,
+                    node_id=self._replace_child_node_id(child_path),
+                    include_body=False,
+                ),
+                row_class="leaf-row",
+            )
+        return _render_row(key, _render_leaf_value_html(value), row_class="leaf-row")
+
     def render_lazy_node(self, node_id: str, *, cursor: int = 0, load_all: bool = False) -> dict[str, object]:
         """Render one lazy widget node page or replacement fragment."""
         patch, path = self._decode_node_id(node_id)
@@ -862,31 +882,7 @@ class EntityCollectionTreeSession:
             for index, (key, value) in enumerate(
                 itertools.islice(collection._entities.items(), start, end), start=start
             ):
-                child_path = (*path, index)
-                if _is_collection_like(value):
-                    child_id = self._collection_child_node_id(child_path)
-                    rows.append(_render_widget_branch(key, value, child_id))
-                elif _is_entity_like(value) and _entity_requires_lazy_details(value):
-                    entity_id = self._replace_child_node_id(child_path)
-                    rows.append(_render_row(key, _render_lazy_entity_value_html(value, entity_id)))
-                elif _leaf_requires_lazy_details(value):
-                    leaf_id = self._replace_child_node_id(child_path)
-                    leaf_state = _leaf_render_state(value)
-                    assert leaf_state.compact_spec is not None
-                    rows.append(
-                        _render_row(
-                            key,
-                            _render_leaf_details(
-                                leaf_state.compact_spec,
-                                css_classes=_COMPACT_DETAILS_CSS_CLASSES,
-                                node_id=leaf_id,
-                                include_body=False,
-                            ),
-                            row_class="leaf-row",
-                        )
-                    )
-                else:
-                    rows.append(_render_row(key, _render_leaf_value_html(value), row_class="leaf-row"))
+                rows.append(self._render_widget_row(key, value, (*path, index)))
 
             total = len(collection._entities)
             next_cursor = min(end, total)
