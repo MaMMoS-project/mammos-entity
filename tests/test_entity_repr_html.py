@@ -1,11 +1,11 @@
 import html
 import re
 
+import mammos_entity._repr as repr_module
 import numpy as np
+from mammos_entity._repr import _repr_css
 
 import mammos_entity as me
-import mammos_entity._repr as repr_module
-from mammos_entity._repr import _repr_css
 
 
 def _strip_html_event_handlers(fragment: str) -> str:
