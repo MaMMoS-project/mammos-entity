@@ -15,6 +15,7 @@ import pandas as pd
 import yaml
 
 import mammos_entity as me
+from mammos_entity import _entity_collection_tree
 
 if TYPE_CHECKING:
     import collections.abc
@@ -238,6 +239,14 @@ class EntityCollection:
         args = f"description={self.description!r},\n"
         args += "\n".join(f"{key}={val!r}," for key, val in self._entities.items())
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
+
+    def _repr_html_(self) -> str:
+        """Render the collection as bounded static HTML."""
+        return _entity_collection_tree.render_entity_collection_html(self)
+
+    def _repr_mimebundle_(self, **kwargs: dict) -> tuple[dict, dict]:
+        """Prefer the lazy anywidget view while keeping static HTML fallback."""
+        return _entity_collection_tree.render_entity_collection_mimebundle(self, **kwargs)
 
     def to_dataframe(self, include_units: bool = False) -> pandas.DataFrame:
         """Convert values to dataframe.
@@ -699,12 +708,13 @@ class EntityCollection:
             element: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
         ) -> dict:
             if isinstance(element, me.Entity):
+                value = element.value.tolist() if hasattr(element.value, "tolist") else element.value
                 return {
                     "ontology_label": element.ontology_label,
                     "description": element.description,
                     "ontology_iri": element.ontology_iri,
-                    "unit": str(element.unit),
-                    "value": element.value.tolist(),
+                    "unit": str(getattr(element, "unit", "")),
+                    "value": value,
                 }
             elif isinstance(element, u.Quantity):
                 return {

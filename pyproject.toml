@@ -28,6 +28,7 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+  "anywidget",
   "emmontopy>=0.8",
   "h5glance>=0.9",  # required for the tutorial
   "h5py>=3.13",  # TODO we would like >= 3.14 (improved string handling) but esys-escript conflicts with that
@@ -66,6 +67,12 @@ pydocstyle.convention = "google"
 "src/mammos_units/__init__.py" = ["F403", "F405"]  # * import of astropy.units
 "*.ipynb" = ["B018"]  # "Found useless expression. Either assign it to a variable or remove it."; false positives when using implicit __repr__ in the notebook
 "tests/*" = ["D100", "D103"]  # do not enforce docstrings in tests
+
+[tool.hatch.build]
+artifacts = [
+  "src/mammos_entity/_entity_collection_tree/*.css",
+  "src/mammos_entity/_entity_collection_tree/*.js",
+]
 
 [tool.pixi.workspace]
 channels = [ "conda-forge" ]

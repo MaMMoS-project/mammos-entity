@@ -9,12 +9,15 @@ from __future__ import annotations
 
 import os
 import re
+import warnings
+from functools import cache
 from typing import TYPE_CHECKING
 
 import h5py
 import mammos_units as u
 
 import mammos_entity as me
+from mammos_entity import _entity_collection_tree as _tree_repr
 from mammos_entity._ontology import mammos_ontology, search_labels
 
 if TYPE_CHECKING:
@@ -30,6 +33,7 @@ base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
 
 
+@cache
 def _convert_unit(
     ontology_unit: owlready2.entity.ThingClass,
 ) -> astropy.units.UnitBase | None:
@@ -68,6 +72,7 @@ def _convert_unit(
                 return unit
 
 
+@cache
 def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
     """Convert an ontology dimension string into astropy units.
 
@@ -106,7 +111,8 @@ def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
     return astropy_unit
 
 
-def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]:
+@cache
+def _get_all_possible_units(ontology_label: str) -> tuple[astropy.units.UnitBase]:
     """Get list of accepted units given an ontology label found in the ontology.
 
     Given a label for an ontology entry, this function finds all SI base units,
@@ -147,7 +153,7 @@ def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]
                 for sub_class in all_sub_classes:
                     # We extract only SI base units, coherent units and special units.
                     # See https://emmo-repo.github.io/emmo.html#siunit
-                    if isinstance(
+                    if isinstance(  # noqa: UP038
                         sub_class,
                         (
                             mammos_ontology.SIBaseUnit,
@@ -173,11 +179,12 @@ def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]
         # The only alternative is that the ontology concept is not related
         # to a quantifiable physical entity. So its unit is dimensionless.
         possible_units.append(u.Unit(""))
-    return sorted(possible_units, key=str)  # return sorted to guarantee reproducibility
+    return tuple(sorted(possible_units, key=str))  # return sorted to guarantee reproducibility
 
 
+@cache
 def _get_preferred_unit(
-    possible_units: list[astropy.units.UnitBase],
+    possible_units: tuple[astropy.units.UnitBase],
 ) -> astropy.units.UnitBase:
     """Choose a preferred unit from a list of possible units.
 
@@ -218,6 +225,7 @@ def _get_preferred_unit(
     return out
 
 
+@cache
 def _select_ontology_label(label: str) -> str:
     """Select ontology label from given one.
 
@@ -269,65 +277,36 @@ def _select_ontology_label(label: str) -> str:
 
 
 class Entity:
-    """Create a quantity (a value and a unit) linked to the EMMO ontology.
-
-    Represents a physical property or quantity that is linked to an ontology
-    concept. It enforces unit compatibility with the ontology.
-
-    Args:
-        ontology_label: Ontology label
-        value: Value
-        unit: Unit
-        description: Description
-
-    Examples:
-        >>> import mammos_entity as me
-        >>> import mammos_units as u
-        >>> Ms = me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
-        >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
-        >>> Tc_mK = me.Entity("CurieTemperature", 300, unit=u.mK)
-        >>> Tc_K = me.Entity("CurieTemperature", Tc_mK, unit=u.K)
-        >>> Tc_kuzmin = me.Entity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
-
-    """  # noqa: E501
-
-    def __init__(
-        self,
-        ontology_label: str,
-        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
-        unit: str | None | mammos_units.UnitBase = None,
-        description: str = "",
-    ):
-        self.description = description
-        if isinstance(value, Entity):
-            if value.ontology_label != ontology_label:
-                raise ValueError(
-                    "Incompatible label for initialization."
-                    f" Trying to initialize a {ontology_label}"
-                    f" with a {value.ontology_label}."
-                )
-            value = value.quantity
-
-        # Select ontology label
+    def __new__(cls, ontology_label: str, value=None, unit=None, description=""):
         label = _select_ontology_label(ontology_label)
+        if mammos_ontology.Quantity in getattr(mammos_ontology, label).ancestors():
+            return super().__new__(QuantityEntity)
+        return super().__new__(cls)
 
-        # Get ontology-compatible units
-        ontology_units = _get_all_possible_units(label)
+    def __init__(self, ontology_label: str, value=None, unit=None, description=""):
+        self._ontology_label = ontology_label
+        self._value = value
+        self.description = description
+        if unit:
+            warnings.warn(f"Ignoring {unit=}", stacklevel=2)
 
-        if unit is None:
-            unit = value.unit if isinstance(value, u.Quantity) else _get_preferred_unit(ontology_units)
-        else:
-            unit = u.Unit(unit)
+    def __repr__(self) -> str:
+        args = [f"ontology_label='{self._ontology_label}'", f"value={self.value!r}"]
+        if self.description:
+            args.append(f"description={self.description!r}")
 
-        with u.set_enabled_equivalencies(mammos_equivalencies):
-            if not any(unit.is_equivalent(ou) for ou in ontology_units):
-                raise ValueError(
-                    f"Given unit: {unit} incompatible with ontology. "
-                    f"Allowed units for entity {label} are: {ontology_units}."
-                )
+        return f"{self.__class__.__name__}({', '.join(args)})"
 
-            self._quantity = u.Quantity(value=value, unit=unit)
-        self._ontology_label = label
+    def _repr_html_(self) -> str:
+        return f"{_tree_repr._tree_css()}{self._repr_html_fragment_()}"
+
+    def _repr_html_fragment_(self) -> str:
+        return _tree_repr._render_entity_value_html(self)
+
+    @property
+    def value(self) -> numpy.number | numpy.ndarray:
+        """Numerical data of the entity."""
+        return self._value
 
     @property
     def description(self) -> str:
@@ -400,6 +379,68 @@ class Entity:
 
         """
         return mammos_ontology.get_by_label(self.ontology_label)
+
+
+class QuantityEntity(Entity):
+    """Create a quantity (a value and a unit) linked to the EMMO ontology.
+
+    Represents a physical property or quantity that is linked to an ontology
+    concept. It enforces unit compatibility with the ontology.
+
+    Args:
+        ontology_label: Ontology label
+        value: Value
+        unit: Unit
+        description: Description
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> import mammos_units as u
+        >>> Ms = me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
+        >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
+        >>> Tc_mK = me.Entity("CurieTemperature", 300, unit=u.mK)
+        >>> Tc_K = me.Entity("CurieTemperature", Tc_mK, unit=u.K)
+        >>> Tc_kuzmin = me.Entity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
+
+    """  # noqa: E501
+
+    def __init__(
+        self,
+        ontology_label: str,
+        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
+        unit: str | None | mammos_units.UnitBase = None,
+        description: str = "",
+    ):
+        self.description = description
+        if isinstance(value, Entity):
+            if value.ontology_label != ontology_label:
+                raise ValueError(
+                    "Incompatible label for initialization."
+                    f" Trying to initialize a {ontology_label}"
+                    f" with a {value.ontology_label}."
+                )
+            value = value.quantity
+
+        # Select ontology label
+        label = _select_ontology_label(ontology_label)
+
+        # Get ontology-compatible units
+        ontology_units = _get_all_possible_units(label)
+
+        if unit is None:
+            unit = value.unit if isinstance(value, u.Quantity) else _get_preferred_unit(ontology_units)
+        else:
+            unit = u.Unit(unit)
+
+        with u.set_enabled_equivalencies(mammos_equivalencies):
+            if not any(unit.is_equivalent(ou) for ou in ontology_units):
+                raise ValueError(
+                    f"Given unit: {unit} incompatible with ontology. "
+                    f"Allowed units for entity {label} are: {ontology_units}."
+                )
+
+            self._quantity = u.Quantity(value=value, unit=unit)
+        self._ontology_label = label
 
     @property
     def quantity(self) -> mammos_units.Quantity:
@@ -494,10 +535,6 @@ class Entity:
         if self.description:
             repr_str += f",{new_line} description={self.description!r}"
         return repr_str + ")"
-
-    def _repr_html_(self) -> str:
-        html_str = str(self).replace("\n", "<br>").replace(" ", "&nbsp;")
-        return f"<samp>{html_str}</samp>"
 
     def to_hdf5(
         self,
