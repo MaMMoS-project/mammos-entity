@@ -70,7 +70,8 @@ pydocstyle.convention = "google"
 
 [tool.hatch.build]
 artifacts = [
-  "src/mammos_entity/*.css",
+  "src/mammos_entity/_entity_collection_tree/*.css",
+  "src/mammos_entity/_entity_collection_tree/*.js",
 ]
 
 [tool.pixi.workspace]

@@ -12,9 +12,9 @@ from mammos_entity._entity_collection_tree import (
     _STATIC_MAX_CHILDREN_PER_COLLECTION,
     _STATIC_PREVIEW_NOTE,
     EntityCollectionTreeSession,
+    EntityCollectionTreeWidget,
     render_entity_collection_text,
 )
-from mammos_entity._entity_collection_tree_widget import EntityCollectionTreeWidget
 
 
 def _nested_collection(depth: int) -> me.EntityCollection:
@@ -156,6 +156,27 @@ def test_render_entity_collection_text_keeps_root_ellipsis_when_global_budget_is
 
     assert "element-0=EntityCollection(" in text_output
     assert "\n    ...,\n)" in text_output
+
+
+def test_render_entity_collection_text_bounds_large_quantity_leaf_values():
+    collection = me.EntityCollection(q=u.Quantity(np.arange(60.0), "A / m"))
+
+    text_output = render_entity_collection_text(collection)
+
+    assert "q=<Quantity [0. 1. 2. ... 57. 58. 59.] A / m> (shape=(60,))," in text_output
+    assert "30." not in text_output
+
+
+def test_render_entity_collection_text_bounds_large_entity_values():
+    collection = me.EntityCollection(M=me.M(np.arange(60.0), "A/m", description="desc"))
+
+    text_output = render_entity_collection_text(collection)
+
+    assert "QuantityEntity(" in text_output
+    assert "value=array([0. 1. 2. ... 57. 58. 59.])" in text_output
+    assert "unit='A / m'" in text_output
+    assert "description='desc'" in text_output
+    assert "30." not in text_output
 
 
 def test_repr_mimebundle_includes_widget_html_plain_and_avoids_collection_repr(monkeypatch):
@@ -346,7 +367,7 @@ def test_widget_reports_lazy_errors(monkeypatch):
 
 
 def test_widget_javascript_source_uses_generic_lazy_protocol_without_loading_indicator():
-    js_text = (Path(me.__file__).resolve().parent / "_entity_collection_tree.js").read_text(encoding="utf-8")
+    js_text = Path(EntityCollectionTreeWidget._esm._path).read_text(encoding="utf-8")
 
     assert 'kind: "render-lazy"' in js_text
     assert 'if (message.patch === "replace-self")' in js_text

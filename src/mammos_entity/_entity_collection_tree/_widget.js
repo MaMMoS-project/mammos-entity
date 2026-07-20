@@ -27,10 +27,7 @@ function htmlFragment(htmlText) {
 
 function requestLazyNode(model, root, lazyId, { force = false, loadAll = false } = {}) {
   const node = findLazyNode(root, lazyId);
-  if (!node) {
-    return;
-  }
-  if (node instanceof HTMLDetailsElement && !node.open) {
+  if (!node || (node instanceof HTMLDetailsElement && !node.open)) {
     return;
   }
   if (!force && node.dataset.lazyLoaded === "true") {
@@ -40,11 +37,10 @@ function requestLazyNode(model, root, lazyId, { force = false, loadAll = false }
     return;
   }
   node.dataset.lazyLoading = "true";
-  const cursor = Number(node.dataset.lazyCursor || "0");
   model.send({
     kind: "render-lazy",
     lazy_id: lazyId,
-    cursor,
+    cursor: Number(node.dataset.lazyCursor || "0"),
     load_all: loadAll,
   });
 }
@@ -70,10 +66,9 @@ function appendChildren(node, htmlText) {
     return;
   }
   const container = childrenContainer(node);
-  if (!container) {
-    return;
+  if (container) {
+    container.append(htmlFragment(htmlText));
   }
-  container.append(htmlFragment(htmlText));
 }
 
 function replaceControls(node, htmlText) {
@@ -99,23 +94,17 @@ export function render({ model, el }) {
   let root = installRoot(model, el);
 
   const handleCollectionControl = (event) => {
-    const target = eventTargetElement(event.target);
-    if (!(target instanceof HTMLElement) || !root) {
-      return;
-    }
-    const button = target.closest(".collection-control");
-    if (!(button instanceof HTMLElement)) {
+    const button = eventTargetElement(event.target)?.closest(".collection-control");
+    if (!(button instanceof HTMLElement) || !root) {
       return;
     }
     event.preventDefault();
-    const lazyId = button.dataset.lazyTargetId;
-    if (!lazyId) {
-      return;
+    if (button.dataset.lazyTargetId) {
+      requestLazyNode(model, root, button.dataset.lazyTargetId, {
+        force: true,
+        loadAll: button.dataset.lazyAction === "all",
+      });
     }
-    requestLazyNode(model, root, lazyId, {
-      force: true,
-      loadAll: button.dataset.lazyAction === "all",
-    });
   };
 
   const handleToggle = (event) => {
