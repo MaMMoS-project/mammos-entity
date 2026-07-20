@@ -12,6 +12,7 @@ from mammos_entity._entity_collection_tree import (
     _STATIC_MAX_CHILDREN_PER_COLLECTION,
     _STATIC_PREVIEW_NOTE,
     EntityCollectionTreeSession,
+    render_entity_collection_text,
 )
 from mammos_entity._entity_collection_tree_widget import EntityCollectionTreeWidget
 
@@ -133,6 +134,30 @@ def test_collection_repr_html_omits_preview_note_when_not_truncated():
     assert "class='static-preview-note'" not in html_output
 
 
+def test_render_entity_collection_text_uses_bounded_collection_repr_style():
+    collection = me.EntityCollection(**{f"k{i}": i for i in range(30)})
+
+    text_output = render_entity_collection_text(collection)
+
+    assert text_output.startswith("EntityCollection(\n")
+    assert "    k19=19," in text_output
+    assert "    k20=20," not in text_output
+    assert "    ...," in text_output
+
+
+def test_render_entity_collection_text_keeps_root_ellipsis_when_global_budget_is_exhausted():
+    repeated_nested = me.EntityCollection(
+        description="the collection description",
+        **{f"entity{j}": j for j in range(400)},
+    )
+    collection = me.EntityCollection(**{f"element-{i}": repeated_nested for i in range(1000)})
+
+    text_output = render_entity_collection_text(collection)
+
+    assert "element-0=EntityCollection(" in text_output
+    assert "\n    ...,\n)" in text_output
+
+
 def test_repr_mimebundle_includes_widget_html_plain_and_avoids_collection_repr(monkeypatch):
     collection = me.EntityCollection(
         alpha=me.EntityCollection(left=me.EntityCollection(a=me.M(1, "A/m"))),
@@ -148,7 +173,9 @@ def test_repr_mimebundle_includes_widget_html_plain_and_avoids_collection_repr(m
 
     assert "application/vnd.jupyter.widget-view+json" in data
     assert data["text/html"].startswith("<style>")
-    assert data["text/plain"] == "EntityCollection(2 items · alpha, beta)"
+    assert data["text/plain"].startswith("EntityCollection(\n")
+    assert "alpha=EntityCollection(" in data["text/plain"]
+    assert "beta=EntityCollection(" in data["text/plain"]
     assert metadata == {}
 
 

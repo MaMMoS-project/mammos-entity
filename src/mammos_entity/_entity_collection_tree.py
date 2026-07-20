@@ -29,6 +29,7 @@ _STATIC_ELLIPSIS_CHILD = "..."
 _STATIC_PREVIEW_NOTE = "Static preview truncated."
 _TREE_META_SEPARATOR = "&nbsp;<span class='entity-meta'>·</span>&nbsp;"
 _COMPACT_DETAILS_CSS_CLASSES = "mammos-entity-inline mammos-compact-value lazy-leaf-details"
+_TEXT_INDENT = " " * 4
 
 
 class _EntityCollectionLike(Protocol):
@@ -58,6 +59,16 @@ class _StaticRenderResult:
     """A rendered static subtree together with the number of rendered nodes."""
 
     html: str
+    nodes_used: int
+    complete: bool
+    hit_global_limit: bool
+
+
+@dataclass(frozen=True, slots=True)
+class _StaticTextRenderResult:
+    """A rendered static text subtree together with the number of rendered nodes."""
+
+    text: str
     nodes_used: int
     complete: bool
     hit_global_limit: bool
@@ -356,12 +367,12 @@ def _render_root_collection_summary(collection: _EntityCollectionLike) -> str:
     )
 
 
-def _repr_text_summary(collection: _EntityCollectionLike) -> str:
-    """Return a cheap plain-text summary for mimebundle fallbacks."""
-    preview = _collection_preview(collection)
-    if collection.description:
-        return f"{collection.__class__.__name__}({preview}; description={collection.description!r})"
-    return f"{collection.__class__.__name__}({preview})"
+def _repr_with_fallback(value: object) -> tuple[str, bool]:
+    """Return ``repr(value)`` and whether the normal repr path failed."""
+    try:
+        return repr(value), False
+    except Exception:
+        return object.__repr__(value), True
 
 
 def _render_text_block(css_class: str, text: str, *, preserve_spaces: bool = False) -> str:
@@ -576,12 +587,7 @@ def _render_entity_value_html(value: object) -> str:
 
 def _leaf_render_state(value: object) -> _LeafRenderState:
     """Collect shared rendering state for a non-entity leaf value."""
-    repr_failed = False
-    try:
-        repr_value_text = repr(value)
-    except Exception:
-        repr_failed = True
-        repr_value_text = object.__repr__(value)
+    repr_value_text, repr_failed = _repr_with_fallback(value)
 
     compact_spec = None
     use_compact = False
@@ -626,6 +632,142 @@ def _render_leaf_value_html(value: object) -> str:
             return _format_html_text(state.compact_spec.expanded_text, preserve_spaces=True)
 
     return _format_html_text(state.repr_value_text, preserve_spaces=True)
+
+
+def _text_indent(level: int) -> str:
+    """Return the shared indentation prefix used by text/plain tree rendering."""
+    return _TEXT_INDENT * level
+
+
+def _render_static_text_branch(
+    key: str,
+    collection: _EntityCollectionLike,
+    *,
+    depth: int,
+    remaining_nodes: int,
+    indent_level: int,
+) -> _StaticTextRenderResult:
+    """Render one nested collection branch for the bounded text/plain fallback."""
+    indent = _text_indent(indent_level)
+    branch_prefix = f"{indent}{key}={collection.__class__.__name__}(\n"
+    branch_suffix = f"\n{indent}),"
+
+    if depth >= _STATIC_MAX_DEPTH:
+        body_lines = []
+        nodes_used = 1
+        if collection.description:
+            body_lines.append(f"{_text_indent(indent_level + 1)}description={collection.description!r},")
+            nodes_used += 1
+        body_lines.append(f"{_text_indent(indent_level + 1)}{_STATIC_ELLIPSIS_CHILD},")
+        nodes_used += 1
+        branch_text = f"{branch_prefix}{chr(10).join(body_lines)}{branch_suffix}"
+        if nodes_used > remaining_nodes:
+            return _StaticTextRenderResult(text="", nodes_used=0, complete=False, hit_global_limit=True)
+        return _StaticTextRenderResult(text=branch_text, nodes_used=nodes_used, complete=False, hit_global_limit=False)
+
+    if remaining_nodes <= 1:
+        return _StaticTextRenderResult(text="", nodes_used=0, complete=False, hit_global_limit=True)
+
+    child_result = _render_static_text_children(
+        collection,
+        depth=depth + 1,
+        remaining_nodes=remaining_nodes - 1,
+        indent_level=indent_level + 1,
+    )
+    branch_text = f"{branch_prefix}{child_result.text}{branch_suffix}"
+    nodes_used = 1 + child_result.nodes_used
+    if nodes_used > remaining_nodes:
+        return _StaticTextRenderResult(text="", nodes_used=0, complete=False, hit_global_limit=True)
+    return _StaticTextRenderResult(
+        text=branch_text,
+        nodes_used=nodes_used,
+        complete=child_result.complete,
+        hit_global_limit=child_result.hit_global_limit,
+    )
+
+
+def _render_static_text_children(
+    collection: _EntityCollectionLike,
+    *,
+    depth: int,
+    remaining_nodes: int,
+    indent_level: int,
+) -> _StaticTextRenderResult:
+    """Render the children block for one collection in text/plain mode."""
+    lines: list[str] = []
+    nodes_used = 0
+    nodes_left = remaining_nodes
+    complete = True
+    hit_global_limit = False
+    hit_local_limit = False
+    indent = _text_indent(indent_level)
+
+    if collection.description:
+        if nodes_left <= 0:
+            return _StaticTextRenderResult(text="", nodes_used=0, complete=False, hit_global_limit=True)
+        lines.append(f"{indent}description={collection.description!r},")
+        nodes_used += 1
+        nodes_left -= 1
+
+    total_children = len(collection._entities)
+    for child_index, (key, value) in enumerate(collection._entities.items()):
+        has_more_siblings = child_index + 1 < total_children
+        if child_index >= _STATIC_MAX_CHILDREN_PER_COLLECTION:
+            complete = False
+            hit_local_limit = True
+            break
+        if nodes_left <= 0:
+            complete = False
+            hit_global_limit = True
+            break
+        if nodes_left == 1:
+            complete = False
+            hit_global_limit = True
+            break
+        child_budget = nodes_left - 1 if has_more_siblings else nodes_left
+        if child_budget <= 0:
+            complete = False
+            hit_global_limit = True
+            break
+        if _is_collection_like(value):
+            item_result = _render_static_text_branch(
+                key,
+                value,
+                depth=depth,
+                remaining_nodes=child_budget,
+                indent_level=indent_level,
+            )
+        else:
+            item_text = f"{indent}{key}={_repr_with_fallback(value)[0]},"
+            item_result = _StaticTextRenderResult(
+                text=item_text,
+                nodes_used=1,
+                complete=True,
+                hit_global_limit=False,
+            )
+
+        if not item_result.text:
+            complete = False
+            hit_global_limit = hit_global_limit or item_result.hit_global_limit
+            break
+
+        lines.append(item_result.text)
+        nodes_used += item_result.nodes_used
+        nodes_left -= item_result.nodes_used
+        if not item_result.complete:
+            complete = False
+            hit_global_limit = hit_global_limit or item_result.hit_global_limit
+
+    if (hit_global_limit or hit_local_limit) and nodes_left > 0:
+        lines.append(f"{indent}{_STATIC_ELLIPSIS_CHILD},")
+        nodes_used += 1
+
+    return _StaticTextRenderResult(
+        text="\n".join(lines),
+        nodes_used=nodes_used,
+        complete=complete,
+        hit_global_limit=hit_global_limit,
+    )
 
 
 def _render_branch_summary(key: str, collection: _EntityCollectionLike) -> str:
@@ -924,10 +1066,23 @@ def render_entity_collection_html(collection: _EntityCollectionLike) -> str:
     return f"{_tree_css()}{outer_prefix}{child_result.html}{preview_note_html}{outer_suffix}"
 
 
+def render_entity_collection_text(collection: _EntityCollectionLike) -> str:
+    """Render the bounded text/plain fallback for EntityCollection."""
+    child_result = _render_static_text_children(
+        collection,
+        depth=0,
+        remaining_nodes=_STATIC_MAX_TOTAL_NODES - 1,
+        indent_level=1,
+    )
+    if child_result.text:
+        return f"{collection.__class__.__name__}(\n{child_result.text}\n)"
+    return f"{collection.__class__.__name__}()"
+
+
 def render_entity_collection_mimebundle(collection: _EntityCollectionLike, **kwargs: dict) -> tuple[dict, dict]:
     """Render a widget-first mimebundle with static HTML fallback."""
     html_fallback = render_entity_collection_html(collection)
-    text_fallback = _repr_text_summary(collection)
+    text_fallback = render_entity_collection_text(collection)
     fallback_data = {"text/html": html_fallback, "text/plain": text_fallback}
     try:
         from mammos_entity._entity_collection_tree_widget import EntityCollectionTreeWidget
