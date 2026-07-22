@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import re
+from functools import cache
 from typing import TYPE_CHECKING
 
 import h5py
@@ -30,6 +31,7 @@ base_units = [u.T, u.J, u.m, u.A, u.radian, u.kg, u.s, u.K, u.mol, u.cd, u.V]
 mammos_equivalencies = u.temperature()
 
 
+@cache
 def _convert_unit(
     ontology_unit: owlready2.entity.ThingClass,
 ) -> astropy.units.UnitBase | None:
@@ -68,6 +70,7 @@ def _convert_unit(
                 return unit
 
 
+@cache
 def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
     """Convert an ontology dimension string into astropy units.
 
@@ -106,7 +109,8 @@ def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
     return astropy_unit
 
 
-def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]:
+@cache
+def _get_all_possible_units(ontology_label: str) -> tuple[astropy.units.UnitBase]:
     """Get list of accepted units given an ontology label found in the ontology.
 
     Given a label for an ontology entry, this function finds all SI base units,
@@ -128,7 +132,7 @@ def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]
     Examples:
         >>> import mammos_entity as me
         >>> me._entity._get_all_possible_units("ThermodynamicTemperature")
-        [Unit("K"), Unit("deg_C")]
+        (Unit("K"), Unit("deg_C"))
 
     """
     thing = me.mammos_ontology[ontology_label]
@@ -173,11 +177,12 @@ def _get_all_possible_units(ontology_label: str) -> list[astropy.units.UnitBase]
         # The only alternative is that the ontology concept is not related
         # to a quantifiable physical entity. So its unit is dimensionless.
         possible_units.append(u.Unit(""))
-    return sorted(possible_units, key=str)  # return sorted to guarantee reproducibility
+    return tuple(sorted(possible_units, key=str))  # return sorted to guarantee reproducibility
 
 
+@cache
 def _get_preferred_unit(
-    possible_units: list[astropy.units.UnitBase],
+    possible_units: tuple[astropy.units.UnitBase],
 ) -> astropy.units.UnitBase:
     """Choose a preferred unit from a list of possible units.
 
@@ -194,10 +199,10 @@ def _get_preferred_unit(
     Examples:
         >>> import mammos_entity as me
         >>> import mammos_units as u
-        >>> me._entity._get_preferred_unit([u.Unit("m2"), u.Unit("m2 sr"), u.Unit("mm2"), u.Unit("m2 / sr")])
+        >>> me._entity._get_preferred_unit((u.Unit("m2"), u.Unit("m2 sr"), u.Unit("mm2"), u.Unit("m2 / sr")))
         Unit("m2")
 
-        >>> me._entity._get_preferred_unit([u.Unit("deg_C"), u.Unit("0.001 deg_C"), u.Unit("K")])
+        >>> me._entity._get_preferred_unit((u.Unit("deg_C"), u.Unit("0.001 deg_C"), u.Unit("K")))
         Unit("K")
 
     """  # noqa:E501
@@ -218,6 +223,7 @@ def _get_preferred_unit(
     return out
 
 
+@cache
 def _select_ontology_label(label: str) -> str:
     """Select ontology label from given one.
 
