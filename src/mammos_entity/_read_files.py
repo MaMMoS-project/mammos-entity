@@ -329,12 +329,29 @@ def from_hdf5(
 ) -> mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike | mammos_entity.EntityCollection:
     """Read HDF5 file, group or dataset and convert to Entity or EntityCollection.
 
-    Datasets are converted to :py:class:`~mammos_entity.Entity`,
-    :py:class:`~mammos_units.Quantity`, or a numpy array or other builtin datatype
-    depending on their associated metadata and shape.
+    The HDF5 structure is interpreted as follows:
 
-    Groups are converted to :py:class:`~mammos_entity.EntityCollection`. Arbitrary
-    nesting of groups is supported and produces nested collections.
+    - HDF5 groups are converted to :py:class:`~mammos_entity.EntityCollection`.
+      The group's ``description`` attribute (if present) becomes the collection
+      description. All other group attributes are ignored.
+    - Nested groups produce nested :py:class:`~mammos_entity.EntityCollection`
+      objects.
+    - HDF5 datasets are converted depending on their attributes:
+
+      * If the dataset has all of the attributes ``ontology_label``,
+        ``ontology_iri``, ``description`` and ``unit``, it is converted to an
+        :py:class:`~mammos_entity.Entity`.
+      * If the dataset has only a ``unit`` attribute (but not the ontology-related
+        attributes), it is converted to a :py:class:`~mammos_units.Quantity`.
+      * Otherwise the dataset is returned as a numpy array, a scalar, or a string
+        (the exact type is inherited from h5py).
+    - All other HDF5 attributes are silently ignored.
+    - The ``decode_bytes`` parameter controls whether byte-string datasets are
+      decoded to Python strings.
+
+    This means external HDF5 files (not written by mammos-entity) can be read
+    as long as their groups and datasets follow the attribute naming conventions
+    listed above.
 
     Args:
         element: If it is a `str` or `PathLike` the entire file is read from disk. If
@@ -347,7 +364,6 @@ def from_hdf5(
     Returns:
         All data in the given HDF5 file/group/dataset as (nested) EntityCollection
         and/or entity-like object.
-
 
     .. seealso::
 
