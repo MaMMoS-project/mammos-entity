@@ -460,42 +460,42 @@ def test_getitem_int():
     assert result.ontology_label == "SpontaneousMagnetization"
     assert result.unit == u.kA / u.m
     assert result.description == "measured at 0 K"
-    assert math.isclose(result.value, 500.0)
+    assert result.value == 500.0
 
 
 def test_getitem_slice():
     """Entity slice indexing returns entity with subset of values."""
     ms = me.Ms([500, 600, 700], "kA/m")
     result = ms[1:3]
-    assert np.allclose(result.value, [600, 700])
+    assert np.array_equal(result.value, [600, 700])
 
 
 def test_getitem_step():
     """Entity slice with step returns every Nth value."""
     ms = me.Ms([500, 600, 700, 800], "kA/m")
     result = ms[::2]
-    assert np.allclose(result.value, [500, 700])
+    assert np.array_equal(result.value, [500, 700])
 
 
 def test_getitem_negative():
     """Negative integer indexing returns last element."""
     ms = me.Ms([500, 600, 700], "kA/m")
     result = ms[-1]
-    assert math.isclose(result.value, 700.0)
+    assert result.value == 700.0
 
 
 def test_getitem_bool_array():
     """Boolean array indexing selects values where mask is True."""
     ms = me.Ms([500, 600, 700, 800], "kA/m")
     result = ms[[True, False, True, False]]
-    assert np.allclose(result.value, [500, 700])
+    assert np.array_equal(result.value, [500, 700])
 
 
 def test_getitem_int_array():
     """Integer array indexing selects values at given positions."""
     ms = me.Ms([500, 600, 700, 800], "kA/m")
     result = ms[[0, 2, 3]]
-    assert np.allclose(result.value, [500, 700, 800])
+    assert np.array_equal(result.value, [500, 700, 800])
 
 
 def test_getitem_multidim():
@@ -503,9 +503,9 @@ def test_getitem_multidim():
     val = [[1, 2, 3], [4, 5, 6]]
     ms = me.Ms(val, "A/m")
     row = ms[0]
-    assert np.allclose(row.value, [1, 2, 3])
+    assert np.array_equal(row.value, [1, 2, 3])
     col = ms[:, 0]
-    assert np.allclose(col.value, [1, 4])
+    assert np.array_equal(col.value, [1, 4])
 
 
 def test_getitem_preserves_ontology_label():
