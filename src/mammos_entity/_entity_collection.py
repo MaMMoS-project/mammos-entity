@@ -797,8 +797,7 @@ class EntityCollection:
           - Plain values are stored as datasets without mammos-specific attributes.
           - Nested :py:class:`~mammos_entity.EntityCollection` objects become
             nested HDF5 groups (recursive structure).
-        - The ``mammos_entity_version`` attribute is written only on the outermost
-          group (or dataset), not on nested elements.
+        - The outermost group has an additional attribute ``mammos_entity_version``.
 
         Args:
             base: If it is an open HDF5 file or a group in an HDF5 file, data will be
