@@ -7,6 +7,7 @@ includes helper functions for inferring the correct SI units from the ontology.
 
 from __future__ import annotations
 
+import abc
 import os
 import re
 from functools import cache
@@ -275,7 +276,57 @@ def _select_ontology_label(label: str) -> str:
         )
 
 
-class Entity:
+class Entity(abc.ABC):
+    """TODO"""
+
+    def __new__(cls, ontology_label: str, value=None, unit=None, description=""):
+        """TODO"""
+        label = _select_ontology_label(ontology_label)
+        if mammos_ontology.Quantity in getattr(mammos_ontology, label).ancestors():
+            return super().__new__(QuantityEntity)
+        else:
+            return super().__new__(StringEntity)
+
+    @abc.abstractproperty
+    def value(self):
+        """TODO"""
+
+    def __repr__(self) -> str:
+        """TODO"""
+        return f"{self.__class__.__name__}({', '.join(self._repr_elements)})"
+
+    @abc.abstractproperty
+    def _repr_elements(self):  # TODO correct type annotation
+        """Yields key-value pairs shown in repr as strings."""
+
+    # TODO move more methods/properties to base class
+
+    # TODO consider changed yaml/hdf5 keys: no unit for StringEntity
+
+class StringEntity:
+    """TODO"""
+
+    def __init__(self, ontology_label: str, value=None, description=""):
+        """TODO"""
+        # TODO perform checks similar to QuantityEntity.__init__
+        self._ontology_label = ontology_label
+        self._value = value
+        self.description = description
+    pass
+
+    @property
+    def value(self) -> numpy.number | numpy.ndarray:
+        """TODO"""
+        return self._value
+
+    def _repr_elements(self) -> str:
+        yield f"ontology_label='{self._ontology_label}'"
+        yield f"value={self.value!r}"
+        if self.description:
+            yield f"description={self.description!r}"
+
+
+class QuantityEntity:
     """Create a quantity (a value and a unit) linked to the EMMO ontology.
 
     Represents a physical property or quantity that is linked to an ontology
