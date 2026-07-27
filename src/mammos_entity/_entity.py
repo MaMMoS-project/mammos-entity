@@ -480,9 +480,7 @@ class Entity:
 
         """  # noqa: E501
         sliced_quantity = self.quantity[key]
-        return self.__class__(
-            self.ontology_label, sliced_quantity, description=self.description
-        )
+        return self.__class__(self.ontology_label, sliced_quantity, description=self.description)
 
     @property
     def axis_label(self) -> str:
