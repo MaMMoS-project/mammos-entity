@@ -438,8 +438,8 @@ class Entity:
     def __getitem__(self, key):
         """Index or slice the entity's values.
 
-        Returns a new :py:class:`Entity` with the same ontology label, unit, and
-        description, but with a subset of the values.
+        Returns a new :py:class:`~mammos_entity.Entity` with the same ontology label,
+        unit, and description, but with a subset of the values.
 
         All indexing and slicing operations supported by NumPy are valid, including
         integers, slices, ellipsis, boolean arrays, and integer arrays.
@@ -448,12 +448,8 @@ class Entity:
             key: Index or slice to apply to the entity's values.
 
         Returns:
-            A new :py:class:`Entity` with the same ontology label, unit and
-            description, containing the selected values.
-
-        Raises:
-            IndexError: If the entity has a scalar value and an index other than
-                ``()`` is used.
+            A new :py:class:`~mammos_entity.Entity` with the same ontology label,
+            unit and description, containing the selected values.
 
         Examples:
             >>> import mammos_entity as me
