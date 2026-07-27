@@ -506,8 +506,16 @@ class Entity:
     ) -> h5py.Dataset | None:
         """Write an entity to an HDF5 dataset.
 
-        The value is added as data of the dataset; ontology_label, iri, unit and
-        description are written to the dataset attributes.
+        The value is stored as the dataset data. The following attributes are written
+        to the dataset:
+
+        - ``ontology_label`` (str): the ontology label of the entity
+        - ``ontology_iri`` (str): the IRI identifying the ontology entry
+        - ``unit`` (str): the unit string
+        - ``description`` (str): an arbitrary description string
+        - ``mammos_entity_version`` (str): the version of mammos-entity that wrote
+          the dataset (only written on top-level calls, not on nested collection
+          elements)
 
         Args:
             base: If it is an open HDF5 file or a group in an HDF5 file, data will be
@@ -521,6 +529,11 @@ class Entity:
             If `base` is an open `File` or `Group`, the newly created dataset. If `base`
             is a file name nothing is returned (because the file created internally will
             be closed before the function returns).
+
+        .. seealso::
+
+           :py:func:`mammos_entity.EntityCollection.to_hdf5`
+           :py:func:`mammos_entity.from_hdf5`
         """
         return self._to_hdf5(base, name)
 
