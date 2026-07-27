@@ -791,7 +791,7 @@ class EntityCollection:
         - Each element of the collection becomes a child of the group:
           - :py:class:`~mammos_entity.Entity` objects are stored as HDF5 datasets
             with attributes ``ontology_label``, ``ontology_iri``, ``unit``,
-            ``description`` (see :py:func:`~mammos_entity.Entity.to_hdf5`).
+            ``description`` (see :py:func:`mammos_entity.Entity.to_hdf5`).
           - :py:class:`~mammos_units.Quantity` objects are stored as datasets
             with a ``unit`` attribute.
           - Plain values are stored as datasets without mammos-specific attributes.
