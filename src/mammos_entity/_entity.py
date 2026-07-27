@@ -483,9 +483,9 @@ class Entity:
             Unit("kA / m")
 
         """  # noqa: E501
-        sliced_quantity = self._quantity[key]
+        sliced_quantity = self.quantity[key]
         return self.__class__(
-            self._ontology_label, sliced_quantity, description=self._description
+            self.ontology_label, sliced_quantity, description=self.description
         )
 
     @property
