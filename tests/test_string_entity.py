@@ -1,6 +1,7 @@
 import mammos_units as u
 import numpy as np
 import pytest
+
 import mammos_entity as me
 
 
@@ -178,13 +179,12 @@ def test_from_compatible_input_errors(value, expected_error):
 
 def test_from_compatible_unit_errors():
     """Test from_compatible raises on wrong unit argument usage."""
-    with pytest.xfail():  # TODO: StringEntity with unit -> decide what to do
-        with pytest.raises(TypeError):
-            me._entity.from_compatible(
-                "ChemicalComposition",
-                fallback_unit="m",
-                chemical_composition="H2O",
-            )
+    with pytest.raises(TypeError), pytest.xfail():  # TODO: StringEntity with unit -> decide what to do
+        me._entity.from_compatible(
+            "ChemicalComposition",
+            fallback_unit="m",
+            chemical_composition="H2O",
+        )
     with pytest.raises(RuntimeError):
         me._entity.from_compatible(
             "ChemicalComposition",
