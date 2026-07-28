@@ -435,7 +435,10 @@ class Entity:
         """Unit of the entity data."""
         return self.quantity.unit
 
-    def __getitem__(self, key):
+    def __getitem__(
+        self,
+        key: int | slice | list[int] | list[bool] | numpy.typing.ArrayLike,
+    ) -> Entity:
         """Index or slice the entity's values.
 
         Returns a new :py:class:`~mammos_entity.Entity` with the same ontology label,
