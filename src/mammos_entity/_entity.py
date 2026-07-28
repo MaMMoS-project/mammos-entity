@@ -9,8 +9,8 @@ from __future__ import annotations
 
 import os
 import re
-from functools import cache
 from abc import ABC, abstractmethod
+from functools import cache
 from typing import TYPE_CHECKING
 
 import h5py
