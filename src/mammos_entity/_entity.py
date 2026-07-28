@@ -293,6 +293,13 @@ class Entity(ABC):
 
     Depending on the input of the initialization, either a `QuantityEntity` or a `StringEntity` will be
     returned.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
+        QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(800000.0), unit='A / m')
+        >>> me.Entity("ChemicalComposition", "Nd2Fe14B")
+        StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')
     """
 
     def __new__(cls, ontology_label: str, value=None, unit=None, description=""):
@@ -431,7 +438,27 @@ class Entity(ABC):
 
 
 class StringEntity(Entity):
-    """Create a string linked to the EMMO ontology."""
+    """Create a string linked to the EMMO ontology.
+
+    Represents a literal property or string that is linked to an ontology concept.
+    It has a single string value (sequences of strings are not allowed) and no unit.
+
+    Args:
+        ontology_label: Ontology label
+        value: Value
+        unit: Unit
+        description: Description
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> me.StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')
+        StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')
+        >>> me.StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B', description='Good magnet')
+        StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B', description='Good magnet')
+        >>> me.StringEntity(ontology_label='StateOfMatter', value='Solid')
+        StringEntity(ontology_label='StateOfMatter', value='Solid')
+
+    """
 
     def __init__(self, ontology_label: str, value=None, description="", **kwargs):
         # TODO: if unit in kwargs log warning?
@@ -453,8 +480,8 @@ class StringEntity(Entity):
         else:
             return TypeError(
                 "Incompatible type for initialization of a `StringEntity` value. "
-                "The value must be a string, or `None`, or an entity with the same "
-                f"ontology label. Received {value} of type {type(value)}."
+                "The value must be a single string, or `None`, or an entity with "
+                f"the same ontology label. Received {value} of type {type(value)}."
             )
 
     @property
@@ -546,11 +573,11 @@ class QuantityEntity(Entity):
     Examples:
         >>> import mammos_entity as me
         >>> import mammos_units as u
-        >>> Ms = me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
-        >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
-        >>> Tc_mK = me.Entity("CurieTemperature", 300, unit=u.mK)
-        >>> Tc_K = me.Entity("CurieTemperature", Tc_mK, unit=u.K)
-        >>> Tc_kuzmin = me.Entity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
+        >>> Ms = me.QuantityEntity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
+        >>> H = me.QuantityEntity("ExternalMagneticField", 1e4 * u.A / u.m)
+        >>> Tc_mK = me.QuantityEntity("CurieTemperature", 300, unit=u.mK)
+        >>> Tc_K = me.QuantityEntity("CurieTemperature", Tc_mK, unit=u.K)
+        >>> Tc_kuzmin = me.QuantityEntity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
 
     """  # noqa: E501
 
