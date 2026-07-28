@@ -290,16 +290,18 @@ class EntityCollection:
         values are dictionaries with:
 
         - keys ``ontology_label``, ``unit`` and ``description`` if the attribute is an
-          entity
+          :py:class:`~mammos_entity.QuantityEntity`.
+        - keys ``ontology_label`` and ``description`` if the attribute is a
+          :py:class:`~mammos_entity.StringEntity`.
         - key ``unit`` if the attribute is a quantity
         - an empty dictionary otherwise
 
         Examples:
             >>> import mammos_entity as me
             >>> import mammos_units as u
-            >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
+            >>> col = me.EntityCollection("The description", Tc=me.Tc(), comp=me.Entity("ChemicalComposition", "H2O"), x=1 * u.m, a=0)
             >>> col.metadata()
-            {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+            {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'comp': {'ontology_label': 'ChemicalComposition', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
 
         .. version-changed:: 0.14.0
            The collection description has been removed from the metadata to allow the
