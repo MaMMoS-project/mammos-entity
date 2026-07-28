@@ -1,3 +1,4 @@
+import mammos_units as u
 import numpy as np
 import pytest
 from numpy import array  # noqa: F401  # required for repr eval
