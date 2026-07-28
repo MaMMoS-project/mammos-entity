@@ -14,7 +14,7 @@ magnetic entities (such as :py:class:`~mammos_entity.Ms`, :py:class:`~mammos_ent
 
 import importlib.metadata
 
-from mammos_entity._entity import Entity
+from mammos_entity._entity import Entity, QuantityEntity, StringEntity
 from mammos_entity._entity_collection import EntityCollection
 from mammos_entity._factory import (
     K1,
@@ -43,6 +43,8 @@ __version__ = importlib.metadata.version(__package__)
 
 __all__ = [
     "Entity",
+    "QuantityEntity",
+    "StringEntity",
     "EntityCollection",
     "A",
     "B",

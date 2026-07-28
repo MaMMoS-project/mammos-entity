@@ -7,10 +7,10 @@ includes helper functions for inferring the correct SI units from the ontology.
 
 from __future__ import annotations
 
-import abc
 import os
 import re
 from functools import cache
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
 import h5py
@@ -276,117 +276,45 @@ def _select_ontology_label(label: str) -> str:
         )
 
 
-class Entity(abc.ABC):
-    """TODO"""
+def _is_quantity_entity(label: str) -> bool:
+    """Check whether given entity is a quantity entity.
+
+    This is done by checking if the ontology element `Quantity` is defined
+    as one of the entity's ancestors.
+
+    Args:
+        label: Ontology label to check.
+    """
+    return mammos_ontology.Quantity in getattr(mammos_ontology, label).ancestors()
+
+
+class Entity(ABC):
+    """Abstract base class for entities.
+
+    Depending on the input of the initialization, either a `QuantityEntity` or a `StringEntity` will be
+    returned.
+    """
 
     def __new__(cls, ontology_label: str, value=None, unit=None, description=""):
-        """TODO"""
         label = _select_ontology_label(ontology_label)
-        if mammos_ontology.Quantity in getattr(mammos_ontology, label).ancestors():
+        if _is_quantity_entity(label):
             return super().__new__(QuantityEntity)
         else:
             return super().__new__(StringEntity)
 
-    @abc.abstractproperty
+    @property
+    @abstractmethod
     def value(self):
-        """TODO"""
+        """String value if a `StringEntity` or quantity value if a `QuantityEntity`."""
 
     def __repr__(self) -> str:
-        """TODO"""
-        return f"{self.__class__.__name__}({', '.join(self._repr_elements)})"
+        return f"{self.__class__.__name__}({', '.join(self._repr_elements())})"
 
-    @abc.abstractproperty
-    def _repr_elements(self):  # TODO correct type annotation
-        """Yields key-value pairs shown in repr as strings."""
+    def _repr_html_(self) -> str:
+        return f"{_tree_repr._tree_css()}{self._repr_html_fragment_()}"
 
-    # TODO move more methods/properties to base class
-
-    # TODO consider changed yaml/hdf5 keys: no unit for StringEntity
-
-class StringEntity:
-    """TODO"""
-
-    def __init__(self, ontology_label: str, value=None, description=""):
-        """TODO"""
-        # TODO perform checks similar to QuantityEntity.__init__
-        self._ontology_label = ontology_label
-        self._value = value
-        self.description = description
-    pass
-
-    @property
-    def value(self) -> numpy.number | numpy.ndarray:
-        """TODO"""
-        return self._value
-
-    def _repr_elements(self) -> str:
-        yield f"ontology_label='{self._ontology_label}'"
-        yield f"value={self.value!r}"
-        if self.description:
-            yield f"description={self.description!r}"
-
-
-class QuantityEntity:
-    """Create a quantity (a value and a unit) linked to the EMMO ontology.
-
-    Represents a physical property or quantity that is linked to an ontology
-    concept. It enforces unit compatibility with the ontology.
-
-    Args:
-        ontology_label: Ontology label
-        value: Value
-        unit: Unit
-        description: Description
-
-    Examples:
-        >>> import mammos_entity as me
-        >>> import mammos_units as u
-        >>> Ms = me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
-        >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
-        >>> Tc_mK = me.Entity("CurieTemperature", 300, unit=u.mK)
-        >>> Tc_K = me.Entity("CurieTemperature", Tc_mK, unit=u.K)
-        >>> Tc_kuzmin = me.Entity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
-
-    """  # noqa: E501
-
-    def __init__(
-        self,
-        ontology_label: str,
-        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
-        unit: str | None | mammos_units.UnitBase = None,
-        *,
-        description: str = "",
-    ):
-        self.description = description
-        if isinstance(value, Entity):
-            if value.ontology_label != ontology_label:
-                raise ValueError(
-                    "Incompatible label for initialization."
-                    f" Trying to initialize a {ontology_label}"
-                    f" with a {value.ontology_label}."
-                )
-            value = value.quantity
-
-        # Select ontology label
-        label = _select_ontology_label(ontology_label)
-
-        # Get ontology-compatible units
-        ontology_units = _get_all_possible_units(label)
-
-        if unit is None:
-            unit = value.unit if isinstance(value, u.Quantity) else _get_preferred_unit(ontology_units)
-        else:
-            unit = u.Unit(unit)
-
-        with u.set_enabled_equivalencies(mammos_equivalencies):
-            if not any(unit.is_equivalent(ou) for ou in ontology_units):
-                raise ValueError(
-                    f"Given unit: {unit} incompatible with ontology. "
-                    f"Allowed units for entity {label} are: {ontology_units}."
-                )
-
-            self._quantity = u.Quantity(value=value, unit=unit)
-        self._ontology_label = label
+    def _repr_html_fragment_(self) -> str:
+        return _tree_repr._render_entity_value_html(self)
 
     @property
     def description(self) -> str:
@@ -460,6 +388,210 @@ class QuantityEntity:
         """
         return mammos_ontology.get_by_label(self.ontology_label)
 
+    def to_hdf5(
+        self,
+        base: h5py.File | h5py.Group | str | os.PathLike,
+        name: str,
+    ) -> h5py.Dataset | None:
+        """Write an entity to an HDF5 dataset.
+
+        The value is added as data of the dataset; ontology_label, iri, unit and
+        description are written to the dataset attributes.
+
+        Args:
+            base: If it is an open HDF5 file or a group in an HDF5 file, data will be
+                added to it as new dataset. If it is a str or PathLike a new HDF5 file
+                with the given name will be created. If a file with that name exists
+                already, it will be overwritten without notice.
+            name: Name for the newly created dataset. If an element with that name
+                exists already in `base` the function will fail.
+
+        Returns:
+            If `base` is an open `File` or `Group`, the newly created dataset. If `base`
+            is a file name nothing is returned (because the file created internally will
+            be closed before the function returns).
+        """
+        return self._to_hdf5(base, name)
+
+    @abstractmethod
+    def _to_hdf5(
+        self,
+        base: h5py.File | h5py.Group | str | os.PathLike,
+        name: str,
+        record_mammos_entity_version: bool = True,
+    ) -> h5py.Dataset | None:
+        """Internal implementation with additional options required for recursion.
+
+        Args:
+            base: <see public function>
+            name: <see public function>
+            record_mammos_entity_version: add mammos_entity version to dataset
+                attributes.
+        """
+
+
+class StringEntity(Entity):
+    """Create a string linked to the EMMO ontology."""
+
+    def __init__(self, ontology_label: str, value=None, description="", **kwargs):
+        # TODO: if unit in kwargs log warning?
+        self._ontology_label = ontology_label
+        self.description = description
+
+        if isinstance(value, Entity):
+            if value.ontology_label != ontology_label:
+                raise ValueError(
+                    "Incompatible label for initialization."
+                    f" Trying to initialize a {ontology_label}"
+                    f" with a {value.ontology_label}."
+                )
+            self._value = value.value  # get value from other StringEntity
+        elif isinstance(value, str):
+            self._value = value
+        elif value is None:
+            self._value = ""
+        else:
+            return TypeError(
+                "Incompatible type for initialization of a `StringEntity` value. "
+                "The value must be a string, or `None`, or an entity with the same "
+                f"ontology label. Received {value} of type {type(value)}."
+            )
+
+    @property
+    def value(self) -> numpy.number | numpy.ndarray:
+        """Return Entity string value."""
+        return self._value
+
+    def __str__(self) -> str:
+        out = f"{self.ontology_label}(value={self.value!r}"
+        if self.description:
+            out += f", description={self.description!r}"
+        out += ")"
+        return out
+
+    def _repr_elements(self) -> str:
+        """Return generator of elements to appear in the repr dunder method."""
+        yield f"ontology_label='{self._ontology_label}'"
+        if self.value:
+            yield f"value={self.value!r}"
+        if self.description:
+            yield f"description={self.description!r}"
+
+    def __eq__(self, other: mammos_entity.Entity) -> bool:
+        """Check if two StringEntities are identical.
+
+        Entities are considered identical if they have the same ontology label and
+        same string value.
+
+        Equality ignores the ``description`` attribute.
+
+        Examples:
+            >>> import mammos_entity as me
+            >>> ms_1 = me.StringEntity("ChemicalComposition", "H2O")
+            >>> ms_2 = me.StringEntity("ChemicalComposition", "H2O")
+            >>> ms_1 == ms_2
+            True
+            >>> ms_3 = me.StringEntity("ChemicalComposition", "H2O2")
+            >>> ms_1 == ms_3
+            False
+            >>> t = me.StringEntity("StateOfMatter", "H2O")
+            >>> ms_1 == t
+            False
+        """
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.ontology_label == other.ontology_label and self.value == other.value
+
+    def _to_hdf5(
+        self,
+        base: h5py.File | h5py.Group | str | os.PathLike,
+        name: str,
+        record_mammos_entity_version: bool = True,
+    ) -> h5py.Dataset | None:
+        """Internal implementation with additional options required for recursion.
+
+        Args:
+            base: <see public function>
+            name: <see public function>
+            record_mammos_entity_version: add mammos_entity version to dataset
+                attributes.
+        """
+        if isinstance(base, str | os.PathLike):
+            with h5py.File(base, "w") as f:
+                self._to_hdf5(f, name, record_mammos_entity_version)
+                return
+
+        dset = base.create_dataset(name, data=self.value)
+        dset.attrs["ontology_label"] = self.ontology_label
+        dset.attrs["ontology_iri"] = self.ontology.iri
+        dset.attrs["description"] = self.description
+
+        if record_mammos_entity_version:
+            dset.attrs["mammos_entity_version"] = me.__version__
+        return dset
+
+
+class QuantityEntity(Entity):
+    """Create a quantity (a value and a unit) linked to the EMMO ontology.
+
+    Represents a physical property or quantity that is linked to an ontology
+    concept. It enforces unit compatibility with the ontology.
+
+    Args:
+        ontology_label: Ontology label
+        value: Value
+        unit: Unit
+        description: Description
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> import mammos_units as u
+        >>> Ms = me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
+        >>> H = me.Entity("ExternalMagneticField", 1e4 * u.A / u.m)
+        >>> Tc_mK = me.Entity("CurieTemperature", 300, unit=u.mK)
+        >>> Tc_K = me.Entity("CurieTemperature", Tc_mK, unit=u.K)
+        >>> Tc_kuzmin = me.Entity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
+
+    """  # noqa: E501
+
+    def __init__(
+        self,
+        ontology_label: str,
+        value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
+        unit: str | None | mammos_units.UnitBase = None,
+        description: str = "",
+    ):
+        self.description = description
+        if isinstance(value, Entity):
+            if value.ontology_label != ontology_label:
+                raise ValueError(
+                    "Incompatible label for initialization."
+                    f" Trying to initialize a {ontology_label}"
+                    f" with a {value.ontology_label}."
+                )
+            value = value.quantity
+
+        # Select ontology label
+        label = _select_ontology_label(ontology_label)
+
+        # Get ontology-compatible units
+        ontology_units = _get_all_possible_units(label)
+
+        if unit is None:
+            unit = value.unit if isinstance(value, u.Quantity) else _get_preferred_unit(ontology_units)
+        else:
+            unit = u.Unit(unit)
+
+        with u.set_enabled_equivalencies(mammos_equivalencies):
+            if not any(unit.is_equivalent(ou) for ou in ontology_units):
+                raise ValueError(
+                    f"Given unit: {unit} incompatible with ontology. "
+                    f"Allowed units for entity {label} are: {ontology_units}."
+                )
+
+            self._quantity = u.Quantity(value=value, unit=unit)
+        self._ontology_label = label
+
     @property
     def quantity(self) -> mammos_units.Quantity:
         """Return the value and unit of the entity as a Quantity.
@@ -514,17 +646,17 @@ class QuantityEntity:
             Integer indexing returns a scalar entity:
 
             >>> Ms[0]
-            Entity(ontology_label='SpontaneousMagnetization', value=np.float64(500.0), unit='kA / m')
+            QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(500.0), unit='kA / m')
 
             Slice indexing returns an entity with a subset of the values:
 
             >>> Ms[1:3]
-            Entity(ontology_label='SpontaneousMagnetization', value=array([600., 700.]), unit='kA / m')
+            QuantityEntity(ontology_label='SpontaneousMagnetization', value=array([600., 700.]), unit='kA / m')
 
             Boolean indexing selects values where the mask is ``True``:
 
             >>> Ms[[True, False, True]]
-            Entity(ontology_label='SpontaneousMagnetization', value=array([500., 700.]), unit='kA / m')
+            QuantityEntity(ontology_label='SpontaneousMagnetization', value=array([500., 700.]), unit='kA / m')
 
             The ontology label, unit, and description are preserved:
 
@@ -586,26 +718,20 @@ class QuantityEntity:
                 and u.allclose(self.q, other.q, equal_nan=True)
             )
 
-    def __repr__(self) -> str:
-        args = [f"ontology_label='{self._ontology_label}'", f"value={self.value!r}"]
+    def _repr_elements(self) -> str:
+        """Return generator of elements to appear in the repr dunder method."""
+        yield f"ontology_label='{self._ontology_label}'"
+        yield f"value={self.value!r}"
         if str(self.unit):
-            args.append(f"unit='{self.unit!s}'")
+            yield f"unit='{self.unit!s}'"
         if self.description:
-            args.append(f"description={self.description!r}")
-
-        return f"{self.__class__.__name__}({', '.join(args)})"
+            yield f"description={self.description!r}"
 
     def __str__(self) -> str:
         repr_str = f"{self.ontology_label}({self.q!s}"
         if self.description:
             repr_str += f", description={self.description!r}"
         return repr_str + ")"
-
-    def _repr_html_(self) -> str:
-        return f"{_tree_repr._tree_css()}{self._repr_html_fragment_()}"
-
-    def _repr_html_fragment_(self) -> str:
-        return _tree_repr._render_entity_value_html(self)
 
     def to_hdf5(
         self,
@@ -677,7 +803,7 @@ class QuantityEntity:
 
 def from_compatible(
     ontology_label: str,
-    fallback_unit: str | mammos_units.Unit,
+    fallback_unit: str | mammos_units.Unit | None = None,
     *,
     compatible_entities: tuple[str] = (),
     enforce_unit: bool = False,
@@ -754,13 +880,17 @@ def from_compatible(
     """
     if len(kwargs) != 1:
         raise RuntimeError(f"Exactly one entity-like must be passed as keyword argument, got {len(kwargs)}.")
+    if enforce_unit and not _is_quantity_entity(ontology_label):
+        raise RuntimeError(
+            f"Argument `enforce_unit` only makes sense for QuantityEntity objects. Label received: '{ontology_label}'."
+        )
+
     arg_name, value = kwargs.popitem()
 
     if isinstance(value, Entity):
-        if value.ontology_label == ontology_label:
+        if value.ontology_label in tuple(compatible_entities) + (ontology_label,):
+            value = value.q if isinstance(value, QuantityEntity) else value.value  # get actual value from entity
             return _to_entity(ontology_label, value, fallback_unit, enforce_unit)
-        elif value.ontology_label in compatible_entities:
-            return _to_entity(ontology_label, value.q, fallback_unit, enforce_unit)
         else:
             raise ValueError(
                 f"Argument {arg_name}, an entity of type {value.ontology_label}, is "
@@ -774,7 +904,10 @@ def from_compatible(
                 f"Argument {arg_name} = {value!r} cannot be interpreted as entity {ontology_label}."
             ) from exc
     else:
-        return Entity(ontology_label, value, fallback_unit)
+        if fallback_unit is None:
+            return Entity(ontology_label=ontology_label, value=value)
+        else:
+            return Entity(ontology_label=ontology_label, value=value, unit=fallback_unit)
 
 
 def _to_entity(
@@ -783,11 +916,11 @@ def _to_entity(
     unit: str | mammos_units.Unit,
     enforce_unit: bool,
 ) -> me.Entity:
-    """Convert an Entity or Quantity to an Entity, optionall with fixed unit."""
+    """Convert an Entity or Quantity to an Entity, optionally with fixed unit."""
     if enforce_unit:
-        return me.Entity(ontology_label, value, unit)
+        return me.Entity(ontology_label=ontology_label, value=value, unit=unit)
     else:
-        return me.Entity(ontology_label, value)
+        return me.Entity(ontology_label=ontology_label, value=value)
 
 
 def ensure_entity(required_label: str, **kwargs: mammos_entity.Entity) -> None:
