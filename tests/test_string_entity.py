@@ -58,6 +58,8 @@ def test_init_entity():
 def test_init_wrong_types():
     """Test that StringEntity cannot be initialized with wrong types."""
     with pytest.raises(TypeError):
+        me.StringEntity("ChemicalComposition", value=["H2", "O"])
+    with pytest.raises(TypeError):
         me.StringEntity("ChemicalComposition", value=42)
     with pytest.raises(TypeError):
         me.StringEntity("ChemicalComposition", value=[1, 2, 3])
