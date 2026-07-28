@@ -29,6 +29,8 @@ cd mammos-entity
 - the following pixi tasks are provided:
 
   - `pixi run test-unittest`: Run unittests with pytest (reading tests/)
+  - `pixi run test-browser`: Run the opt-in Playwright browser tests. Install Chromium once with
+    `pixi run python -m playwright install chromium`; on Linux, add `--with-deps` if system libraries are missing.
   - `pixi run test-docstrings`: Run doctests with pytest (reading src/mammos_entity)
   - `pixi run test-notebooks`: Run nbval with pytest on notebooks (reading examples/)
   - `pixi run test-all`: run `unittest`, `doctest` and `notebooktest`

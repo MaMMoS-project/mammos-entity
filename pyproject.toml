@@ -28,12 +28,14 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+  "anywidget",
   "emmontopy>=0.8",
   "h5glance>=0.9",  # required for the tutorial
   "h5py>=3.13",  # TODO we would like >= 3.14 (improved string handling) but esys-escript conflicts with that
   "mammos-units>=0.2.1",
   "numpy<3",
   "pandas>=2",
+  "traitlets",
 ]
 
 [project.urls]
@@ -67,6 +69,18 @@ pydocstyle.convention = "google"
 "*.ipynb" = ["B018"]  # "Found useless expression. Either assign it to a variable or remove it."; false positives when using implicit __repr__ in the notebook
 "tests/*" = ["D100", "D103"]  # do not enforce docstrings in tests
 
+[tool.pytest.ini_options]
+addopts = '-m "not browser"'
+markers = [
+  "browser: tests that require a Playwright browser",
+]
+
+[tool.hatch.build]
+artifacts = [
+  "src/mammos_entity/_entity_collection_tree/*.css",
+  "src/mammos_entity/_entity_collection_tree/*.js",
+]
+
 [tool.pixi.workspace]
 channels = [ "conda-forge" ]
 platforms = [ "osx-arm64", "linux-64", "osx-64", "win-64" ]
@@ -80,6 +94,7 @@ nbval = "*"
 packaging = "<25"
 pre-commit = "*"
 pytest = "*"
+pytest-playwright = "*"
 ruff = "*"
 towncrier = "*"
 
@@ -89,6 +104,7 @@ mammos-entity = { path = ".", editable = true }
 [tool.pixi.tasks]
 examples = "jupyter-lab examples"
 test-unittest = "pytest -v tests"
+test-browser = "python -m pytest -v -o addopts= -m browser tests/test_entity_collection_tree_browser.py"
 test-docstrings = "pytest -v --doctest-modules --doctest-continue-on-failure src/mammos_entity"
 test-notebooks = "pytest -v --nbval-lax examples"
 test-all = { depends-on = ["test-unittest", "test-docstrings", "test-notebooks"] }
