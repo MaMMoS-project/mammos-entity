@@ -56,21 +56,21 @@ class EntityCollection:
 
         When creating a new collection entities can be passed as keyword arguments:
 
-        >>> collection = me.EntityCollection("A description", Ms=me.Ms(), T=me.T())
+        >>> collection = me.EntityCollection("A description", Ms=me.Ms(), comp=me.StringEntity("ChemicalComposition", "Nd2Fe14B"))
         >>> collection
         EntityCollection(
             description='A description',
-            Ms=Entity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m'),
-            T=Entity(ontology_label='ThermodynamicTemperature', value=np.float64(0.0), unit='K'),
+            Ms=QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m'),
+            comp=StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B'),
         )
 
         Entities in the collection can be accessed either via attribute or a
         dictionary-like interface:
 
         >>> collection.Ms
-        Entity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')
-        >>> collection["T"]
-        Entity(ontology_label='ThermodynamicTemperature', value=np.float64(0.0), unit='K')
+        QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')
+        >>> collection["comp"]
+        StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')
 
         Additional elements can be added using both interfaces ("private" elements, i.e.
         entity names starting with an underscore can only be set/retrieved using the
@@ -88,13 +88,13 @@ class EntityCollection:
 
         Elements can be removed using:
 
-        >>> del collection.T
+        >>> del collection.comp
         >>> del collection.B
 
         The collection is iterable, elements are tuples ``(name, entity-like)``:
 
         >>> list(collection)
-        [('Ms', Entity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')), ('A', [1, 2, 3])]
+        [('Ms', QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')), ('A', [1, 2, 3])]
 
         An entity with key ``description`` can only be set/accessed via the
         dictionary-like interface as it collides with the `description` property of the
