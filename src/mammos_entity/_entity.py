@@ -518,7 +518,7 @@ class StringEntity(Entity):
         return self._value
 
     def __str__(self) -> str:
-        value_string = f"{self.value!s}" if self.value else ""
+        value_string = f"{self.value!s}"
         out = f"{self.ontology_label}({value_string}"
         if self.description:
             if value_string:
