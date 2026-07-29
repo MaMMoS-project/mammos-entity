@@ -11,10 +11,11 @@ import os
 import re
 from abc import ABC, abstractmethod
 from functools import cache
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import h5py
 import mammos_units as u
+import numpy as np
 
 import mammos_entity as me
 from mammos_entity import _entity_collection_tree as _tree_repr
@@ -299,7 +300,7 @@ class Entity(ABC):
         >>> me.Entity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
         QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(800000.0), unit='A / m')
         >>> me.Entity("ChemicalComposition", "Nd2Fe14B")
-        StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')
+        StringEntity(ontology_label='ChemicalComposition', value=array('Nd2Fe14B', dtype=StringDType()))
     """
 
     def __new__(cls, ontology_label: str, value=None, unit=None, description=""):
@@ -438,33 +439,59 @@ class Entity(ABC):
 
 
 class StringEntity(Entity):
-    """Create a string linked to the EMMO ontology.
+    """Define an ontology-linked string.
 
-    Represents a literal property or string that is linked to an ontology concept.
-    It has a single string value (sequences of strings are not allowed) and no unit.
+    This entity represents a literal property or a string that is linked to an ontology concept.
+
+    Its :py:attr:`StringEntity.value` is a :py:class:`numpy.ndarray` with variable length strings.
+    Whatever the passed value at instantiation, it gets converted into a NumPy array of strings.
+    This design is consistent with values of a :py:class:`QuantityEntity`.
+    Furthermore, a ``StringEntity`` has no unit.
 
     Args:
         ontology_label: Ontology label
         value: Value
-        unit: Unit
         description: Description
 
     Examples:
         >>> import mammos_entity as me
-        >>> me.StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')
-        StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')
-        >>> me.StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B', description='Good magnet')
-        StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B', description='Good magnet')
-        >>> me.StringEntity(ontology_label='StateOfMatter', value='Solid')
-        StringEntity(ontology_label='StateOfMatter', value='Solid')
+        >>> me.StringEntity(ontology_label='StateOfMatter', value='Solid', description='During experiment')
+        StringEntity(ontology_label='StateOfMatter', value=array('Solid', dtype=StringDType()), description='During experiment')
+        >>> me.StringEntity(ontology_label='ChemicalComposition', value=['Nd2Fe14B', 'H2O'])
+        StringEntity(ontology_label='ChemicalComposition', value=array(['Nd2Fe14B', 'H2O'], dtype=StringDType()))
 
-    """
+    """  # noqa: E501
 
-    def __init__(self, ontology_label: str, value=None, description="", **kwargs):
-        # TODO: if unit in kwargs log warning?
+    def __init__(self, ontology_label: str, value: Any | None = None, description: str = "", unit=None):  # noqa: D417
+        """Initialize a StringEntity.
+
+        Args:
+            ontology_label: Label of the respective ontology object.
+            value: String value(s). It gets converted into a NumPy array of strings.
+            description: Information string to assign to ``description`` attribute.
+
+
+        Examples:
+            >>> import mammos_entity as me
+            >>> me.StringEntity(ontology_label='StateOfMatter', value='Solid', description='During experiment')
+            StringEntity(ontology_label='StateOfMatter', value=array('Solid', dtype=StringDType()), description='During experiment')
+            >>> me.StringEntity(ontology_label='ChemicalComposition', value=['Nd2Fe14B', 'H2O'])
+            StringEntity(ontology_label='ChemicalComposition', value=array(['Nd2Fe14B', 'H2O'], dtype=StringDType()))
+
+        """  # noqa: E501
         self._ontology_label = ontology_label
         self.description = description
 
+        # Raise error if unit is not empty.
+        # The unit of a `StringEntity` should never be defined.
+        # We accept the unit as an input of the initialization only because it is
+        # consistent with Entity classes.
+        if unit:
+            raise ValueError(
+                f"StringEntity does not allow a `unit` argument. Used label: {ontology_label}. Given unit: {unit}."
+            )
+
+        # if value is an Entity, check label and use its value
         if isinstance(value, Entity):
             if value.ontology_label != ontology_label:
                 raise ValueError(
@@ -473,16 +500,15 @@ class StringEntity(Entity):
                     f" with a {value.ontology_label}."
                 )
             self._value = value.value  # get value from other StringEntity
-        elif isinstance(value, str):
-            self._value = value
-        elif value is None:
-            self._value = ""
         else:
-            return TypeError(
-                "Incompatible type for initialization of a `StringEntity` value. "
-                "The value must be a single string, or `None`, or an entity with "
-                f"the same ontology label. Received {value} of type {type(value)}."
-            )
+            # if value is None, we initialize with empty string, otherwise it will be saved as 'None'
+            if value is None:
+                value = ""
+            # Store value internally as NumPy array of strings.
+            # If the value is turned into an array but the inferred
+            # type is not a `StrDType`, it means that types inside
+            # the passed value are not only strings, so we raise an error.
+            self._value = np.array(value, dtype=np.dtypes.StringDType)
 
     @property
     def value(self) -> numpy.number | numpy.ndarray:
@@ -490,16 +516,19 @@ class StringEntity(Entity):
         return self._value
 
     def __str__(self) -> str:
-        out = f"{self.ontology_label}(value={self.value!r}"
+        value_string = f"{self.value!s}" if self.value else ""
+        out = f"{self.ontology_label}({value_string}"
         if self.description:
-            out += f", description={self.description!r}"
+            if value_string:
+                out += ", "
+            out += f"description={self.description!r}"
         out += ")"
         return out
 
     def _repr_elements(self) -> str:
         """Return generator of elements to appear in the repr dunder method."""
         yield f"ontology_label='{self._ontology_label}'"
-        if self.value:
+        if self.value is not None:
             yield f"value={self.value!r}"
         if self.description:
             yield f"description={self.description!r}"
@@ -527,7 +556,7 @@ class StringEntity(Entity):
         """
         if not isinstance(other, self.__class__):
             return NotImplemented
-        return self.ontology_label == other.ontology_label and self.value == other.value
+        return self.ontology_label == other.ontology_label and bool(np.all(self.value == other.value))
 
     def _to_hdf5(
         self,
