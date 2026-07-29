@@ -61,7 +61,7 @@ class EntityCollection:
         EntityCollection(
             description='A description',
             Ms=QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m'),
-            comp=StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B'),
+            comp=StringEntity(ontology_label='ChemicalComposition', value=array('Nd2Fe14B', dtype=StringDType())),
         )
 
         Entities in the collection can be accessed either via attribute or a
@@ -70,7 +70,7 @@ class EntityCollection:
         >>> collection.Ms
         QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')
         >>> collection["comp"]
-        StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')
+        StringEntity(ontology_label='ChemicalComposition', value=array('Nd2Fe14B', dtype=StringDType()))
 
         Additional elements can be added using both interfaces ("private" elements, i.e.
         entity names starting with an underscore can only be set/retrieved using the
@@ -312,7 +312,8 @@ class EntityCollection:
             element = {}
             if isinstance(entity_like, me.Entity):
                 element["ontology_label"] = entity_like.ontology_label
-                element["unit"] = str(entity_like.unit)
+                if isinstance(entity_like, me.QuantityEntity):
+                    element["unit"] = str(entity_like.unit)
                 element["description"] = entity_like.description
             elif isinstance(entity_like, u.Quantity):
                 element["unit"] = str(entity_like.unit)

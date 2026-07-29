@@ -55,28 +55,27 @@ def test_init_entity():
         me.StringEntity("ChemicalComposition", value=me.Hc())
 
 
-def test_init_wrong_types():
-    """Test that StringEntity cannot be initialized with wrong types."""
-    with pytest.raises(TypeError):
-        me.StringEntity("ChemicalComposition", value=["H2", "O"])
-    with pytest.raises(TypeError):
-        me.StringEntity("ChemicalComposition", value=42)
-    with pytest.raises(TypeError):
-        me.StringEntity("ChemicalComposition", value=[1, 2, 3])
-    with pytest.raises(TypeError):
-        me.StringEntity("ChemicalComposition", value=0.5)
-    with pytest.raises(TypeError):
-        me.StringEntity("ChemicalComposition", value=(1, 2))
-    with pytest.raises(TypeError):
-        me.StringEntity("ChemicalComposition", value=np.array([1, 2, 3]))
-    with pytest.raises(TypeError):
-        me.StringEntity("ChemicalComposition", value=1 * u.A / u.m)
+def test_init_different_types():
+    """Test that StringEntity cannot be initialized with wrong types.
+
+    Test 1: list of strings.
+    Test 2: single integer.
+    Test 3: single float.
+    Test 4: list of integers.
+    Test 5: tuple of integers.
+    """
+    assert np.all(me.StringEntity("ChemicalComposition", value=["H2", "O"]).value == np.array(["H2", "O"]))
+    assert np.all(me.StringEntity("ChemicalComposition", value=42).value == np.array(["42"]))
+    assert np.all(me.StringEntity("ChemicalComposition", value=0.5).value == np.array(["0.5"]))
+    assert np.all(me.StringEntity("ChemicalComposition", value=[1, 2, 3]).value == np.array(["1", "2", "3"]))
+    assert np.all(me.StringEntity("ChemicalComposition", value=(1, 2, 3)).value == np.array(["1", "2", "3"]))
+    assert np.all(me.StringEntity("ChemicalComposition", value=np.array([1, 2, 3])).value == np.array(["1", "2", "3"]))
+    assert np.all(me.StringEntity("ChemicalComposition", value=1 * u.A / u.m).value == np.array(["1.0"]))
 
 
 def test_init_unit():
     """Test behavior of StringEntity and units."""
     with pytest.xfail():
-        # TODO: either error or warning for defining StringEntity with unit.
         with pytest.raises(TypeError):
             me.Entity("ChemicalComposition", value="Nd2Fe14B", unit="m")
         with pytest.raises(TypeError):
@@ -154,34 +153,18 @@ def test_from_compatible_compatible_entity(value):
     assert out == expected
 
 
-@pytest.mark.parametrize(
-    "value, expected_error",
-    [
-        (me.StringEntity("StateOfMatter", "Solid"), ValueError),
-        (1, TypeError),
-        ([1, 2, "String"], TypeError),
-        (
-            [
-                me.StringEntity("ChemicalComposition", "H2O"),
-                me.StringEntity("ChemicalComposition", "H2O"),
-                me.StringEntity("ChemicalComposition", "H2O"),
-            ],
-            TypeError,
-        ),
-    ],
-)
-def test_from_compatible_input_errors(value, expected_error):
+def test_from_compatible_input_error():
     """Test from_compatible raises on incompatible inputs."""
-    with pytest.raises(expected_error):
+    with pytest.raises(ValueError):
         me._entity.from_compatible(
             "ChemicalComposition",
-            chemical_composition=value,
+            comp=me.StringEntity("StateOfMatter", "Solid"),
         )
 
 
-def test_from_compatible_unit_errors():
-    """Test from_compatible raises on wrong unit argument usage."""
-    with pytest.raises(TypeError), pytest.xfail():  # TODO: StringEntity with unit -> decide what to do
+def test_from_compatible_unit():
+    """Test behavior of from_compatible with unit arguments usage."""
+    with pytest.raises(ValueError):
         me._entity.from_compatible(
             "ChemicalComposition",
             fallback_unit="m",
