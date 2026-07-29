@@ -617,6 +617,25 @@ class QuantityEntity(Entity):
         unit: str | None | mammos_units.UnitBase = None,
         description: str = "",
     ):
+        """Initialize a QuantityEntity.
+
+        Args:
+            ontology_label: Label of the respective ontology object.
+            value: String value(s). It gets converted into a numerical NumPy array.
+            unit: Physical unit of its value. It is checked for consistency in the ontology.
+            description: Information string to assign to ``description`` attribute.
+
+
+        Examples:
+            >>> import mammos_entity as me
+            >>> import mammos_units as u
+            >>> Ms = me.QuantityEntity(ontology_label='SpontaneousMagnetization', value=8e5, unit='A / m')
+            >>> H = me.QuantityEntity("ExternalMagneticField", 1e4 * u.A / u.m)
+            >>> Tc_mK = me.QuantityEntity("CurieTemperature", 300, unit=u.mK)
+            >>> Tc_K = me.QuantityEntity("CurieTemperature", Tc_mK, unit=u.K)
+            >>> Tc_kuzmin = me.QuantityEntity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
+
+        """  # noqa: E501
         self.description = description
         if isinstance(value, Entity):
             if value.ontology_label != ontology_label:
