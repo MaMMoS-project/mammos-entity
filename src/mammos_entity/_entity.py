@@ -608,7 +608,7 @@ class QuantityEntity(Entity):
         >>> Tc_K = me.QuantityEntity("CurieTemperature", Tc_mK, unit=u.K)
         >>> Tc_kuzmin = me.QuantityEntity("CurieTemperature", 0.1, description="Temperature estimated via Kuzmin model")
 
-    """  # noqa: E501
+    """
 
     def __init__(
         self,
