@@ -34,8 +34,20 @@ jobs:
         path: pixi.lock
       if: ${{ matrix.os == 'ubuntu-latest' && !cancelled() }}
 
+  browser-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Setup Pixi
+      uses: prefix-dev/setup-pixi@v0.8.8
+    - name: Install Chromium
+      run: pixi run python -m playwright install --with-deps chromium
+    - name: Browser tests
+      run: pixi run test-browser
+
   build:
-    needs: test
+    needs: [test, browser-test]
     name: Build sdist and wheel
     runs-on: ubuntu-latest
     defaults:

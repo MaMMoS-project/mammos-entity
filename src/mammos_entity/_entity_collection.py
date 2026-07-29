@@ -15,6 +15,7 @@ import pandas as pd
 import yaml
 
 import mammos_entity as me
+from mammos_entity import _entity_collection_tree
 
 if TYPE_CHECKING:
     import collections.abc
@@ -236,8 +237,18 @@ class EntityCollection:
     def __repr__(self) -> str:
         """Show container elements."""
         args = f"description={self.description!r},\n"
-        args += "\n".join(f"{key}={val!r}," for key, val in self._entities.items())
+        args += "\n".join(
+            f"{key}={_entity_collection_tree._repr_with_fallback(value)[0]}," for key, value in self._entities.items()
+        )
         return f"{self.__class__.__name__}(\n{textwrap.indent(args, ' ' * 4)}\n)"
+
+    def _repr_html_(self) -> str:
+        """Render the collection as bounded static HTML."""
+        return _entity_collection_tree.render_entity_collection_html(self)
+
+    def _repr_mimebundle_(self, **kwargs: object) -> tuple[dict[str, object], dict[str, object]]:
+        """Prefer the lazy anywidget view while keeping static HTML and plain text fallbacks."""
+        return _entity_collection_tree.render_entity_collection_mimebundle(self, **kwargs)
 
     def to_dataframe(self, include_units: bool = False) -> pandas.DataFrame:
         """Convert values to dataframe.

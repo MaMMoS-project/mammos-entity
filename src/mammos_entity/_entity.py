@@ -16,6 +16,7 @@ import h5py
 import mammos_units as u
 
 import mammos_entity as me
+from mammos_entity import _entity_collection_tree as _tree_repr
 from mammos_entity._ontology import mammos_ontology, search_labels
 
 if TYPE_CHECKING:
@@ -552,8 +553,10 @@ class Entity:
         return repr_str + ")"
 
     def _repr_html_(self) -> str:
-        html_str = str(self).replace("\n", "<br>").replace(" ", "&nbsp;")
-        return f"<samp>{html_str}</samp>"
+        return f"{_tree_repr._tree_css()}{self._repr_html_fragment_()}"
+
+    def _repr_html_fragment_(self) -> str:
+        return _tree_repr._render_entity_value_html(self)
 
     def to_hdf5(
         self,
