@@ -292,8 +292,10 @@ def _is_quantity_entity(label: str) -> bool:
 class Entity(ABC):
     """Abstract base class for entities.
 
-    Depending on the input of the initialization, either a `QuantityEntity` or a `StringEntity` will be
-    returned.
+    Depending on the input of the initialization, either a :py:func:`QuantityEntity` or
+    a :py:func:`StringEntity` will be returned. This decision is based on the ontology
+    label. If this represents an object that contains :entity:`Quantity` among its
+    ancenstors, than we create a the former type of entity. Otherwise, the latter.
 
     Examples:
         >>> import mammos_entity as me
