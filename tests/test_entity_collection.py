@@ -196,3 +196,14 @@ def test_dataframe_roundtrip():
         "name with spaces",
         "description",
     ]
+
+
+def test_ipython_key_completions_():
+    col = me.EntityCollection()
+    assert col._ipython_key_completions_() == []
+
+    col = me.EntityCollection(a=1, b=2)
+    assert col._ipython_key_completions_() == ["a", "b"]
+
+    col["another key"] = 3
+    assert col._ipython_key_completions_() == ["a", "b", "another key"]
