@@ -2,6 +2,7 @@ import mammos_units as u
 import numpy as np
 import pytest
 from numpy import array  # noqa: F401  # required for repr eval
+from numpy.dtypes import StringDType  # noqa: F401  # required for repr eval
 
 import mammos_entity as me
 from mammos_entity import QuantityEntity, StringEntity  # noqa: F401  # required for repr eval
@@ -44,14 +45,16 @@ def test_repr():
     assert e.__repr__() == f"QuantityEntity(ontology_label='DemagnetizingFactor', value={zero_string})"
     assert eval(repr(e)) == e
 
-    e = me.StringEntity("ChemicalComposition", value="Nd2Fe14B")
-    assert e.__repr__() == "StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B')"
+    value = "Nd2Fe14B"
+    value_repr = f"{np.array(value, dtype=np.dtypes.StringDType)!r}"
+    e = me.StringEntity("ChemicalComposition", value=value)
+    assert e.__repr__() == f"StringEntity(ontology_label='ChemicalComposition', value={value_repr})"
     assert eval(repr(e)) == e
 
-    e = me.StringEntity("ChemicalComposition", value="Nd2Fe14B", description="experiment 2")
+    e = me.StringEntity("ChemicalComposition", value=value, description="experiment 2")
     assert (
         e.__repr__()
-        == "StringEntity(ontology_label='ChemicalComposition', value='Nd2Fe14B', description='experiment 2')"
+        == f"StringEntity(ontology_label='ChemicalComposition', value={value_repr}, description='experiment 2')"
     )
     assert eval(repr(e)) == e
 
@@ -64,8 +67,10 @@ def test_str():
     Test 3: Test repr for QuantityEntity with 1D-vectorial value.
     Test 4: Test repr for QuantityEntity with 2D-vectorial value.
     Test 5: Test repr for unitless QuantityEntity.
-    Test 6: Test repr for StringEntity
-    Test 7: Test repr for StringEntity with description
+    Test 6: Test repr for StringEntity with no value
+    Test 7: Test repr for StringEntity with value only
+    Test 8: Test repr for StringEntity with description only
+    Test 9: Test repr for StringEntity with value and description
     """
     e = me.Entity("CurieTemperature")
     assert str(e) == "CurieTemperature(0.0 K)"
@@ -83,11 +88,17 @@ def test_str():
     e = me.Entity("DemagnetizingFactor")
     assert str(e) == "DemagnetizingFactor(0.0)"
 
+    e = me.StringEntity("ChemicalComposition")
+    assert str(e) == "ChemicalComposition()"
+
     e = me.StringEntity("ChemicalComposition", value="Nd2Fe14B")
-    assert str(e) == "ChemicalComposition(value='Nd2Fe14B')"
+    assert str(e) == "ChemicalComposition(Nd2Fe14B)"
+
+    e = me.StringEntity("ChemicalComposition", description="experiment 2")
+    assert str(e) == "ChemicalComposition(description='experiment 2')"
 
     e = me.StringEntity("ChemicalComposition", value="Nd2Fe14B", description="experiment 2")
-    assert str(e) == "ChemicalComposition(value='Nd2Fe14B', description='experiment 2')"
+    assert str(e) == "ChemicalComposition(Nd2Fe14B, description='experiment 2')"
 
 
 @pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
