@@ -275,12 +275,14 @@ class EntityCollection:
             else:
                 return ""
 
-        return pd.DataFrame(
-            {
-                f"{key}{unit(key) if include_units else ''}": np.atleast_1d(getattr(val, "value", val))
-                for key, val in self
-            }
-        )
+        df_items = {}
+        for key, val in self:
+            dataframe_key = f"{key}{unit(key) if include_units else ''}"
+            dtypes = {}
+            if isinstance(val, me.StringEntity):
+                dtypes[dataframe_key] = "str"  # Enforce dtype str on StringEntity
+            df_items[dataframe_key] = np.atleast_1d(getattr(val, "value", val))
+        return pd.DataFrame(df_items).astype(dtypes)
 
     def metadata(self) -> dict[str, dict[str, str]]:
         """Get entity metadata as dictionary.
@@ -366,7 +368,7 @@ class EntityCollection:
                 elem = me.Entity(
                     ontology_label=metadata[name]["ontology_label"],
                     value=value,
-                    unit=metadata[name].get("unit"),
+                    unit=metadata[name].get("unit", None),
                     description=metadata[name].get("description", ""),
                 )
             elif "unit" in metadata[name]:
