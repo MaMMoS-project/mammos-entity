@@ -719,13 +719,15 @@ class EntityCollection:
             element: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
         ) -> dict:
             if isinstance(element, me.Entity):
-                return {
+                serialized_entity = {
                     "ontology_label": element.ontology_label,
                     "description": element.description,
                     "ontology_iri": element.ontology_iri,
-                    "unit": str(element.unit),
-                    "value": element.value.tolist(),
                 }
+                if isinstance(element, me.QuantityEntity):
+                    serialized_entity["unit"] = str(element.unit)
+                serialized_entity["value"] = element.value.tolist()
+                return serialized_entity
             elif isinstance(element, u.Quantity):
                 return {
                     "unit": str(element.unit),
