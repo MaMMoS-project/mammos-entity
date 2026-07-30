@@ -549,12 +549,19 @@ class EntityCollection:
 
         Entity-like entries have the following keys:
 
-        - For :py:class:`~mammos_entity.Entity`:
+        - For :py:class:`~mammos_entity.QuantityEntity`:
 
           - ``ontology_label``: label in the ontology
           - ``description``: description string
           - ``ontology_iri``: IRI of the entity
           - ``unit``: unit of the entity (``""`` for dimensionless)
+          - ``value``: value of the data
+
+        - For :py:class:`~mammos_entity.StringEntity`:
+
+          - ``ontology_label``: label in the ontology
+          - ``description``: description string
+          - ``ontology_iri``: IRI of the entity
           - ``value``: value of the data
 
         - For :py:class:`~mammos_units.Quantity`:
@@ -609,6 +616,7 @@ class EntityCollection:
             ...     Ms=me.Entity("SpontaneousMagnetization", [1e2, 1e2, 1e2], "kA/m", description="Magnetization at 0 Kelvin"),
             ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
             ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
+            ...     comp=me.Entity("ChemicalComposition", ["Nd2Fe14B", "Nd2Fe14B", "Nd2Fe14B"]),
             ...     comment=[
             ...         "Comment in the first row",
             ...         "Comment in the second row",
@@ -642,6 +650,11 @@ class EntityCollection:
                 ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
                 unit: ''
                 value: [1.0, 0.5, 0.5]
+              comp:
+                ontology_label: ChemicalComposition
+                description: ''
+                ontology_iri: https://w3id.org/emmo#EMMO_7efd64d1_05a1_49cd_a7f0_783ca050d4f3
+                value: [Nd2Fe14B, Nd2Fe14B, Nd2Fe14B]
               comment:
                 value: [Comment in the first row, Comment in the second row, Comment in the third
                     row]
