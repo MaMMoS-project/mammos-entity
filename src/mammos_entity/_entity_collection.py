@@ -234,6 +234,10 @@ class EntityCollection:
         else:
             raise ValueError(f"Description must be a string. Received value: {value} of type: {type(value)}.")
 
+    def _ipython_key_completions_(self) -> list[str]:
+        """Tab completion for dict-like access of entities in the collection."""
+        return list(self._entities.keys())
+
     def __repr__(self) -> str:
         """Show container elements."""
         args = f"description={self.description!r},\n"
