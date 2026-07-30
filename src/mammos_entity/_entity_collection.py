@@ -276,9 +276,9 @@ class EntityCollection:
                 return ""
 
         df_items = {}
+        dtypes = {}
         for key, val in self:
             dataframe_key = f"{key}{unit(key) if include_units else ''}"
-            dtypes = {}
             if isinstance(val, me.StringEntity):
                 dtypes[dataframe_key] = "str"  # Enforce dtype str on StringEntity
             df_items[dataframe_key] = np.atleast_1d(getattr(val, "value", val))
