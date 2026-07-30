@@ -2,6 +2,7 @@ from pathlib import Path
 
 import h5py
 import mammos_units as u
+import numpy as np
 import pytest
 
 import mammos_entity as me
@@ -18,6 +19,19 @@ def test_entity_to_hdf5_root():
         assert f["T"].attrs["ontology_iri"] == T.ontology.iri
         assert f["T"].attrs["mammos_entity_version"] == me.__version__
         assert me.from_hdf5(f["T"]) == T
+
+
+def test_string_entity_to_hdf5_root():
+    with h5py.File.in_memory() as f:
+        comp = me.StringEntity("ChemicalComposition", "H2O")
+        comp.to_hdf5(f, "comp")
+        assert "comp" in f
+        assert np.array(f["comp"].astype(np.dtypes.StringDType())) == comp.value  # hdf5 stores strings as bytes
+        assert f["comp"].attrs["ontology_label"] == comp.ontology_label
+        assert f["comp"].attrs["ontology_iri"] == comp.ontology.iri
+        assert f["comp"].attrs["mammos_entity_version"] == me.__version__
+        assert "unit" not in f["comp"].attrs
+        assert me.from_hdf5(f["comp"]) == comp
 
 
 def test_entity_to_hdf5_group():
@@ -79,6 +93,7 @@ def test_entity_collection_to_hdf5_roundtrip():
             Ms=me.Ms([300, 250, 200], "kA/m"),
             T=me.T([50, 100, 200]),
             Tc=me.Tc(600, "K"),
+            comp=me.Entity("ChemicalComposition", "H2O"),
         )
         col["description"] = me.Entity("Length", [0, 0, 0])
         col.to_hdf5(f, "/sample1/properties")
@@ -86,10 +101,11 @@ def test_entity_collection_to_hdf5_roundtrip():
         col_read = me.from_hdf5(f["/sample1/properties"])
         assert isinstance(col_read, me.EntityCollection)
         assert col_read.description == col.description
-        assert [name for name, _entity in col_read] == ["Ms", "T", "Tc", "description"]
+        assert [name for name, _entity in col_read] == ["Ms", "T", "Tc", "comp", "description"]
         assert col_read.Ms == col.Ms
         assert col_read.T == col.T
         assert col_read.Tc == col.Tc
+        assert col_read.comp == col.comp
         assert col_read["description"] == col["description"]
 
 
