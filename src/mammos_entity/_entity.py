@@ -277,6 +277,7 @@ def _select_ontology_label(label: str) -> str:
         )
 
 
+@cache
 def _is_quantity_entity(label: str) -> bool:
     """Check whether given entity is a quantity entity.
 
