@@ -303,6 +303,7 @@ class Entity:
         ontology_label: str,
         value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
         unit: str | None | mammos_units.UnitBase = None,
+        *,
         description: str = "",
     ):
         self.description = description
