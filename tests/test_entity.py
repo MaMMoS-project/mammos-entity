@@ -92,13 +92,13 @@ def test_str():
     assert str(e) == "ChemicalComposition()"
 
     e = me.StringEntity("ChemicalComposition", value="Nd2Fe14B")
-    assert str(e) == "ChemicalComposition(Nd2Fe14B)"
+    assert str(e) == "ChemicalComposition('Nd2Fe14B')"
 
     e = me.StringEntity("ChemicalComposition", description="experiment 2")
     assert str(e) == "ChemicalComposition(description='experiment 2')"
 
     e = me.StringEntity("ChemicalComposition", value="Nd2Fe14B", description="experiment 2")
-    assert str(e) == "ChemicalComposition(Nd2Fe14B, description='experiment 2')"
+    assert str(e) == "ChemicalComposition('Nd2Fe14B', description='experiment 2')"
 
 
 @pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
