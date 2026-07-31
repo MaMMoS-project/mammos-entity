@@ -179,6 +179,32 @@ def test_repr():
     assert eval(repr(e)) == e
 
 
+def test_str():
+    """Test readable string of an Entity.
+
+    Test 1: Test repr for Entity with scalar value
+    Test 2: Test repr for Entity with scalar value and description
+    Test 3: Test repr for Entity with 1D-vectorial value.
+    Test 4: Test repr for Entity with 2D-vectorial value.
+    Test 5: Test repr for unitless Entity.
+    """
+    e = me.Entity("CurieTemperature")
+    assert str(e) == "CurieTemperature(0.0 K)"
+
+    e = me.Entity("CurieTemperature", description="Estimated.")
+    assert str(e) == "CurieTemperature(0.0 K, description='Estimated.')"
+
+    e = me.Entity("ExternalMagneticField", value=[1, 2, 3])
+    assert str(e) == "ExternalMagneticField([1. 2. 3.] A / m)"
+
+    a = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    e = me.Entity("ExternalMagneticField", value=a)
+    assert str(e) == f"ExternalMagneticField({e.q!s})"
+
+    e = me.Entity("DemagnetizingFactor")
+    assert str(e) == "DemagnetizingFactor(0.0)"
+
+
 def test_axis_labels():
     """Test different axis_label examples."""
     e_1 = me.Entity("ExternalMagneticField")
