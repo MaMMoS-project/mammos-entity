@@ -545,12 +545,9 @@ class Entity:
         return f"{self.__class__.__name__}({', '.join(args)})"
 
     def __str__(self) -> str:
-        new_line = "\n" if self.value.size > 4 else ""
-        repr_str = f"{self.ontology_label}(value={new_line}{self.value}"
-        if not self.unit.is_equivalent(u.dimensionless_unscaled):
-            repr_str += f",{new_line} unit={self.unit}"
+        repr_str = f"{self.ontology_label}({self.q!s}"
         if self.description:
-            repr_str += f",{new_line} description={self.description!r}"
+            repr_str += f", description={self.description!r}"
         return repr_str + ")"
 
     def _repr_html_(self) -> str:
@@ -676,23 +673,23 @@ def from_compatible(
         Users can pass the correct entity:
 
         >>> f(me.Entity("ThermodynamicTemperature"))
-        ThermodynamicTemperature(value=0.0, unit=K)
+        ThermodynamicTemperature(0.0 K)
 
         a compatible entity:
 
         >>> f(me.Entity("CurieTemperature"))
-        ThermodynamicTemperature(value=0.0, unit=K)
+        ThermodynamicTemperature(0.0 K)
 
         a quantity with compatible units:
 
         >>> import mammos_units as u
         >>> f(0 * u.K)
-        ThermodynamicTemperature(value=0.0, unit=K)
+        ThermodynamicTemperature(0.0 K)
 
         or a value:
 
         >>> f(0)
-        ThermodynamicTemperature(value=0.0, unit=deg_C)
+        ThermodynamicTemperature(0.0 deg_C)
 
         Incompatible entity or unit lead to errors:
 
