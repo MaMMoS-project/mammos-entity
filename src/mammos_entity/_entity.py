@@ -306,7 +306,7 @@ class Entity(ABC):
         StringEntity(ontology_label='ChemicalComposition', value=array('Nd2Fe14B', dtype=StringDType()))
     """
 
-    def __new__(cls, ontology_label: str, value=None, unit=None, description=""):
+    def __new__(cls, ontology_label: str, value=None, unit=None, *, description=""):
         label = _select_ontology_label(ontology_label)
         if _is_quantity_entity(label):
             return super().__new__(QuantityEntity)
@@ -465,7 +465,7 @@ class StringEntity(Entity):
 
     """  # noqa: E501
 
-    def __init__(self, ontology_label: str, value: Any | None = None, description: str = "", unit=None):  # noqa: D417
+    def __init__(self, ontology_label: str, value: Any | None = None, unit=None, *, description: str = ""):  # noqa: D417
         """Initialize a StringEntity.
 
         Args:
@@ -618,6 +618,7 @@ class QuantityEntity(Entity):
         ontology_label: str,
         value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
         unit: str | None | mammos_units.UnitBase = None,
+        *,
         description: str = "",
     ):
         """Initialize a QuantityEntity.
