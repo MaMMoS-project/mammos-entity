@@ -519,7 +519,7 @@ class StringEntity(Entity):
         return self._value
 
     def __str__(self) -> str:
-        value_string = f"{self.value!s}"
+        value_string = str(self.value) if self.value.shape else repr(val) if (val := self.value.item()) else ""
         out = f"{self.ontology_label}({value_string}"
         if self.description:
             if value_string:
