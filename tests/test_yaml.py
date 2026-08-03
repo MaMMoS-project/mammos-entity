@@ -377,6 +377,30 @@ def test_read_yaml_error_unit_for_string_entity(tmp_path):
     assert ("keys should match") in message
 
 
+def test_read_yaml_error_missing_unit_for_quantity_entity(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos yaml v2
+        metadata: null
+        description: Top-level description.
+        data:
+          Ms:
+            ontology_label: SpontaneousMagnetization
+            description: ''
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+            value: [600.0, 650.0, 700.0]
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+
+    message = str(exc_info.value)
+    assert 'Entry "Ms" is an invalid quantity entity in mammos yaml v2: keys should match' in message
+
+
 def test_read_yaml_error_for_invalid_top_level_description_type(tmp_path):
     file_content = textwrap.dedent(
         """\
