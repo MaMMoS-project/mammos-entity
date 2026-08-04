@@ -1,162 +1,22 @@
-import math
-
-import astropy
 import mammos_units as u
 import numpy as np
 import pytest
 from numpy import array  # noqa: F401  # required for repr eval
+from numpy.dtypes import StringDType  # noqa: F401  # required for repr eval
 
 import mammos_entity as me
-from mammos_entity import Entity  # noqa: F401  # required for repr eval
-
-
-def test_init_float():
-    """Initialize Entity instance with a float."""
-    e = me.Entity("ExternalMagneticField", value=8e5)
-    q = 8e5 * u.A / u.m
-    assert u.allclose(e.quantity, q)
-    assert np.allclose(e.value, 8e5)
-    assert e.unit == u.A / u.m
-    assert e.ontology_label == "ExternalMagneticField"
-
-
-def test_init_list():
-    """Initialize with Python lists."""
-    val = [42, 42, 42]
-    e = me.Entity("ExternalMagneticField", value=val)
-    assert np.allclose(e.value, val)
-    val[0] = 1
-    assert np.allclose(e.value, [42, 42, 42])
-
-
-def test_init_tuple():
-    """Initialize with Python tuples."""
-    val = (42, 42, 42)
-    e = me.Entity("ExternalMagneticField", value=val)
-    assert np.allclose(e.value, np.array(val))
-
-
-def test_init_numpy():
-    """Initialize with NumPy array."""
-    val = np.array([42, 42, 42])
-    e = me.Entity("ExternalMagneticField", value=val)
-    assert np.allclose(e.value, val)
-    val[0] = 1
-    assert np.allclose(e.value, [42, 42, 42])
-    val = np.ones((42, 42, 42, 3))
-    e = me.Entity("ExternalMagneticField", value=val)
-    assert np.allclose(e.value, val)
-
-
-def test_init_quantity():
-    """Initialize using mammos_units.Quantity.
-
-    Test 1: an entity created from a quantity without specifying unit
-    will take value and unit from the quantity. In this case the unit
-    of the quantity is the default ontology quantity.
-    Test 2: an entity created from a quantity specifying the unit
-    will convert the quantity to the selected unit. In this case
-    the unit is the same of the quantity, so there is actually no
-    conversion involved.
-    Test 3: Same as Test 1, but this time the unit of the quantity
-    is not the default ontology quantity.
-    Test 4: Same as Test 2, but there is an actually conversion involved.
-    """
-    q = 1 * u.A / u.m
-    e = me.Entity("ExternalMagneticField", value=q)
-    assert e.ontology_label == "ExternalMagneticField"
-    assert u.allclose(e.quantity, q)
-    assert np.allclose(e.value, 1)
-    assert e.unit == u.A / u.m
-    q = 1 * u.kA / u.m
-    e = me.Entity("ExternalMagneticField", value=q, unit="kA/m")
-    assert u.allclose(e.quantity, q)
-    assert np.allclose(e.value, 1)
-    assert e.unit == u.kA / u.m
-    e = me.Entity("ExternalMagneticField", value=q)
-    assert u.allclose(e.quantity, q)
-    assert np.allclose(e.value, 1)
-    assert e.unit == u.kA / u.m
-    e = me.Entity("ExternalMagneticField", value=q, unit="MA/m")
-    assert u.allclose(e.quantity, q)
-    assert np.allclose(e.value, 1e-3)
-    assert e.unit == u.MA / u.m
-
-
-def test_init_entity():
-    """Initialize from another Entity.
-
-    Test 1: an Entity initialized from another Entity will define
-    its Quantity (including unit) from it.
-    Test 2: if we select a different unit, it gets converted.
-    Test 3: if we initialize using an Entity with a different ontology label
-    we get an error.
-    """
-    e_1 = me.Entity("ExternalMagneticField", value=1, unit="mA/m")
-    e_2 = me.Entity("ExternalMagneticField", value=e_1)
-    assert e_2.ontology_label == "ExternalMagneticField"
-    assert u.allclose(e_1.quantity, e_2.quantity)
-    assert np.allclose(e_1.value, e_2.value)
-    assert e_1.unit == e_2.unit
-    e_3 = me.Entity("ExternalMagneticField", value=e_1, unit="A/m")
-    assert u.allclose(e_3.quantity, e_1.quantity)
-    assert np.allclose(e_3.value, 1e-3)
-    assert e_3.unit == u.A / u.m
-    with pytest.raises(ValueError):
-        me.Entity("CurieTemperature", value=e_1)
-
-
-def test_unitless():
-    """Test unitless Entity."""
-    e_1 = me.Entity("DemagnetizingFactor", 0.3)
-    assert e_1.ontology_label == "DemagnetizingFactor"
-    assert math.isclose(e_1.value, 0.3)
-    assert e_1.unit.is_equivalent("")
-    e_2 = me.Entity("DemagnetizingFactor", [1, 2])
-    assert np.allclose(e_2.value, [1, 2])
-    assert e_2.unit.is_equivalent("")
-    e_3 = me.Entity("DemagnetizingFactor", u.Quantity(0.3))
-    assert math.isclose(e_3.value, 0.3)
-    assert e_3.unit.is_equivalent("")
-    e_4 = me.Entity("DemagnetizingFactor", e_3)
-    assert math.isclose(e_4.value, 0.3)
-    assert e_4.unit.is_equivalent("")
-
-
-def test_check_units():
-    """Test units of Entity.
-
-    Test 1: Check that unit is immutable.
-    Test 2: Check that Entity cannot be initialized with wrong unit.
-    Even if we activate the necessary conversion equivalency, the initialization
-    should reset all equivalencies.
-    """
-    # change unit (conversion/change unit after initialized entity)
-    e = me.Entity("SpontaneousMagnetization", value=1, unit=u.A / u.m)
-    e.quantity.to("kA/m")
-    assert e.unit == u.A / u.m
-    e.quantity.to("kA/m", copy=False)
-    assert e.unit == u.A / u.m
-    with pytest.raises(ValueError, match="incompatible with ontology. Allowed units"):
-        me.Entity("SpontaneousMagnetization", value=1, unit="T")
-    with (
-        u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(ValueError, match="incompatible with ontology. Allowed units"),
-    ):
-        me.Entity("SpontaneousMagnetization", value=1, unit="T")
-    with (
-        u.set_enabled_equivalencies(u.magnetic_flux_field()),
-        pytest.raises(astropy.units.UnitConversionError),
-    ):
-        me.Entity("SpontaneousMagnetization", value=1 * u.T, unit="A/m")
+from mammos_entity import QuantityEntity, StringEntity  # noqa: F401  # required for repr eval
 
 
 def test_repr():
-    """Test representation string.
+    """Test representation string of an Entity.
 
-    Test 1: Test repr for scalar value.
-    Test 2: Test repr for vectorial value.
-    Test 3: Test repr for unitless Entity.
+    Test 1: Test repr for QuantityEntity with scalar value.
+    Test 2: Test repr for QuantityEntity with scalar value and description
+    Test 3: Test repr for QuantityEntity with vectorial value.
+    Test 4: Test repr for unitless QuantityEntity.
+    Test 5: Test repr for StringEntity
+    Test 6: Test repr for StringEntity with description
 
     Note that the representation of floats will be slightly different for NumPy 1
     and for NumPy 2. In particular `zero_string` = `'0.0'` for NumPy 1,
@@ -164,29 +24,53 @@ def test_repr():
     """
     e = me.Entity("CurieTemperature")
     zero_string = f"{np.float64(0.0)!r}"  # differs for NumPy 1 and NumPy 2.
-    assert e.__repr__() == f"Entity(ontology_label='CurieTemperature', value={zero_string}, unit='K')"
+    assert e.__repr__() == f"QuantityEntity(ontology_label='CurieTemperature', value={zero_string}, unit='K')"
+    assert eval(repr(e)) == e
+
+    e = me.Entity("CurieTemperature", description="Estimated.")
+    assert (
+        e.__repr__()
+        == f"QuantityEntity(ontology_label='CurieTemperature', value={zero_string}, unit='K', description='Estimated.')"
+    )
     assert eval(repr(e)) == e
 
     a = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
     e = me.Entity("ExternalMagneticField", value=a)
     assert e.__repr__() == (
-        "Entity(ontology_label='ExternalMagneticField', " + f"value={np.array(a, dtype=float)!r}, unit='A / m')"
+        "QuantityEntity(ontology_label='ExternalMagneticField', " + f"value={np.array(a, dtype=float)!r}, unit='A / m')"
     )
     assert eval(repr(e)) == e
 
     e = me.Entity("DemagnetizingFactor")
-    assert e.__repr__() == f"Entity(ontology_label='DemagnetizingFactor', value={zero_string})"
+    assert e.__repr__() == f"QuantityEntity(ontology_label='DemagnetizingFactor', value={zero_string})"
+    assert eval(repr(e)) == e
+
+    value = "Nd2Fe14B"
+    value_repr = f"{np.array(value, dtype=np.dtypes.StringDType)!r}"
+    e = me.StringEntity("ChemicalComposition", value=value)
+    assert e.__repr__() == f"StringEntity(ontology_label='ChemicalComposition', value={value_repr})"
+    assert eval(repr(e)) == e
+
+    e = me.StringEntity("ChemicalComposition", value=value, description="experiment 2")
+    assert (
+        e.__repr__()
+        == f"StringEntity(ontology_label='ChemicalComposition', value={value_repr}, description='experiment 2')"
+    )
     assert eval(repr(e)) == e
 
 
 def test_str():
     """Test readable string of an Entity.
 
-    Test 1: Test repr for Entity with scalar value
-    Test 2: Test repr for Entity with scalar value and description
-    Test 3: Test repr for Entity with 1D-vectorial value.
-    Test 4: Test repr for Entity with 2D-vectorial value.
-    Test 5: Test repr for unitless Entity.
+    Test 1: Test repr for QuantityEntity with scalar value.
+    Test 2: Test repr for QuantityEntity with scalar value and description
+    Test 3: Test repr for QuantityEntity with 1D-vectorial value.
+    Test 4: Test repr for QuantityEntity with 2D-vectorial value.
+    Test 5: Test repr for unitless QuantityEntity.
+    Test 6: Test repr for StringEntity with no value
+    Test 7: Test repr for StringEntity with value only
+    Test 8: Test repr for StringEntity with description only
+    Test 9: Test repr for StringEntity with value and description
     """
     e = me.Entity("CurieTemperature")
     assert str(e) == "CurieTemperature(0.0 K)"
@@ -204,26 +88,25 @@ def test_str():
     e = me.Entity("DemagnetizingFactor")
     assert str(e) == "DemagnetizingFactor(0.0)"
 
+    e = me.StringEntity("ChemicalComposition")
+    assert str(e) == "ChemicalComposition()"
 
-def test_axis_labels():
-    """Test different axis_label examples."""
-    e_1 = me.Entity("ExternalMagneticField")
-    assert e_1.axis_label == "External Magnetic Field (A / m)"
-    e_2 = me.Entity("AffinityOfAChemicalReaction")
-    assert e_2.axis_label == "Affinity Of A Chemical Reaction (J / mol)"
-    e_3 = me.Entity("DemagnetizingFactor")
-    assert e_3.axis_label == "Demagnetizing Factor"
-    e_4 = me.Entity("Entropy")
-    assert e_4.axis_label == "Entropy (J / K)"
-    e_5 = me.Entity("PlanckConstant")
-    assert e_5.axis_label == "Planck Constant (J s)"
+    e = me.StringEntity("ChemicalComposition", value="Nd2Fe14B")
+    assert str(e) == "ChemicalComposition('Nd2Fe14B')"
+
+    e = me.StringEntity("ChemicalComposition", description="experiment 2")
+    assert str(e) == "ChemicalComposition(description='experiment 2')"
+
+    e = me.StringEntity("ChemicalComposition", value="Nd2Fe14B", description="experiment 2")
+    assert str(e) == "ChemicalComposition('Nd2Fe14B', description='experiment 2')"
 
 
 @pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
 def test_all_labels_ontology(ontology_element):
-    """Test all labels in the ontology.
+    """Test creation of Entity with all labels in the ontology.
 
-    This test creates one Entity instance for each label in the ontology.
+    We initialize entities without a value. This is intended as the empty
+    string for StringEntity objects and as zero for QuantityEntity objects.
 
     Entities `Person` and `Organization` do not have a `prefLabel`.
     These are extreme, unfixable cases and we ignore them.
@@ -239,109 +122,7 @@ def test_all_labels_ontology(ontology_element):
             "RelativePermittivity",
         ]:
             pytest.xfail(f"{prefLabel=} is ambiguous")
-        me.Entity(prefLabel, 42)
-
-
-def test_default_unit():
-    """Test default unit for different entities."""
-    assert me.Entity("MaximumEnergyProduct").unit == u.J / u.m**3
-    assert me.Entity("SpontaneousMagneticPolarisation").unit == u.T
-
-
-def test_label_without_concrete_units():
-    """Test the ontology entries without concrete units.
-
-    This test checks that entries with an abstract unit but no concrete units (i.e. the
-    subclasses of abstract units) are initialized with units given from their dimension
-    strings.
-
-    For example, ``MagneticMoment`` has the abstract unit ``ElectricCurrentAreaUnit``.
-    This abstract unit is not tied to any concrete unit, i.e. it has no subclasses.
-    However, it has the attribute ``hasDimensionString`` is equal to
-    ``'T0 L+2 M0 I+1 Θ0 N0 J0'`` and we read this instead.
-    """
-    assert me.Entity("MagneticMoment").unit == u.A * u.m**2
-    assert me.Entity("DiffusionCoefficient").unit == u.m**2 / u.s
-    assert me.Entity("DiffusionCoefficientForParticleNumberDensity").unit == u.m**2 / u.s
-    assert me.Entity("EffectiveDiffusionCoefficient").unit == u.m**2 / u.s
-    assert me.Entity("ElectricDipoleMoment").unit == u.A * u.m * u.s
-    assert me.Entity("EnergyDensityOfStates").unit == u.s**2 / u.m**5 / u.kg
-    assert me.Entity("JouleThomsonCoefficient").unit == u.K * u.s**2 * u.m / u.kg
-    assert me.Entity("LorenzCoefficient").unit == u.m**4 * u.kg**2 / u.A**2 / u.s**6
-    assert me.Entity("MagneticMomentPerUnitMass").unit == u.m**2 * u.A / u.kg
-    assert me.Entity("Mobility").unit == u.A * u.s**2 / u.kg
-
-
-def test_switch_to_pref_label():
-    """Test the switch to prefLabel instead of given one."""
-    assert me.Entity("Ms").ontology_label == "SpontaneousMagnetization"
-    assert me.Entity("K1").ontology_label == "MagnetocrystallineAnisotropyConstantK1"
-    assert me.Entity("A").ontology_label == "ExchangeStiffnessConstant"
-    assert me.Entity("Js").ontology_label == "SpontaneousMagneticPolarization"
-
-
-def test_ontology_information_mammos():
-    """Test ontology label and IRI for an Entity in the MaMMoS ontology."""
-    e = me.Entity("ExternalMagneticField")
-    assert e.ontology_label == "ExternalMagneticField"
-    assert e.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
-    assert (
-        e.ontology_label_with_iri
-        == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
-    )
-    assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
-    assert e.ontology_label in me.mammos_ontology
-    H = me.mammos_ontology.get_by_label(e.ontology_label)
-    assert e.ontology_label_with_iri == f"{H.prefLabel[0]} {H.iri}"
-
-
-def test_ontology_information_EMMO():
-    """Test ontology label and IRI for an Entity in the EMMO."""
-    e = me.Entity("AngularVelocity")
-    assert e.ontology_label == "AngularVelocity"
-    assert e.ontology_iri == "https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
-    assert (
-        e.ontology_label_with_iri == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
-    )
-    assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
-    assert e.ontology_label in me.mammos_ontology
-    omega = me.mammos_ontology.get_by_label(e.ontology_label)
-    assert e.ontology_label_with_iri == f"{omega.prefLabel[0]} {omega.iri}"
-
-
-def test_equality():
-    """Test equality.
-
-    We expect two entities to be equal if the ontology_label is the same
-    and the values are close enough.
-    Equality fails when the right hand term is not an Entity.
-    """
-    e_1 = me.Entity("SpontaneousMagnetization", value=1)
-    e_2 = me.Entity("SpontaneousMagnetization", value=1)
-    assert e_1 == e_2
-    e_3 = me.Entity("SpontaneousMagnetization", value=2)
-    assert e_1 != e_3
-    e_4 = me.Entity("ExternalMagneticField", value=1)
-    assert e_1 != e_4
-    e_5 = me.Entity("SpontaneousMagnetization", value=1000, unit=u.mA / u.m)
-    assert e_1 == e_5
-    e_6 = me.Entity("SpontaneousMagnetization", value=[[1, 1]])
-    assert e_1 != e_6
-    e_7 = me.Entity("SpontaneousMagnetization", value=[[1], [1]])
-    assert e_6 != e_7
-
-    # Other objects
-    assert e_1 != 1 * u.A / u.m
-    assert e_1 != 1
-    assert e_1 != e_2.quantity
-
-    # Other objects can implement __eq__ in a way that is compatible with Entity
-
-    class A:
-        def __eq__(self, o):
-            return True
-
-    assert e_1 == A()
+        me.Entity(prefLabel)
 
 
 @pytest.mark.parametrize(
