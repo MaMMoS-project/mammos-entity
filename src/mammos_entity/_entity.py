@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import re
+import warnings
 from functools import cache
 from typing import TYPE_CHECKING
 
@@ -17,7 +18,6 @@ import mammos_units as u
 
 import mammos_entity as me
 from mammos_entity import _entity_collection_tree as _tree_repr
-from mammos_entity._ontology import mammos_ontology, search_labels
 
 if TYPE_CHECKING:
     import astropy.units
@@ -111,7 +111,7 @@ def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
 
 
 @cache
-def _get_all_possible_units(ontology_label: str) -> tuple[astropy.units.UnitBase]:
+def _get_all_possible_units(ontology: mammos_entity.Ontology, ontology_label: str) -> tuple[astropy.units.UnitBase]:
     """Get list of accepted units given an ontology label found in the ontology.
 
     Given a label for an ontology entry, this function finds all SI base units,
@@ -124,6 +124,7 @@ def _get_all_possible_units(ontology_label: str) -> tuple[astropy.units.UnitBase
     unit.
 
     Args:
+        ontology: TODO: write.
         ontology_label: The label of an ontology concept
             (e.g., 'SpontaneousMagnetization').
 
@@ -136,15 +137,16 @@ def _get_all_possible_units(ontology_label: str) -> tuple[astropy.units.UnitBase
         (Unit("K"), Unit("deg_C"))
 
     """
-    thing = me.mammos_ontology[ontology_label]
+    ontopy_ontology = ontology._ontopy_ontology
+    thing = ontopy_ontology[ontology_label]
     possible_units = []
     for ancestor in thing.ancestors():
         # we find the ancestor with the attribute `hasMeasurementUnit`
         if hasattr(ancestor, "hasMeasurementUnit") and ancestor.hasMeasurementUnit:
             measurement_unit = ancestor.hasMeasurementUnit[0]
             if (
-                measurement_unit == mammos_ontology.DimensionlessUnit
-                or mammos_ontology.DimensionlessUnit in measurement_unit.ancestors()
+                measurement_unit == ontopy_ontology.DimensionlessUnit
+                or ontopy_ontology.DimensionlessUnit in measurement_unit.ancestors()
             ):
                 # entity is dimensionless by ontology
                 possible_units.append(u.Unit(""))
@@ -155,9 +157,9 @@ def _get_all_possible_units(ontology_label: str) -> tuple[astropy.units.UnitBase
                     if isinstance(
                         sub_class,
                         (
-                            mammos_ontology.SIBaseUnit,
-                            mammos_ontology.SICoherentDerivedUnit,
-                            mammos_ontology.SISpecialUnit,
+                            ontopy_ontology.SIBaseUnit,
+                            ontopy_ontology.SICoherentDerivedUnit,
+                            ontopy_ontology.SISpecialUnit,
                         ),
                     ):
                         converted_unit = _convert_unit(sub_class)
@@ -225,7 +227,7 @@ def _get_preferred_unit(
 
 
 @cache
-def _select_ontology_label(label: str) -> str:
+def _select_ontology_label(ontology: mammos_entity.Ontology, label: str) -> str:
     """Select ontology label from given one.
 
     First, the label is matched with the `prefLabel`s in the ontology. If the given
@@ -235,6 +237,7 @@ def _select_ontology_label(label: str) -> str:
     If any of these two step returns more than one match, an error is raised.
 
     Args:
+        ontology: TODO: write
         label: Given label of an ontology entry.
 
     Returns:
@@ -248,20 +251,24 @@ def _select_ontology_label(label: str) -> str:
 
     """
     # Find prefLabel
-    prefLabel_matches = mammos_ontology.search(prefLabel=label)
+    prefLabel_matches = ontology._ontopy_ontology.search(prefLabel=label)
     n_matches = len(prefLabel_matches)
     if n_matches == 1:
         return str(prefLabel_matches[0].prefLabel[0])
     elif n_matches > 1:
-        raise ValueError(
-            f"The ontology contains more than one entry with the given label '{label}' "
-            "as prefLabel. Please raise an issue in the mammos-entity repository "
-            "https://github.com/MaMMoS-project/mammos-entity/issues or in the "
-            "repository of the relevant ontology."
+        warnings.warn(
+            "The ontology contains more than one entry with the given label "
+            f"'{label}' as prefLabel. Matches: {prefLabel_matches!s}. "
+            f"Chosen entity {prefLabel_matches[0].name} from ontology "
+            f"{prefLabel_matches[0].namespace.get_version(as_iri=True)}. "
+            "For a more specific match, use the IRI.",
+            stacklevel=2,
         )
+        # TODO: Maybe better to raise a ValueError?
+        return str(prefLabel_matches[0].prefLabel[0])
 
     # Find alternative labels
-    label_matches = search_labels(label, auto_wildcard=False)
+    label_matches = ontology.search_labels(label, auto_wildcard=False)
     n_matches = len(label_matches)
     if n_matches == 1:
         return label_matches[0]
@@ -305,7 +312,11 @@ class Entity:
         unit: str | None | mammos_units.UnitBase = None,
         *,
         description: str = "",
+        ontology: mammos_entity.Ontology | None = None,
     ):
+        if ontology is None:
+            ontology = me.mammos_ontology
+        self._ontology = ontology
         self.description = description
         if isinstance(value, Entity):
             if value.ontology_label != ontology_label:
@@ -317,10 +328,10 @@ class Entity:
             value = value.quantity
 
         # Select ontology label
-        label = _select_ontology_label(ontology_label)
+        label = _select_ontology_label(ontology, ontology_label)
 
         # Get ontology-compatible units
-        ontology_units = _get_all_possible_units(label)
+        ontology_units = _get_all_possible_units(ontology, label)
 
         if unit is None:
             unit = value.unit if isinstance(value, u.Quantity) else _get_preferred_unit(ontology_units)
@@ -381,7 +392,7 @@ class Entity:
             The ontology IRI corresponding to the right ontology record.
 
         """
-        return self.ontology.iri
+        return self.thing.iri
 
     @property
     def ontology_label_with_iri(self) -> str:
@@ -398,16 +409,25 @@ class Entity:
         """
         return f"{self.ontology_label} {self.ontology_iri}"
 
-    # FIX: right not this will fail if no internet!
     @property
-    def ontology(self) -> owlready2.entity.ThingClass:
+    def ontology(self) -> mammos_entity.Ontology:
         """Retrieve the ontology object.
 
         Returns:
-            The ontology object matching the entity.
+            The ontology where the entity is defined.
 
         """
-        return mammos_ontology.get_by_label(self.ontology_label)
+        return self._ontology
+
+    @property
+    def thing(self) -> owlready2.entity.ThingClass:
+        """Retrieve the ontology object.
+
+        Returns:
+            The ontology thing matching the entity.
+
+        """
+        return self._ontology._ontopy_ontology.get_by_label(self.ontology_label)
 
     @property
     def quantity(self) -> mammos_units.Quantity:
