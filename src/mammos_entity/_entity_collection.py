@@ -16,6 +16,7 @@ import yaml
 
 import mammos_entity as me
 from mammos_entity import _entity_collection_tree
+from mammos_entity._ontology import mammos_ontology
 
 if TYPE_CHECKING:
     import collections.abc
@@ -393,7 +394,8 @@ class EntityCollection:
           dashed lines
         - (optional, only for entities) the preferred ontology label
         - (optional, only for entities) a description string
-        - (optional, only for entities) the ontology IRI
+        - (optional, only for entities) the ontology base IRI (with version)
+        - (optional, only for entities) the entity IRI in the ontology
         - (optional, for entities and quantities) units
         - the short labels used to refer to individual columns when working with the
           data,  e.g. in a :py:class:`pandas.DataFrame` (omitting spaces in this string
@@ -423,6 +425,9 @@ class EntityCollection:
         .. version-changed:: v3
            Ontology labels, entity descriptions, IRIs, and units are no longer
            commented.
+
+        .. version-changed:: v4
+           Each entity IRI is split into ontology base IRI and entity IRI.
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -539,6 +544,7 @@ class EntityCollection:
         Collection nodes are recursive and have two keys ``description`` and ``data``:
 
         - ``description``: a (multi-line) string with arbitrary content
+        - ``ontologies``: a list of ontology IRI strings (with version)
         - ``data``: mapping from entry names to entity-like entries or nested
           collection nodes
 
@@ -732,8 +738,10 @@ class EntityCollection:
         if len(self) == 0:
             raise ValueError("Empty collections cannot be saved to YAML.")
 
+        ontologies = [mammos_ontology.get_version(as_iri=True)]
+
         def _serialize_collection(collection: EntityCollection) -> dict:
-            result = {"description": collection.description, "data": {}}
+            result = {"description": collection.description, "ontologies": ontologies, "data": {}}
             for name, element in collection:
                 if isinstance(element, EntityCollection):
                     result["data"][name] = _serialize_collection(element)
