@@ -16,7 +16,6 @@ import yaml
 
 import mammos_entity as me
 from mammos_entity import _entity_collection_tree
-from mammos_entity._ontology import mammos_ontology
 
 if TYPE_CHECKING:
     import collections.abc
@@ -118,6 +117,7 @@ class EntityCollection:
 
         Args:
             description: Information string to assign to ``description`` attribute.
+            ontology: TODO: docstring.
             **kwargs : entities to be stored in the collection.
         """
         self.description = description
@@ -311,6 +311,8 @@ class EntityCollection:
             element = {}
             if isinstance(entity_like, me.Entity):
                 element["ontology_label"] = entity_like.ontology_label
+                element["ontology_iri"] = entity_like.ontology_iri
+                element["entity_iri"] = entity_like.entity_iri
                 element["unit"] = str(entity_like.unit)
                 element["description"] = entity_like.description
             elif isinstance(entity_like, u.Quantity):
@@ -354,6 +356,17 @@ class EntityCollection:
         if missing_keys := set(metadata) - set(dataframe.columns):
             raise ValueError(f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}")
 
+        # load needed online ontologies
+        iris = set(
+            entity["ontology_iri"]
+            for entity in metadata.values()
+            if "ontology_iri" in entity and entity["ontology_iri"]
+        )
+        # HACK: magmo ontology is broken and need its dependency
+        if "https://w3id.org/emmo/domain/0.0.5/magnetic-materials" in iris:
+            iris.add("https://w3id.org/emmo/domain/magnetic-materials/0.0.5/magnetic-materials-dependencies")
+        ontology = me.Ontology(iris=iris, initialize=True)
+
         collection = cls(description=description)
         for name in metadata:
             value = dataframe[name].to_numpy()
@@ -366,6 +379,7 @@ class EntityCollection:
                     value=value,
                     unit=metadata[name].get("unit"),
                     description=metadata[name].get("description", ""),
+                    ontology=ontology,
                 )
             elif "unit" in metadata[name]:
                 elem = u.Quantity(
@@ -738,7 +752,7 @@ class EntityCollection:
         if len(self) == 0:
             raise ValueError("Empty collections cannot be saved to YAML.")
 
-        ontologies = [mammos_ontology.get_version(as_iri=True)]
+        ontologies = [me.mammos_ontology.get_version(as_iri=True)]
 
         def _serialize_collection(collection: EntityCollection) -> dict:
             result = {"description": collection.description, "ontologies": ontologies, "data": {}}

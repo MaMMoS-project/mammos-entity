@@ -111,8 +111,12 @@ def _convert_dimension_string(unit_string: str) -> astropy.units.UnitBase:
 
 
 @cache
-def _get_all_possible_units(ontology: mammos_entity.Ontology, ontology_label: str) -> tuple[astropy.units.UnitBase]:
+def _get_all_possible_units(
+    ontology: mammos_entity.Ontology, thing: owlready2.entity.ThingClass
+) -> tuple[astropy.units.UnitBase]:
     """Get list of accepted units given an ontology label found in the ontology.
+
+    TODO: check docstring.
 
     Given a label for an ontology entry, this function finds all SI base units,
     SI-coherent units, and some selected special units (classified as
@@ -125,8 +129,7 @@ def _get_all_possible_units(ontology: mammos_entity.Ontology, ontology_label: st
 
     Args:
         ontology: TODO: write.
-        ontology_label: The label of an ontology concept
-            (e.g., 'SpontaneousMagnetization').
+        thing: The owlready2 `ThingClass` representing an ontology concept.
 
     Returns:
         A list of all compatible astropy units.
@@ -138,7 +141,6 @@ def _get_all_possible_units(ontology: mammos_entity.Ontology, ontology_label: st
 
     """
     ontopy_ontology = ontology._ontopy_ontology
-    thing = ontopy_ontology[ontology_label]
     possible_units = []
     for ancestor in thing.ancestors():
         # we find the ancestor with the attribute `hasMeasurementUnit`
@@ -227,34 +229,30 @@ def _get_preferred_unit(
 
 
 @cache
-def _select_ontology_label(ontology: mammos_entity.Ontology, label: str) -> str:
-    """Select ontology label from given one.
+def _select_ontology_thing(ontology: mammos_entity.Ontology, label: str, iri: str) -> owlready2.entity.ThingClass:
+    """Select thing from ontology representing the entity.
 
-    First, the label is matched with the `prefLabel`s in the ontology. If the given
-    label does not match with any `prefLabel`, we use the function
-    :py:func:`~mammos.entity.search_labels` to also match `label`s and `altLabel`s.
-
-    If any of these two step returns more than one match, an error is raised.
-
-    Args:
-        ontology: TODO: write
-        label: Given label of an ontology entry.
-
-    Returns:
-        Matched label in the ontology.
-
-    Raises:
-        ValueError: Multiple ontology entries have the selected entry as prefLabel.
-        ValueError: No ontology entry found to match to given label.
-        ValueError: The given label is not the prefLabel for any ontology entry and it
-            is ambiguous as an alternative label.
-
+    TODO: docstring.
     """
+    # Search by IRI: it should be straightforward
+    if iri:
+        thing = ontology._ontopy_ontology[iri]
+        if label and thing.prefLabel != label:
+            raise ValueError(
+                "Discrepancy between entity iri and the given label. prefLabel "
+                f"of the given iri: {thing.prefLabel}. Given label: {label}"
+            )
+        return thing
+
+    # if we do not have label nor iri, we have error
+    if not label:
+        raise ValueError("Entity should be defined either via ontology_label or entity_iri.")
+
     # Find prefLabel
     prefLabel_matches = ontology._ontopy_ontology.search(prefLabel=label)
     n_matches = len(prefLabel_matches)
     if n_matches == 1:
-        return str(prefLabel_matches[0].prefLabel[0])
+        return prefLabel_matches[0]
     elif n_matches > 1:
         warnings.warn(
             "The ontology contains more than one entry with the given label "
@@ -265,13 +263,13 @@ def _select_ontology_label(ontology: mammos_entity.Ontology, label: str) -> str:
             stacklevel=2,
         )
         # TODO: Maybe better to raise a ValueError?
-        return str(prefLabel_matches[0].prefLabel[0])
+        return prefLabel_matches[0]
 
     # Find alternative labels
     label_matches = ontology.search_labels(label, auto_wildcard=False)
     n_matches = len(label_matches)
     if n_matches == 1:
-        return label_matches[0]
+        return ontology._ontopy_ontology[label_matches[0]]
     elif n_matches == 0:
         raise ValueError(f"No ontology entry found with label '{label}'.")
     else:
@@ -307,19 +305,29 @@ class Entity:
 
     def __init__(
         self,
-        ontology_label: str,
+        ontology_label: str = "",
         value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
         unit: str | None | mammos_units.UnitBase = None,
         *,
+        iri: str = "",
         description: str = "",
         ontology: mammos_entity.Ontology | None = None,
     ):
         if ontology is None:
             ontology = me.mammos_ontology
+        if not ontology._initialized:
+            ontology.initialize()
         self._ontology = ontology
         self.description = description
+
+        # find correct entity in the ontology
+        thing = _select_ontology_thing(ontology, ontology_label, iri)
+        label = thing.get_preferred_label()
+        self._ontology_label = label
+
+        # if value is an Entity, we should check that it matches
         if isinstance(value, Entity):
-            if value.ontology_label != ontology_label:
+            if value.ontology_label != thing.ontology_label:
                 raise ValueError(
                     "Incompatible label for initialization."
                     f" Trying to initialize a {ontology_label}"
@@ -327,12 +335,10 @@ class Entity:
                 )
             value = value.quantity
 
-        # Select ontology label
-        label = _select_ontology_label(ontology, ontology_label)
-
         # Get ontology-compatible units
-        ontology_units = _get_all_possible_units(ontology, label)
+        ontology_units = _get_all_possible_units(ontology, thing)
 
+        # Check inputted unit
         if unit is None:
             unit = value.unit if isinstance(value, u.Quantity) else _get_preferred_unit(ontology_units)
         else:
@@ -346,7 +352,6 @@ class Entity:
                 )
 
             self._quantity = u.Quantity(value=value, unit=unit)
-        self._ontology_label = label
 
     @property
     def description(self) -> str:
@@ -381,18 +386,28 @@ class Entity:
         return self._ontology_label
 
     @property
-    def ontology_iri(self) -> str:
-        """The ontology IRI that links the entity to the EMMO ontology.
+    def entity_iri(self) -> str:
+        """The IRI that links the entity to its ontology.
 
         Retrieve the ontology IRI (Internationalized Resource Identifier) corresponding
         to the :py:class:`owlready2.entity.ThingClass` that defines the given entity
         in ontology.
 
         Returns:
-            The ontology IRI corresponding to the right ontology record.
+            The IRI corresponding to the right entity in its specific ontology.
 
         """
         return self.thing.iri
+
+    @property
+    def ontology_iri(self) -> str:
+        """The ontology IRI with version.
+
+        Returns:
+            The ontology IRI with version.
+
+        """
+        return self.thing.namespace.ontology.get_version(as_iri=True)
 
     @property
     def ontology_label_with_iri(self) -> str:
@@ -587,7 +602,8 @@ class Entity:
         to the dataset:
 
         - ``ontology_label`` (str): the ontology label of the entity
-        - ``ontology_iri`` (str): the IRI identifying the ontology entry
+        - ``ontology_iri`` (str): the IRI (with version) identifying the ontology
+        - ``entity_iri`` (str): the IRI identifying the entry in the ontology
         - ``unit`` (str): the unit string
         - ``description`` (str): an arbitrary description string
         - ``mammos_entity_version`` (str): the version of mammos-entity that wrote
@@ -635,7 +651,8 @@ class Entity:
 
         dset = base.create_dataset(name, data=self.value)
         dset.attrs["ontology_label"] = self.ontology_label
-        dset.attrs["ontology_iri"] = self.ontology.iri
+        dset.attrs["ontology_iri"] = self.ontology_iri
+        dset.attrs["entity_iri"] = self.entity_iri
         dset.attrs["unit"] = str(self.unit)
         dset.attrs["description"] = self.description
 
