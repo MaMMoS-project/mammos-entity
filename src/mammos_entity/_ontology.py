@@ -7,6 +7,7 @@ from ``.ttl`` (Turtle) files distributed with mammos-entity.
 
 from __future__ import annotations
 
+import warnings
 from collections.abc import Iterable
 from logging import getLogger
 from pathlib import Path
@@ -15,6 +16,7 @@ from typing import TYPE_CHECKING
 import ontopy
 
 from mammos_entity._entity import Entity
+from mammos_entity._entity_collection import EntityCollection
 
 logger = getLogger(__name__)
 
@@ -32,15 +34,15 @@ class Ontology:
 
     def __init__(self, iris: Iterable[str] | None = None, initialize: bool = False):
         """TODO: docstring."""
-        self._iris = iris
+        self._iris = sorted(iris, reverse=True) if iris else iris
+        self._initialized = False
         if initialize:
             self.initialize()
-        else:
-            self._initialized = False
 
     def __str__(self):
         """TODO: docstring."""
-        out = "Ontology:\n"
+        _init = " (initialized)" if self._initialized else ""
+        out = f"Ontology:{_init}\n"
         if self._iris is None:
             out += "- local `magmo`."
         else:
@@ -49,15 +51,50 @@ class Ontology:
 
     def __repr__(self):
         """TODO: docstring."""
-        return f"Ontology({self._iris!r})"
+        arg = f"{self._iris!r}" if self._iris else ""
+        return f"Ontology({arg})"
+
+    @property
+    def iris(self) -> list[str]:
+        """TODO: docstring."""
+        return self._iris
+
+    @iris.setter
+    def iris(self, _) -> None:
+        """TODO: docstring."""
+        raise RuntimeError(
+            "Do not assign the iris directly. To add new iris, use the method "
+            "`add`. To remove iris, please initiate a new `Ontology` object."
+        )
 
     def initialize(self, verbose: bool = False):
         """TODO: docstring."""
+        if self._initialized:
+            warnings.warn(
+                "Already initialized. Re-initializing.",
+                stacklevel=1,
+            )
         if self._iris is None:
-            self._ontopy_ontology = load_offline_ontologies(verbose=verbose)
+            self._ontopy_ontology, self._iris = _load_local_ontologies(verbose=verbose)
+            self._local = True
         else:
-            self._ontopy_ontology = load_online_ontologies(self._iris, verbose=verbose)
+            self._ontopy_ontology = _load_online_ontologies(self._iris, verbose=verbose)
+            self._local = False
         self._initialized = True
+
+    def add_iri(self, iri: str):
+        """TODO. docstring."""
+        if iri in self._iris:
+            warnings.warn(
+                f"IRI: '{iri}' was already in the list: {self.iris!s}.",
+                stacklevel=1,
+            )
+        else:
+            if self._initialized:
+                new_dep = self._ontopy_ontology.world.get_ontology(iri).load()
+                self._ontopy_ontology.imported_ontologies.append(new_dep)
+            self._iris.append(iri)
+            self.iris.sort(reverse=True)
 
     def search_labels(self, text: str, auto_wildcard: bool = True) -> list[str]:
         """Search entity labels by name.
@@ -105,20 +142,30 @@ class Ontology:
 
     def Entity(
         self,
-        ontology_label: str,
+        ontology_label: str = "",
         value: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike = 0,
         unit: str | None | mammos_units.UnitBase = None,
         *,
+        iri: str = "",
         description: str = "",
     ):
         """TODO: docstring."""
         if not self._initialized:
             self.initialize()
-            self._initialized = True
-        return Entity(ontology_label, value, unit, description=description, ontology=self)
+        return Entity(ontology_label, value, unit, iri=iri, description=description, ontology=self)
+
+    def EntityCollection(
+        self,
+        description: str = "",
+        **kwargs: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+    ):
+        """TODO: docstring."""
+        if not self._initialized:
+            self.initialize()
+        return EntityCollection(description=description, ontology=self, **kwargs)
 
 
-def load_offline_ontologies(verbose: bool = False) -> ontopy.ontology.Ontology:
+def _load_local_ontologies(verbose: bool = False) -> (ontopy.ontology.Ontology, list[str]):
     """Load EMMO and MaMMoS ontology from 'ontology' directory.
 
     The returned ontology object contains all definitions from both ontologies, EMMO is
@@ -135,16 +182,18 @@ def load_offline_ontologies(verbose: bool = False) -> ontopy.ontology.Ontology:
     # we construct the file uri manually in the form required for ontopy
     emmo_ttl = f"file://{ontology_dir / 'emmo-inferred.ttl'!s}"
     logger.debug("loading emmo ttl from '%s'", emmo_ttl)
-    world.get_ontology(emmo_ttl).load()
+    emmo = world.get_ontology(emmo_ttl).load()
+    iris = [emmo.get_version(as_iri=True)]
     # now load MaMMoS ontology, which builds upon EMMO; with EMMO already loaded
     # no internet access is required to resolve 'owl:imports <https://w3id.org/emmo'
     mammos_ttl = f"file://{ontology_dir / 'magnetic-materials.ttl'!s}"
     logger.debug("loading mammos ttl from '%s'", mammos_ttl)
-    mammos_ontology = world.get_ontology(mammos_ttl).load()
-    return mammos_ontology
+    onto = world.get_ontology(mammos_ttl).load()
+    iris.append(onto.get_version(as_iri=True))
+    return onto, iris
 
 
-def load_online_ontologies(iris: Iterable[str], verbose: bool = False) -> ontopy.ontology.Ontology:
+def _load_online_ontologies(iris: Iterable[str], verbose: bool = False) -> ontopy.ontology.Ontology:
     """Fetch EMMO and MaMMoS ontology from the internet.
 
     TODO: update.
