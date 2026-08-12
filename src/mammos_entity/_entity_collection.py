@@ -356,15 +356,12 @@ class EntityCollection:
         if missing_keys := set(metadata) - set(dataframe.columns):
             raise ValueError(f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}")
 
-        # load needed online ontologies
+        # load ontologies
         iris = set(
             entity["ontology_iri"]
             for entity in metadata.values()
             if "ontology_iri" in entity and entity["ontology_iri"]
         )
-        # HACK: magmo ontology is broken and need its dependency
-        if "https://w3id.org/emmo/domain/0.0.5/magnetic-materials" in iris:
-            iris.add("https://w3id.org/emmo/domain/magnetic-materials/0.0.5/magnetic-materials-dependencies")
         ontology = me.Ontology(iris=iris, initialize=True)
 
         collection = cls(description=description)
@@ -378,6 +375,7 @@ class EntityCollection:
                     ontology_label=metadata[name]["ontology_label"],
                     value=value,
                     unit=metadata[name].get("unit"),
+                    iri=metadata[name]["entity_iri"],
                     description=metadata[name].get("description", ""),
                     ontology=ontology,
                 )

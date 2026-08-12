@@ -1,5 +1,7 @@
 """Entity functionality.
 
+TODO: update package docstring.
+
 Entities are quantities (numbers with units) with an associated ontology label.
 
 This packages contains classes for defining, collecting and saving such entities (
@@ -13,6 +15,9 @@ magnetic entities (such as :py:class:`~mammos_entity.Ms`, :py:class:`~mammos_ent
 """
 
 import importlib.metadata
+from pathlib import Path
+
+from platformdirs import user_cache_dir
 
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
@@ -67,3 +72,6 @@ __all__ = [
     "from_hdf5",
     "from_yaml",
 ]
+
+
+(_CACHE_DIR := Path(user_cache_dir("mammos_entity"))).mkdir(exist_ok=True)
