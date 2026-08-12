@@ -237,7 +237,7 @@ def _select_ontology_thing(ontology: mammos_entity.Ontology, label: str, iri: st
     # Search by IRI: it should be straightforward
     if iri:
         thing = ontology._ontopy_ontology[iri]
-        if label and thing.prefLabel != label:
+        if label and thing.get_preferred_label() != label:
             raise ValueError(
                 "Discrepancy between entity iri and the given label. prefLabel "
                 f"of the given iri: {thing.prefLabel}. Given label: {label}"
@@ -258,7 +258,7 @@ def _select_ontology_thing(ontology: mammos_entity.Ontology, label: str, iri: st
             "The ontology contains more than one entry with the given label "
             f"'{label}' as prefLabel. Matches: {prefLabel_matches!s}. "
             f"Chosen entity {prefLabel_matches[0].name} from ontology "
-            f"{prefLabel_matches[0].namespace.get_version(as_iri=True)}. "
+            f"{prefLabel_matches[0].namespace.ontology.get_version(as_iri=True)}. "
             "For a more specific match, use the IRI.",
             stacklevel=2,
         )

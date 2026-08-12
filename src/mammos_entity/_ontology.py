@@ -7,6 +7,8 @@ from ``.ttl`` (Turtle) files distributed with mammos-entity.
 
 from __future__ import annotations
 
+import os
+import re
 import warnings
 from collections.abc import Iterable
 from logging import getLogger
@@ -14,12 +16,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import ontopy
+import requests
+import urllib3
 
+import mammos_entity as me
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 
-logger = getLogger(__name__)
-
+logger = getLogger(__package__)
 
 if TYPE_CHECKING:
     import mammos_units
@@ -34,8 +38,12 @@ class Ontology:
 
     def __init__(self, iris: Iterable[str] | None = None, initialize: bool = False):
         """TODO: docstring."""
-        self._iris = sorted(iris, reverse=True) if iris else iris
+        if iris is None:
+            self._iris = ["https://w3id.org/emmo/domain/magnetic-materials/0.0.6"]
+        else:
+            self._iris = iris
         self._initialized = False
+        self._ontopy_ontology = None
         if initialize:
             self.initialize()
 
@@ -67,19 +75,14 @@ class Ontology:
             "`add`. To remove iris, please initiate a new `Ontology` object."
         )
 
-    def initialize(self, verbose: bool = False):
+    def initialize(self, use_cache: bool = True):
         """TODO: docstring."""
         if self._initialized:
             warnings.warn(
                 "Already initialized. Re-initializing.",
                 stacklevel=1,
             )
-        if self._iris is None:
-            self._ontopy_ontology, self._iris = _load_local_ontologies(verbose=verbose)
-            self._local = True
-        else:
-            self._ontopy_ontology = _load_online_ontologies(self._iris, verbose=verbose)
-            self._local = False
+        self._ontopy_ontology = _load_ontologies(self.iris, use_cache=use_cache)
         self._initialized = True
 
     def add_iri(self, iri: str):
@@ -94,7 +97,6 @@ class Ontology:
                 new_dep = self._ontopy_ontology.world.get_ontology(iri).load()
                 self._ontopy_ontology.imported_ontologies.append(new_dep)
             self._iris.append(iri)
-            self.iris.sort(reverse=True)
 
     def search_labels(self, text: str, auto_wildcard: bool = True) -> list[str]:
         """Search entity labels by name.
@@ -165,6 +167,36 @@ class Ontology:
         return EntityCollection(description=description, ontology=self, **kwargs)
 
 
+def _iri_to_filename(iri: str) -> os.PathLike:
+    """TODO: docstring."""
+    name, version = _iri_to_info(iri)
+    return me._CACHE_DIR / name / version / "inferred.ttl"
+
+
+def _iri_to_inferred(iri: str) -> os.PathLike:
+    """TODO: docstring."""
+    emmo_domain = "https://w3id.org/emmo"
+    name, version = _iri_to_info(iri)
+    if name == "emmo":
+        return f"{emmo_domain}/{version}/inferred"
+    else:
+        return f"{emmo_domain}/domain/{name}/{version}/inferred"
+
+
+def _iri_to_info(iri: str) -> tuple(str):
+    """TODO: docstring."""
+    if "https://w3id.org/emmo" not in iri:
+        raise ValueError(f"Not an EMMO iri. Given iri: {iri}.")
+    emmo_domain = "https://w3id.org/emmo/"
+    onto_info = iri.replace(emmo_domain, "")
+    version = re.search(r"\d+.\d+.\d+", onto_info).group()
+    name = re.search(r".*\d+.\d+.\d+", onto_info).group()
+    if name == version:
+        return ("emmo", version)
+    else:
+        return (name.replace("domain/", "").replace(f"/{version}", ""), version)
+
+
 def _load_local_ontologies(verbose: bool = False) -> (ontopy.ontology.Ontology, list[str]):
     """Load EMMO and MaMMoS ontology from 'ontology' directory.
 
@@ -173,8 +205,6 @@ def _load_local_ontologies(verbose: bool = False) -> (ontopy.ontology.Ontology, 
     ``imported=True``.
 
     """
-    if verbose:
-        print("Reading local MagMO")
     world = ontopy.World()
     ontology_dir = (Path(__file__).parent / "ontology").resolve()
     # load EMMO
@@ -206,6 +236,56 @@ def _load_online_ontologies(iris: Iterable[str], verbose: bool = False) -> ontop
         dep = world.get_ontology(iri).load()
         onto.imported_ontologies.append(dep)
     return onto
+
+
+def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.ontology.Ontology:
+    """Load ontologies.
+
+    TODO: update.
+    """
+    if use_cache:
+        logger.debug("Using caching of turtle files")
+        to_read = []
+        logger.debug("Downloading missing ontologies...")
+        for iri in iris:
+            if "file://" in iri:
+                logger.debug(f"{iri} is a local file.")
+                to_read.append(iri)
+                continue
+            filename = _iri_to_filename(iri)
+            to_read.append(filename)
+            if filename.is_file():
+                logger.info(f"Found {iri} in {filename}")
+            else:
+                logger.info(f"Downloading {iri} (inferred) to {filename}.")
+                _download_ontology(_iri_to_inferred(iri), filename)
+    else:
+        logger.debug("Not using caching of turtle files")
+        to_read = iris
+
+    # Read ontologies one by one
+    world = ontopy.World()
+    onto = world.get_ontology("ontology")
+    for iri in to_read:
+        logger.info(f"Reading {iri}")
+        dep = world.get_ontology(iri).load()
+        onto.imported_ontologies.append(dep)
+    return onto
+
+
+def _download_ontology(url: str, destination: os.PathLike) -> None:
+    """TODO: docstring."""
+    s = requests.Session()
+    retries = urllib3.util.Retry(
+        total=3,
+        backoff_factor=0.1,
+        status_forcelist=[500, 502, 503, 504],
+    )
+    s.mount("https://", requests.adapters.HTTPAdapter(max_retries=retries))
+    res = s.get(url)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with open(destination, "w") as f:
+        f.write(res.text)
 
 
 mammos_ontology = Ontology()
