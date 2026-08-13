@@ -237,10 +237,11 @@ def _select_ontology_thing(ontology: mammos_entity.Ontology, label: str, iri: st
     # Search by IRI: it should be straightforward
     if iri:
         thing = ontology._ontopy_ontology[iri]
-        if label and thing.get_preferred_label() != label:
+        thing_label = str(thing.get_preferred_label())
+        if label and thing_label != label:
             raise ValueError(
                 "Discrepancy between entity iri and the given label. prefLabel "
-                f"of the given iri: {thing.prefLabel}. Given label: {label}"
+                f"of the given iri: {thing_label}. Given label: {label}"
             )
         return thing
 
@@ -322,12 +323,11 @@ class Entity:
 
         # find correct entity in the ontology
         thing = _select_ontology_thing(ontology, ontology_label, iri)
-        label = thing.get_preferred_label()
-        self._ontology_label = label
+        self._ontology_label = str(thing.get_preferred_label())
 
         # if value is an Entity, we should check that it matches
         if isinstance(value, Entity):
-            if value.ontology_label != thing.ontology_label:
+            if value.ontology_label != self._ontology_label:
                 raise ValueError(
                     "Incompatible label for initialization."
                     f" Trying to initialize a {ontology_label}"
@@ -338,7 +338,7 @@ class Entity:
         # Get ontology-compatible units
         ontology_units = _get_all_possible_units(ontology, thing)
 
-        # Check inputted unit
+        # Check unit
         if unit is None:
             unit = value.unit if isinstance(value, u.Quantity) else _get_preferred_unit(ontology_units)
         else:
@@ -348,7 +348,7 @@ class Entity:
             if not any(unit.is_equivalent(ou) for ou in ontology_units):
                 raise ValueError(
                     f"Given unit: {unit} incompatible with ontology. "
-                    f"Allowed units for entity {label} are: {ontology_units}."
+                    f"Allowed units for entity {self._ontology_label} are: {ontology_units}."
                 )
 
             self._quantity = u.Quantity(value=value, unit=unit)
@@ -422,7 +422,7 @@ class Entity:
             with the IRI.
 
         """
-        return f"{self.ontology_label} {self.ontology_iri}"
+        return f"{self.ontology_label} {self.entity_iri}"
 
     @property
     def ontology(self) -> mammos_entity.Ontology:

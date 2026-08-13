@@ -566,7 +566,8 @@ class EntityCollection:
 
           - ``ontology_label``: label in the ontology
           - ``description``: description string
-          - ``ontology_iri``: IRI of the entity
+          - ``ontology_iri`` (str): the IRI (with version) identifying the ontology
+          - ``entity_iri`` (str): the IRI identifying the entry in the ontology
           - ``unit``: unit of the entity (``""`` for dimensionless)
           - ``value``: value of the data
 
@@ -591,6 +592,9 @@ class EntityCollection:
              ``metadata:description``.
            - Non-entity entries no longer store null-valued ontology keys.
            - Nested collections are supported recursively.
+
+        .. version-changed:: v3
+           Each entity IRI is split into ontology base IRI and entity IRI.
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -634,7 +638,7 @@ class EntityCollection:
             The new file has the following content:
 
             >>> print(Path("example.yaml").read_text())
-            # mammos yaml v2
+            # mammos yaml v3
             metadata: null
             description: Test data
             data:
@@ -736,6 +740,7 @@ class EntityCollection:
                     "ontology_label": element.ontology_label,
                     "description": element.description,
                     "ontology_iri": element.ontology_iri,
+                    "entity_iri": element.entity_iri,
                     "unit": str(element.unit),
                     "value": element.value.tolist(),
                 }
@@ -750,10 +755,8 @@ class EntityCollection:
         if len(self) == 0:
             raise ValueError("Empty collections cannot be saved to YAML.")
 
-        ontologies = [me.mammos_ontology.get_version(as_iri=True)]
-
         def _serialize_collection(collection: EntityCollection) -> dict:
-            result = {"description": collection.description, "ontologies": ontologies, "data": {}}
+            result = {"description": collection.description, "data": {}}
             for name, element in collection:
                 if isinstance(element, EntityCollection):
                     result["data"][name] = _serialize_collection(element)
@@ -825,8 +828,8 @@ class EntityCollection:
           attribute.
         - Each element of the collection becomes a child of the group:
           - :py:class:`~mammos_entity.Entity` objects are stored as HDF5 datasets
-            with attributes ``ontology_label``, ``ontology_iri``, ``unit``,
-            ``description`` (see :py:func:`mammos_entity.Entity.to_hdf5`).
+            with attributes ``ontology_label``, ``ontology_iri``, ``entity_iri``,
+             ``unit``, ``description`` (see :py:func:`mammos_entity.Entity.to_hdf5`).
           - :py:class:`~mammos_units.Quantity` objects are stored as datasets
             with a ``unit`` attribute.
           - Plain values are stored as datasets without mammos-specific attributes.
