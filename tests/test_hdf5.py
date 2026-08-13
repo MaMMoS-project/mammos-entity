@@ -15,7 +15,8 @@ def test_entity_to_hdf5_root():
         assert f["T"][()] == T.value
         assert f["T"].attrs["unit"] == T.unit
         assert f["T"].attrs["ontology_label"] == T.ontology_label
-        assert f["T"].attrs["ontology_iri"] == T.ontology.iri
+        assert f["T"].attrs["ontology_iri"] == T.ontology_iri
+        assert f["T"].attrs["entity_iri"] == T.entity_iri
         assert f["T"].attrs["mammos_entity_version"] == me.__version__
         assert me.from_hdf5(f["T"]) == T
 

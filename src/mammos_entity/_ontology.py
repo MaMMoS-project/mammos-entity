@@ -39,9 +39,9 @@ class Ontology:
     def __init__(self, iris: Iterable[str] | None = None, initialize: bool = False):
         """TODO: docstring."""
         if iris is None:
-            self._iris = ["https://w3id.org/emmo/domain/magnetic-materials/0.0.6"]
+            self._iris = ["https://w3id.org/emmo/domain/magnetic-materials/0.0.6/inferred"]
         else:
-            self._iris = iris
+            self._iris = list(iris)
         self._initialized = False
         self._ontopy_ontology = None
         if initialize:
@@ -180,6 +180,8 @@ def _iri_to_inferred(iri: str) -> os.PathLike:
     if name == "emmo":
         return f"{emmo_domain}/{version}/inferred"
     else:
+        if name == "magnetic-materials":
+            return f"{emmo_domain}/domain/{name}/inferred"  # HACK: MagMO versionIRI does not work
         return f"{emmo_domain}/domain/{name}/{version}/inferred"
 
 
@@ -257,8 +259,9 @@ def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.onto
             if filename.is_file():
                 logger.info(f"Found {iri} in {filename}")
             else:
-                logger.info(f"Downloading {iri} (inferred) to {filename}.")
-                _download_ontology(_iri_to_inferred(iri), filename)
+                inferred_url = _iri_to_inferred(iri)
+                logger.info(f"Downloading {inferred_url} (inferred) to {filename}.")
+                _download_ontology(inferred_url, filename)
     else:
         logger.debug("Not using caching of turtle files")
         to_read = iris

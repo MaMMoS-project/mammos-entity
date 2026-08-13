@@ -103,14 +103,26 @@ def test_bad_description():
 def test_metadata():
     ec = me.EntityCollection(
         "descr",
-        M=me.M(1, "A/m"),
+        Ms=me.Ms(1, "A/m"),
         Tc=me.Tc(1, "K", description="low"),
         T_q=me.T(1, "K").q,
         V=1,
     )
     reference = {
-        "M": {"ontology_label": "Magnetization", "unit": "A / m", "description": ""},
-        "Tc": {"ontology_label": "CurieTemperature", "unit": "K", "description": "low"},
+        "Ms": {
+            "ontology_label": "SpontaneousMagnetization",
+            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.6",
+            "entity_iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25",
+            "unit": "A / m",
+            "description": "",
+        },
+        "Tc": {
+            "ontology_label": "CurieTemperature",
+            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.6",
+            "entity_iri": "https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d",
+            "unit": "K",
+            "description": "low",
+        },
         "T_q": {"unit": "K"},
         "V": {},
     }
@@ -162,8 +174,18 @@ def test_to_dataframe_unsupported():
 def test_from_dataframe():
     data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
     metadata = {
-        "M": {"ontology_label": "Magnetization", "unit": "kA/m", "description": "abc"},
-        "T": {"ontology_label": "ThermodynamicTemperature"},
+        "M": {
+            "ontology_label": "Magnetization",
+            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.6",
+            "entity_iri": "https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37",
+            "unit": "kA / m",
+            "description": "abc",
+        },
+        "T": {
+            "ontology_label": "ThermodynamicTemperature",
+            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.6",
+            "entity_iri": "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f",
+        },
         "l_q": {"unit": "m"},
         "x": {},
     }
