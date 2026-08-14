@@ -34,7 +34,15 @@ if TYPE_CHECKING:
 
 
 class Ontology:
-    """TODO: docstring."""
+    """TODO: docstring.
+
+    Attrs:
+        iris: list of ``versionIRI`` urls of all loaded ontology. Each ontology
+            will be automatically downloaded in the cache for future use.
+
+    .. version-added: 0.14.0
+       The Ontology class.
+    """
 
     def __init__(self, iris: Iterable[str] | None = None, initialize: bool = False):
         """TODO: docstring."""

@@ -41,12 +41,13 @@ from mammos_entity._factory import (
 from mammos_entity._ontology import Ontology, mammos_ontology
 from mammos_entity._read_files import from_csv, from_hdf5, from_yaml
 
-from . import operations
+from . import _io, operations
 
 __version__ = importlib.metadata.version(__package__)
 
 
 __all__ = [
+    "_io",
     "Entity",
     "EntityCollection",
     "A",
@@ -74,4 +75,4 @@ __all__ = [
 ]
 
 
-(_CACHE_DIR := Path(user_cache_dir("mammos_entity"))).mkdir(exist_ok=True)
+(_CACHE_DIR := Path(user_cache_dir("mammos_entity"))).mkdir(exist_ok=True, parents=True)
