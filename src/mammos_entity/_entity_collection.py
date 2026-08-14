@@ -518,11 +518,12 @@ class EntityCollection:
             [getattr(elem, "ontology_label", "") for _, elem in self],
             [getattr(elem, "description", "") for _, elem in self],
             [getattr(elem, "ontology_iri", "") for _, elem in self],
+            [getattr(elem, "entity_iri", "") for _, elem in self],
             [str(getattr(elem, "unit", "")) for _, elem in self],
         ]
 
         with open(filename, "w", newline="") as csvfile:
-            csvfile.write(f"# mammos csv v3{os.linesep}")
+            csvfile.write(f"# mammos csv v4{os.linesep}")
             if self.description:
                 csvfile.write("#" + "-" * 40 + os.linesep)
                 for line in self.description.splitlines():
@@ -594,7 +595,8 @@ class EntityCollection:
            - Nested collections are supported recursively.
 
         .. version-changed:: v3
-           Each entity IRI is split into ontology base IRI and entity IRI.
+           Each entity IRI is split into the ``ontology_iri`` (the ontology versionIRI)
+           and the ``entity_iri`` (the IRI of the specific entity inside the ontology).
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -809,7 +811,7 @@ class EntityCollection:
         _Dumper.add_representer(str, _represent_string)
 
         with open(filename, "w") as f:
-            f.write("# mammos yaml v2\n")
+            f.write("# mammos yaml v3\n")
             yaml.dump(
                 entity_dict,
                 stream=f,
@@ -885,6 +887,7 @@ def _to_hdf5(
         group.attrs["description"] = data.description
         if record_mammos_entity_version:
             group.attrs["mammos_entity_version"] = me.__version__
+            group.attrs["mammos_hdf5_version"] = "v2"
         for name, entity_like in data:
             _to_hdf5(entity_like, group, name, record_mammos_entity_version=False)
         return group

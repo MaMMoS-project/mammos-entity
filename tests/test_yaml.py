@@ -1,3 +1,4 @@
+import filecmp
 import textwrap
 
 import mammos_units as u
@@ -48,7 +49,16 @@ def test_write_read_yaml(tmp_path):
     assert read_data["description"] == collection["description"]
 
 
-def test_read_yaml_v1(tmp_path):
+def test_yaml_v1(tmp_path):
+    from mammos_entity._io._yaml_v1 import _to_yaml_v1
+
+    collection = me.EntityCollection(
+        Ms=me.Ms([600, 650, 700], "kA / m"),
+        T=me.T([1, 2, 3], "K"),
+        angle=[0, 0.5, 0.7] * u.rad,
+        demag_factor=me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]),
+        comment=["Some comment", "Some other comment", "A third comment"],
+    )
     file_content = textwrap.dedent(
         """\
         metadata:
@@ -57,7 +67,7 @@ def test_read_yaml_v1(tmp_path):
         data:
           Ms:
             ontology_label: SpontaneousMagnetization
-            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
             unit: kA / m
             value: [600.0, 650.0, 700.0]
           T:
@@ -72,7 +82,7 @@ def test_read_yaml_v1(tmp_path):
             value: [0.0, 0.5, 0.7]
           demag_factor:
             ontology_label: DemagnetizingFactor
-            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
             unit: ''
             value: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
           comment:
@@ -85,6 +95,7 @@ def test_read_yaml_v1(tmp_path):
     (tmp_path / "data.yaml").write_text(file_content)
     read_data = me.from_yaml(tmp_path / "data.yaml")
 
+    # Reading tests
     assert read_data.description == ""
     assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
     assert me.T([1, 2, 3]) == read_data.T
@@ -95,6 +106,9 @@ def test_read_yaml_v1(tmp_path):
         "Some other comment",
         "A third comment",
     ]
+    # Writing tests
+    _to_yaml_v1(collection, tmp_path / "written.yaml")
+    assert filecmp.cmp(tmp_path / "written.yaml", tmp_path / "data.yaml")
 
 
 def test_read_yaml_v2_flat(tmp_path):
@@ -318,6 +332,7 @@ def test_write_yaml_key_types(tmp_path):
         "ontology_label",
         "description",
         "ontology_iri",
+        "entity_iri",
         "unit",
         "value",
     }
@@ -333,6 +348,7 @@ def test_write_yaml_key_types(tmp_path):
         "ontology_label",
         "description",
         "ontology_iri",
+        "entity_iri",
         "unit",
         "value",
     }

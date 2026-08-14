@@ -76,7 +76,7 @@ def test_write_read_csv(tmp_path):
         "description (m)",
     ]
 
-    df = pd.read_csv(tmp_path / "example.csv", header=9)
+    df = pd.read_csv(tmp_path / "example.csv", header=10)
     assert all(df == df_without_units)
 
 
@@ -169,6 +169,53 @@ def test_read_csv_v3(tmp_path):
     assert read_data.Ms.description == "first line\nsecond line"
     assert me.T([1, 2, 3]) == read_data.T
     assert read_data.T.description == "description, with a comma"
+    assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
+    assert list(read_data.comment) == [
+        "Some comment",
+        "Some other comment",
+        "A third comment",
+    ]
+
+
+def test_read_csv_v4(tmp_path):
+    # hack: trick every platform to save the two-line description using `\n`
+    file_content = (
+        textwrap.dedent(
+            """\
+        # mammos csv v4
+        #----------------------------------------
+        # Test file description.
+        # Test 1, 2, 3.
+        #----------------------------------------
+        SpontaneousMagnetization,ThermodynamicTemperature,,
+        "first line{description_newline}second line","description, with a comma",,
+        https://w3id.org/emmo/domain/magnetic-materials/0.0.6,https://w3id.org/emmo/domain/magnetic-materials/0.0.6,,
+        https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
+        kA / m,K,rad,
+        Ms,T,angle,comment
+        600.0,1.0,0.0,Some comment
+        650.0,2.0,0.5,Some other comment
+        700.0,3.0,0.7,A third comment
+        """
+        )
+        .replace("\n", os.linesep)
+        .format(description_newline="\n")
+    )
+    (tmp_path / "data.csv").write_text(file_content, newline="")
+    read_data = me.from_csv(tmp_path / "data.csv")
+
+    assert read_data.description == "Test file description.\nTest 1, 2, 3."
+    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert read_data.Ms.description == "first line\nsecond line"
+    assert read_data.Ms.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials/0.0.6"
+    assert (
+        read_data.Ms.entity_iri
+        == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25"
+    )
+    assert me.T([1, 2, 3]) == read_data.T
+    assert read_data.T.description == "description, with a comma"
+    assert read_data.T.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials/0.0.6"
+    assert read_data.T.entity_iri == "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f"
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
     assert list(read_data.comment) == [
         "Some comment",
