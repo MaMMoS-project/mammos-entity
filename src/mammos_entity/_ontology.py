@@ -315,3 +315,38 @@ def _download_ontology(url: str, destination: os.PathLike) -> None:
 
 
 mammos_ontology = Ontology()
+
+
+def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
+    """Search entity labels by name.
+
+    The string ``text`` is searched into ``label``, ``prefLabel``, and ``altLabel``
+    of all entities of the ontology MagMO. The match is case sensitive.
+    The returned label is always the ``prefLabel``.
+
+    Args:
+        text: String to match.
+        auto_wildcard: If True, the wildcard ``*`` is added at the beginning
+            and at the end of the string ``text``. This allows partial matches, finding
+            labels containing ``text``. If False, only labels identical to ``text``
+            are returned.
+
+            Passing ``"text", auto_wildcard=True`` is identical to passing
+            ``"*text*", auto_wildcard=False``.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> me.search_labels("ShapeAnisotropy")
+        ['ShapeAnisotropy', 'ShapeAnisotropyConstant']
+
+        >>> me.search_labels("Magnetization")
+        ['MagneticMomentPerUnitMass', 'Magnetization', 'MassMagnetizationUnit', 'Remanence', 'SaturationMagnetization', 'SpontaneousMagnetization']
+
+        ``'MagneticMomentPerUnitMass'`` appears because ``'MassMagnetization'`` is
+        in its ``altLabel``.
+
+        >>> me.search_labels("Magnetization", auto_wildcard=False)
+        ['Magnetization']
+
+    """  # noqa:E501
+    mammos_ontology.search_labels(text, auto_wildcard=auto_wildcard)
