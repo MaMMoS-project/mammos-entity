@@ -6,6 +6,29 @@ This project uses [towncrier](https://towncrier.readthedocs.io/) and the changes
 
 <!-- towncrier release notes start -->
 
+## [mammos-entity 0.14.0](https://github.com/MaMMoS-project/mammos-entity/tree/0.14.0) – 2026-08-17
+
+### Added
+
+- HTML representation for EntityCollection with support for collapsing nested collections. The HTML representation of Entity has been reworked to better align with the collection representation. ([#232](https://github.com/MaMMoS-project/mammos-entity/pull/232))
+- Re-introduce slicing of `Entity` objects. `Entity.__getitem__` delegates to the underlying Quantity and returns a new `Entity` preserving ontology label, unit, and description. ([#243](https://github.com/MaMMoS-project/mammos-entity/pull/243))
+- Tab-completion for dict-like access of elements in an EntityCollection in ipython/Jupyter notebooks. ([#253](https://github.com/MaMMoS-project/mammos-entity/pull/253))
+
+### Changed
+
+- The name `description` is now allowed as key for an entity-like in an EntityCollection. ([#235](https://github.com/MaMMoS-project/mammos-entity/pull/235))
+- The `description` argument in the creation of an `Entity` must be a keyword argument when initializing an `Entity`. ([#257](https://github.com/MaMMoS-project/mammos-entity/pull/257))
+
+### Fixed
+
+- Fixed logic of the function `mammos_entity.search_labels`. Now it is possible to run `search_labels("")` to get all possible the ontology labels. ([#224](https://github.com/MaMMoS-project/mammos-entity/pull/224))
+
+### Misc
+
+- Extended the HDF5 API documentation with a description of the HDF5 file structure and the interpretation rules for groups and datasets. ([#242](https://github.com/MaMMoS-project/mammos-entity/pull/242))
+- Ontology queries during Entity creation are now cached to speed up repeated creation of the same entity. ([#250](https://github.com/MaMMoS-project/mammos-entity/pull/250))
+
+
 ## [mammos-entity 0.13.0](https://github.com/MaMMoS-project/mammos-entity/tree/0.13.0) – 2026-04-22
 
 ### Changed
