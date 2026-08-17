@@ -54,7 +54,8 @@ def _convert_unit(
 
     Examples:
         >>> import mammos_entity as me
-        >>> me._entity._convert_unit(me.mammos_ontology.AmperePerMetre)
+        >>> AmperePerMetre = me.mammos_ontology._ontopy_ontology.AmperePerMetre
+        >>> me._entity._convert_unit(AmperePerMetre)
         Unit("A / m")
 
     """
@@ -116,10 +117,8 @@ def _get_all_possible_units(
 ) -> tuple[astropy.units.UnitBase]:
     """Get list of accepted units given an ontology label found in the ontology.
 
-    TODO: check docstring.
-
-    Given a label for an ontology entry, this function finds all SI base units,
-    SI-coherent units, and some selected special units (classified as
+    Given an ontology and a label defined in it, this function finds all SI base
+    units, SI-coherent units, and some selected special units (classified as
     `SISpecialUnit` in the EMMO ontology), navigating the class hierarchy.
 
     In case the ontology does not define concrete units (e.g. `Meter`) as subclasses
@@ -128,7 +127,7 @@ def _get_all_possible_units(
     unit.
 
     Args:
-        ontology: TODO: write.
+        ontology: where to look for possible units.
         thing: The owlready2 `ThingClass` representing an ontology concept.
 
     Returns:
@@ -136,7 +135,8 @@ def _get_all_possible_units(
 
     Examples:
         >>> import mammos_entity as me
-        >>> me._entity._get_all_possible_units("ThermodynamicTemperature")
+        >>> ThermodynamicTemperature = me.mammos_ontology._ontopy_ontology.ThermodynamicTemperature
+        >>> me._entity._get_all_possible_units(me.mammos_ontology, ThermodynamicTemperature)
         (Unit("K"), Unit("deg_C"))
 
     """
@@ -229,10 +229,32 @@ def _get_preferred_unit(
 
 
 @cache
-def _select_ontology_thing(ontology: mammos_entity.Ontology, label: str, iri: str) -> owlready2.entity.ThingClass:
-    """Select thing from ontology representing the entity.
+def _select_ontology_thing(
+    ontology: mammos_entity.Ontology, label: str = "", iri: str = ""
+) -> owlready2.entity.ThingClass:
+    """Select an entity from an ontology.
 
-    TODO: docstring.
+    At least one identifying argument between `label` and `iri` must be given.
+
+    If both a label and the iri are given, the entity is selected giving priority to the IRI. Then the given label is
+    checked for consistency.
+
+    Args:
+        ontology: where to look for possible units.
+        label: The label associated to an entity.
+        iri: The internationalized resource identifier (IRI) associated to an entity.
+
+    Returns:
+        A list of all compatible astropy units.
+
+    Examples:
+        >>> import mammos_entity as me
+        >>> onto = me.Ontology(initialize=True)
+        >>> me._entity._select_ontology_thing(onto, label="Magnetization")
+        emmo.Magnetization
+        >>> me._entity._select_ontology_thing(onto, iri="Magnetization")
+        emmo.Magnetization
+
     """
     # Search by IRI: it should be straightforward
     if iri:
@@ -241,13 +263,13 @@ def _select_ontology_thing(ontology: mammos_entity.Ontology, label: str, iri: st
         if label and thing_label != label:
             raise ValueError(
                 "Discrepancy between entity iri and the given label. prefLabel "
-                f"of the given iri: {thing_label}. Given label: {label}"
+                f"of the given iri: '{thing_label}'. Given label: '{label}'."
             )
         return thing
 
     # if we do not have label nor iri, we have error
     if not label:
-        raise ValueError("Entity should be defined either via ontology_label or entity_iri.")
+        raise ValueError("Entity should be defined either via label or iri.")
 
     # Find prefLabel
     prefLabel_matches = ontology._ontopy_ontology.search(prefLabel=label)
@@ -263,7 +285,7 @@ def _select_ontology_thing(ontology: mammos_entity.Ontology, label: str, iri: st
             "For a more specific match, use the IRI.",
             stacklevel=2,
         )
-        # TODO: Maybe better to raise a ValueError?
+        # TODO: Better to raise a ValueError?
         return prefLabel_matches[0]
 
     # Find alternative labels
