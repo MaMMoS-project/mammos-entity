@@ -266,7 +266,7 @@ def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.onto
                 to_read.append(iri)
                 continue
             filename = _iri_to_filename(iri)
-            to_read.append(filename)
+            to_read.append(f"file://{filename}")
             if filename.is_file():
                 logger.info(f"Found {iri} in {filename}")
             else:
