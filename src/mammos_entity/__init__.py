@@ -37,7 +37,7 @@ from mammos_entity._factory import (
     T,
     Tc,
 )
-from mammos_entity._ontology import Ontology, mammos_ontology
+from mammos_entity._ontology import Ontology, mammos_ontology, search_labels
 from mammos_entity._read_files import from_csv, from_hdf5, from_yaml
 
 from . import _io, operations
@@ -67,6 +67,7 @@ __all__ = [
     "Tc",
     "mammos_ontology",
     "operations",
+    "search_labels",
     "units",
     "from_csv",
     "from_hdf5",
