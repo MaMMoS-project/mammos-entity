@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import warnings
 from collections.abc import Iterable
 from logging import getLogger
@@ -47,7 +48,7 @@ class Ontology:
     def __init__(self, iris: Iterable[str] | None = None, initialize: bool = False):
         """TODO: docstring."""
         if iris is None:
-            self._iris = ["https://w3id.org/emmo/domain/magnetic-materials/0.0.6/inferred"]
+            self._iris = ["https://w3id.org/emmo/domain/magnetic-materials/0.0.5/inferred"]
         else:
             self._iris = list(iris)
         self._initialized = False
@@ -85,6 +86,7 @@ class Ontology:
 
     def initialize(self, use_cache: bool = True):
         """TODO: docstring."""
+        logger.debug(f"Initializing with iris={self.iris!r}")
         if self._initialized:
             warnings.warn(
                 "Already initialized. Re-initializing.",
@@ -188,13 +190,14 @@ def _iri_to_inferred(iri: str) -> os.PathLike:
     if name == "emmo":
         return f"{emmo_domain}/{version}/inferred"
     else:
-        if name == "magnetic-materials":
-            return f"{emmo_domain}/domain/{name}/inferred"  # HACK: MagMO versionIRI does not work
         return f"{emmo_domain}/domain/{name}/{version}/inferred"
 
 
 def _iri_to_info(iri: str) -> tuple(str):
     """TODO: docstring."""
+    if iri == "https://w3id.org/1.0.3/emmo":
+        # HACK: EMMO 1.0.3 inferred IRI is broken
+        return ("emmo", "1.0.3")
     if "https://w3id.org/emmo" not in iri:
         raise ValueError(f"Not an EMMO iri. Given iri: {iri}.")
     emmo_domain = "https://w3id.org/emmo/"
@@ -268,8 +271,10 @@ def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.onto
                 logger.info(f"Found {iri} in {filename}")
             else:
                 inferred_url = _iri_to_inferred(iri)
-                logger.info(f"Downloading {inferred_url} (inferred) to {filename}.")
-                _download_ontology(inferred_url, filename)
+                if inferred_url == "https://w3id.org/emmo/domain/magnetic-materials/0.0.5/inferred":
+                    _copy_packaged_ontology(filename)
+                else:
+                    _download_ontology(inferred_url, filename)
     else:
         logger.debug("Not using caching of turtle files")
         to_read = iris
@@ -284,8 +289,18 @@ def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.onto
     return onto
 
 
+def _copy_packaged_ontology(destination: os.PathLike) -> None:
+    """TODO: docstring."""
+    logger.info("Using local MagMO packaged with mammos-entity.")
+    magmo = Path(__file__).parent / "ontology" / "magmo-inferred.ttl"
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(magmo, destination)
+    logger.debug(f"Copied {magmo} to {destination}.")
+
+
 def _download_ontology(url: str, destination: os.PathLike) -> None:
     """TODO: docstring."""
+    logger.info(f"Downloading {url} (inferred) to {destination}.")
     s = requests.Session()
     retries = urllib3.util.Retry(
         total=3,

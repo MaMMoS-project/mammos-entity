@@ -111,14 +111,14 @@ def test_metadata():
     reference = {
         "Ms": {
             "ontology_label": "SpontaneousMagnetization",
-            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.6",
+            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.5",
             "entity_iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25",
             "unit": "A / m",
             "description": "",
         },
         "Tc": {
             "ontology_label": "CurieTemperature",
-            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.6",
+            "ontology_iri": "https://w3id.org/1.0.3/emmo",
             "entity_iri": "https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d",
             "unit": "K",
             "description": "low",
@@ -172,18 +172,18 @@ def test_to_dataframe_unsupported():
 
 
 def test_from_dataframe():
-    data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
+    data = pd.DataFrame({"Ms": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
     metadata = {
-        "M": {
-            "ontology_label": "Magnetization",
-            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.6",
-            "entity_iri": "https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37",
+        "Ms": {
+            "ontology_label": "SpontaneousMagnetization",
+            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.5",
+            "entity_iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25",
             "unit": "kA / m",
             "description": "abc",
         },
         "T": {
             "ontology_label": "ThermodynamicTemperature",
-            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.6",
+            "ontology_iri": "https://w3id.org/1.0.3/emmo",
             "entity_iri": "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f",
         },
         "l_q": {"unit": "m"},
@@ -191,12 +191,12 @@ def test_from_dataframe():
     }
     collection = me.EntityCollection.from_dataframe(data, metadata, description="desc")
     assert collection.description == "desc"
-    assert me.M([1, 2], "kA/m") == collection.M
-    assert collection.M.description == "abc"
+    assert me.Ms([1, 2], "kA/m") == collection.Ms
+    assert collection.Ms.description == "abc"
     assert me.T([3, 4], "K") == collection.T
     assert all([5, 6] * u.m == collection.l_q)
     assert all(collection.x == [7, 8])
-    assert [name for name, _entity in collection] == ["M", "T", "l_q", "x"]
+    assert [name for name, _entity in collection] == ["Ms", "T", "l_q", "x"]
 
 
 def test_dataframe_roundtrip():
