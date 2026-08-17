@@ -1,17 +1,27 @@
 """Entity functionality.
 
-TODO: update package docstring.
-
 Entities are quantities (numbers with units) with an associated ontology label.
 
 This packages contains classes for defining, collecting and saving such entities (
-:py:class:`~mammos_entity.Entity` and :py:class:`~mammos_entity.EntityCollection`),
-the :py:func:`~mammos_entity.search_labels` function to search for partial
-or full matches of labels defined in the ontology, the reading routines
-:py:func:`~mammos_entity.from_csv`, :py:func:`~mammos_entity.from_hdf5`
-:py:func:`~mammos_entity.from_yaml`, and some pre-defined factory methods for
-magnetic entities (such as :py:class:`~mammos_entity.Ms`, :py:class:`~mammos_entity.A`,
-:py:class:`~mammos_entity.Ku`, and :py:class:`~mammos_entity.H`).
+:py:class:`~mammos_entity.Entity` and :py:class:`~mammos_entity.EntityCollection`)
+from specific ontologies (:py:class:`~mammos_entity.Ontology`) defining the meaning
+and the context of each object. The object `mammos_ontology` is initialized as an
+:py:class:`~mammos_entity.Ontology` representing the EMMO-base `magnetic materials domain
+ontology (MagMO) <https://emmo-repo.github.io/domain-magnetic-materials/>`__.
+
+The function :py:func:`~mammos_entity.search_labels` can be used to search for partial
+or full matches of labels defined in MagMO, while the reading routines
+:py:func:`~mammos_entity.from_csv`, :py:func:`~mammos_entity.from_hdf5`, and
+:py:func:`~mammos_entity.from_yaml` define :py:class:`~mammos_entity.EntityCollection`
+objects from `mammos` files.
+
+Furthermore, some pre-defined factory methods for magnetic entities are present, such as
+general terms (e.g. magnetization :py:class:`~mammos_entity.M` and temperature
+:py:class:`~mammos_entity.T`), magnetic intrinsic properties (e.g. spontaneous magnetization
+:py:class:`~mammos_entity.Ms`), magnetic extrinsic properties (e.g. remanent magnetization
+:py:class:`~mammos_entity.Mr`), and other magnetic quantities (e.g. Curie temperature
+:py:class:`~mammos_entity.Tc`).
+)
 """
 
 import importlib.metadata
