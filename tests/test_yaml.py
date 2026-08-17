@@ -218,14 +218,14 @@ def test_read_yaml_v3_flat(tmp_path):
         data:
           Ms:
             ontology_label: SpontaneousMagnetization
-            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
             entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
             unit: kA / m
             value: [600.0, 650.0, 700.0]
             description: ''
           T:
             ontology_label: ThermodynamicTemperature
-            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
             entity_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
             unit: K
             value: [1.0, 2.0, 3.0]
@@ -235,7 +235,7 @@ def test_read_yaml_v3_flat(tmp_path):
             value: [0.0, 0.5, 0.7]
           demag_factor:
             ontology_label: DemagnetizingFactor
-            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
             entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
             unit: ''
             value: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
@@ -275,7 +275,7 @@ def test_read_yaml_v3_nested(tmp_path):
                 data:
                   Ms:
                     ontology_label: SpontaneousMagnetization
-                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
                     entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                     unit: kA / m
                     value: [600.0, 650.0, 700.0]
@@ -287,7 +287,7 @@ def test_read_yaml_v3_nested(tmp_path):
                 value: measured in setup A
           T:
             ontology_label: ThermodynamicTemperature
-            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
             entity_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
             unit: K
             value: [300.0, 350.0, 400.0]
