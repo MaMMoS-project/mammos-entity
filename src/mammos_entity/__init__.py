@@ -15,9 +15,8 @@ magnetic entities (such as :py:class:`~mammos_entity.Ms`, :py:class:`~mammos_ent
 """
 
 import importlib.metadata
-from pathlib import Path
 
-from platformdirs import user_cache_dir
+from platformdirs import user_cache_path
 
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
@@ -75,4 +74,4 @@ __all__ = [
 ]
 
 
-(_CACHE_DIR := Path(user_cache_dir("mammos_entity"))).mkdir(exist_ok=True, parents=True)
+(_CACHE_DIR := user_cache_path("mammos_entity", ensure_exists=True))
