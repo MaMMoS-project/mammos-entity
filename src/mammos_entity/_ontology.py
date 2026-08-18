@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     import mammos_units
     import numpy.typing
     import ontopy.ontology
+    import owlready2.entity
 
     import mammos_entity
 
@@ -82,6 +83,11 @@ class Ontology:
     def __repr__(self) -> str:
         arg = f"{self._iris!r}" if self._iris else ""
         return f"Ontology({arg})"
+
+    def __getitem__(self, val) -> owlready2.entity.ThingClass:
+        if not self._initialized:
+            self.initialize()
+        return self._ontopy_ontology[val]
 
     @property
     def iris(self) -> list[str]:
