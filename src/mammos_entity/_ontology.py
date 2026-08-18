@@ -202,40 +202,6 @@ def _iri_to_info(iri: str) -> tuple(str):
         return (name.replace("domain/", "").replace(f"/{version}", ""), version)
 
 
-def _load_local_ontologies(verbose: bool = False) -> (ontopy.ontology.Ontology, list[str]):
-    """Load EMMO and MaMMoS ontology from 'ontology' directory.
-
-    The returned ontology object contains all definitions from both ontologies, EMMO is
-    in the attribute ``.imported_ontologies`` and accessible in other methods when using
-    ``imported=True``.
-
-    """
-    world = ontopy.World()
-    ontology_dir = (Path(__file__).parent / "ontology").resolve()
-    # using pathlib.Path(...).as_uri() causes ontopy to fail on Windows, therefore
-    # we construct the file uri manually in the form required for ontopy
-    mammos_ttl = f"file://{ontology_dir / 'magmo-inferred.ttl'!s}"
-    logger.debug("loading magmo from '%s'", mammos_ttl)
-    onto = world.get_ontology(mammos_ttl).load()
-    iris = [onto.get_version(as_iri=True)]
-    return onto, iris
-
-
-def _load_online_ontologies(iris: Iterable[str], verbose: bool = False) -> ontopy.ontology.Ontology:
-    """Fetch EMMO and MaMMoS ontology from the internet.
-
-    TODO: update.
-    """
-    world = ontopy.World()
-    onto = world.get_ontology("ontology")
-    for iri in iris:
-        if verbose:
-            print(f"Reading {iri}")
-        dep = world.get_ontology(iri).load()
-        onto.imported_ontologies.append(dep)
-    return onto
-
-
 def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.ontology.Ontology:
     """Load ontologies.
 
