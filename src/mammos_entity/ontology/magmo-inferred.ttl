@@ -6,6 +6,7 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix vann: <http://purl.org/vocab/vann/> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
 <http://purl.org/ontology/bibo/status/published> a owl:Thing .
@@ -630,6 +631,8 @@ ns1:Zebi rdfs:subClassOf ns1:EMMO_ac9e518d_b403_4d8b_97e2_06f9d40bac01 .
         "Thomas Schrefl"@en,
         "Wilfried Hortschitz"@en ;
     dcterms:title "Magnetic Materials Ontology (MagMO)"@en ;
+    vann:preferredNamespacePrefix "magmo"^^xsd:string ;
+    vann:preferredNamespaceUri "https://w3id.org/emmo/domain/magnetic-materials"^^xsd:string ;
     rdfs:comment "Created within the EU project MaMMoS. Grant number 101135546     (HORIZON-CL4-2023-DIGITAL-EMERGING-01)."^^xsd:string,
         """Contacts:
 Wilfried Hortschitz
