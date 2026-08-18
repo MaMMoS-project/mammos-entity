@@ -304,6 +304,13 @@ def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.onto
     for iri in to_read:
         logger.info(f"Reading {iri}")
         dep = world.get_ontology(iri).load()
+        if dep.metadata.has("http://purl.org/vocab/vann/preferredNamespacePrefix"):
+            prefix = dep.metadata.preferredNamespacePrefix[0]
+            logger.debug(f"Changing prefix of {dep} to {prefix}.")
+            dep.name = prefix  # change repr of entities in this ontology
+            dep.prefix = prefix  # change prefix - used in some operations
+        else:
+            logger.debug(f"Ontology {dep} does not have a `preferredNamespacePrefix`.")
         onto.imported_ontologies.append(dep)
     return onto
 
