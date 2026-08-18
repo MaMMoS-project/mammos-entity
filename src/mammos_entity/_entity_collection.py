@@ -117,7 +117,6 @@ class EntityCollection:
 
         Args:
             description: Information string to assign to ``description`` attribute.
-            ontology: TODO: docstring.
             **kwargs : entities to be stored in the collection.
         """
         self.description = description
