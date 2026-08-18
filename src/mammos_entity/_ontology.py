@@ -22,7 +22,6 @@ import urllib3
 
 import mammos_entity as me
 from mammos_entity._entity import Entity
-from mammos_entity._entity_collection import EntityCollection
 
 logger = getLogger(__package__)
 
@@ -166,15 +165,8 @@ class Ontology:
             self.initialize()
         return Entity(ontology_label, value, unit, iri=iri, description=description, ontology=self)
 
-    def EntityCollection(
-        self,
-        description: str = "",
-        **kwargs: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
-    ):
-        """TODO: docstring."""
         if not self._initialized:
             self.initialize()
-        return EntityCollection(description=description, ontology=self, **kwargs)
 
 
 def _iri_to_filename(iri: str) -> os.PathLike:
