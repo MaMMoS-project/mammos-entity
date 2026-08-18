@@ -300,4 +300,6 @@ def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
         ['Magnetization']
 
     """  # noqa:E501
-    mammos_ontology.search_labels(text, auto_wildcard=auto_wildcard)
+    if not mammos_ontology._initialized:
+        mammos_ontology.initialize()
+    return mammos_ontology.search_labels(text, auto_wildcard=auto_wildcard)
