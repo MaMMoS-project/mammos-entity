@@ -1,8 +1,16 @@
 """Loads and provides access to MaMMoS ontology which is part of EMMO.
 
-Loads and provides access to the MaMMoS magnetic materials ontology, including
-everything from the EMMO ontology, via the `EMMOntoPy` library. The ontology is loaded
-from ``.ttl`` (Turtle) files distributed with mammos-entity.
+Loads and provides access to the MaMMoS magnetic materials ontology, including everything from the EMMO ontology,
+via the `EMMOntoPy` library. The ontology is loaded from ``.ttl`` (Turtle) files distributed with mammos-entity.
+
+To uniquely identify ontologies, a ``versionIRI`` is used. This consist of the ontology name and the version string.
+This is, e.g.
+- ``https://w3id.org/1.0.3/emmo/`` for EMMO 1.0.3
+- ``https://w3id.org/emmo/domain/magnetic-materials/0.0.5/`` for MagMO 0.0.5
+- ``https://w3id.org/emmo/domain/electrochemistry/0.37.2/`` for ECHO 0.37.2
+
+Observe that a different range of versionIRIs are accepted, for example the inferred versionIRI
+``https://w3id.org/emmo/domain/magnetic-materials/0.0.5/inferred`` is also valid.
 """
 
 from __future__ import annotations
@@ -34,18 +42,25 @@ if TYPE_CHECKING:
 
 
 class Ontology:
-    """TODO: docstring.
+    """An object storing different ontologies information.
 
-    Attrs:
-        iris: list of ``versionIRI`` urls of all loaded ontology. Each ontology
-            will be automatically downloaded in the cache for future use.
+    Entities can be created using :py:method:`Entity`. It is recommended to define entities via their IRIs. If the same
+    entity appears in different ontologies, the object is created from the the first available one.
+
+    When initialized, each ontology is automatically downloaded and cached for future use.
 
     .. version-added: 0.14.0
        The Ontology class.
     """
 
-    def __init__(self, iris: Iterable[str] | None = None, initialize: bool = False):
-        """TODO: docstring."""
+    def __init__(self, iris: Iterable[str] | None = None, initialize: bool = False) -> None:
+        """Initialize an ontology object.
+
+        Args:
+            iris: List of ``versionIRI`` of all the ontologies to be loaded.
+            initialize: Whether to load the ontology at this stage. It is still possible to add other ontologies later
+                with the method :py:method:`add_iri`.
+        """
         if iris is None:
             self._iris = ["https://w3id.org/emmo/domain/magnetic-materials/0.0.5/inferred"]
         else:
@@ -55,8 +70,7 @@ class Ontology:
         if initialize:
             self.initialize()
 
-    def __str__(self):
-        """TODO: docstring."""
+    def __str__(self) -> str:
         _init = " (initialized)" if self._initialized else ""
         out = f"Ontology:{_init}\n"
         if self._iris is None:
@@ -65,26 +79,38 @@ class Ontology:
             out += "\n".join(f"- {iri}" for iri in self._iris)
         return out
 
-    def __repr__(self):
-        """TODO: docstring."""
+    def __repr__(self) -> str:
         arg = f"{self._iris!r}" if self._iris else ""
         return f"Ontology({arg})"
 
     @property
     def iris(self) -> list[str]:
-        """TODO: docstring."""
+        """List of ``versionIRI`` urls of all loaded ontology."""
         return self._iris
 
     @iris.setter
     def iris(self, _) -> None:
-        """TODO: docstring."""
+        """Assign iris directly.
+
+        Trying to assign the iris directly will fail. Use the method :py:method:``add_iri`` instead.
+
+        Raises:
+            RuntimeError: The method :py:method:``add_iri`` should be used instead of this property.
+        """
         raise RuntimeError(
             "Do not assign the iris directly. To add new iris, use the method "
-            "`add`. To remove iris, please initiate a new `Ontology` object."
+            "`add_iri`. To remove iris, please initiate a new `Ontology` object."
         )
 
-    def initialize(self, use_cache: bool = True):
-        """TODO: docstring."""
+    def initialize(self, use_cache: bool = True) -> None:
+        """Initialize ontologies.
+
+        Download the ontologies and load them into an :py:class:`ontopy.ontology.Ontology` object.
+        If caching is activated, the download step is skipped.
+
+        Args:
+            use_cache: Whether to use caching of ontologies.
+        """
         logger.debug(f"Initializing with iris={self.iris!r}")
         if self._initialized:
             warnings.warn(
@@ -94,8 +120,12 @@ class Ontology:
         self._ontopy_ontology = _load_ontologies(self.iris, use_cache=use_cache)
         self._initialized = True
 
-    def add_iri(self, iri: str):
-        """TODO. docstring."""
+    def add_iri(self, iri: str) -> None:
+        """Add ontology from a ``versionIRI`` string.
+
+        Args:
+            iri: IRI of the ontology expressed as ``versionIRI``.
+        """
         if iri in self._iris:
             warnings.warn(
                 f"IRI: '{iri}' was already in the list: {self.iris!s}.",
@@ -108,16 +138,12 @@ class Ontology:
             self._iris.append(iri)
 
     def search_labels(self, text: str, auto_wildcard: bool = True) -> list[str]:
-        """Search entity labels by name.
+        """Search entity labels by name in the current ontology.
 
-        TODO: update.
+        The string ``text`` is searched into ``label``, ``prefLabel``, and ``altLabel`` of all entities.
+        The match is case sensitive. The returned label is always the ``prefLabel``.
 
-        The string ``text`` is searched into ``label``, ``prefLabel``, and ``altLabel`` of
-        all entities. The match is case sensitive. The returned label is always the
-        ``prefLabel``.
-
-        This function uses internally the method ``.search()`` of
-        ``mammos_entity.mammos_ontology``.
+        This function uses internally the method ``.search()`` of :py:class:`ontopy.ontology.Ontology`.
 
         Args:
             text: String to match.
@@ -131,16 +157,17 @@ class Ontology:
 
         Examples:
             >>> import mammos_entity as me
-            >>> me.search_labels("ShapeAnisotropy")
+            >>> onto = me.Ontology(initialize=True)
+            >>> onto.search_labels("ShapeAnisotropy")
             ['ShapeAnisotropy', 'ShapeAnisotropyConstant']
 
-            >>> me.search_labels("Magnetization")
+            >>> onto.search_labels("Magnetization")
             ['MagneticMomentPerUnitMass', 'Magnetization', 'MassMagnetizationUnit', 'Remanence', 'SaturationMagnetization', 'SpontaneousMagnetization']
 
             ``'MagneticMomentPerUnitMass'`` appears because ``'MassMagnetization'`` is
             in its ``altLabel``.
 
-            >>> me.search_labels("Magnetization", auto_wildcard=False)
+            >>> onto.search_labels("Magnetization", auto_wildcard=False)
             ['Magnetization']
 
         """  # noqa:E501
@@ -159,24 +186,46 @@ class Ontology:
         *,
         iri: str = "",
         description: str = "",
-    ):
-        """TODO: docstring."""
+    ) -> mammos_entity.Entity:
+        """Create Entity from this ontology.
+
+        Args:
+            ontology_label: Label of the entity in any of the loaded ontologies.
+            value: Numerical value of the entity.
+            unit: Physical unit of the entity.
+            iri: IRI of the entity in any of the loaded ontologies.
+            description: Optional description string.
+
+        Returns:
+           Entity representing the ontology concept.
+        """
         if not self._initialized:
             self.initialize()
         return Entity(ontology_label, value, unit, iri=iri, description=description, ontology=self)
 
-        if not self._initialized:
-            self.initialize()
-
 
 def _iri_to_filename(iri: str) -> os.PathLike:
-    """TODO: docstring."""
+    """Get path of cached ontology on the local system.
+
+    Args:
+        iri: IRI of the ontology expressed as ``versionIRI``.
+
+    Returns:
+        Path of the cached ontology.
+    """
     name, version = _iri_to_info(iri)
     return me._CACHE_DIR / name / version / "inferred.ttl"
 
 
-def _iri_to_inferred(iri: str) -> os.PathLike:
-    """TODO: docstring."""
+def _iri_to_inferred(iri: str) -> str:
+    """Get url of inferred ontology from IRI.
+
+    Args:
+        iri: IRI of the ontology expressed as ``versionIRI``.
+
+    Returns:
+        URL of inferred ontology.
+    """
     emmo_domain = "https://w3id.org/emmo"
     name, version = _iri_to_info(iri)
     if name == "emmo":
@@ -186,7 +235,18 @@ def _iri_to_inferred(iri: str) -> os.PathLike:
 
 
 def _iri_to_info(iri: str) -> tuple(str):
-    """TODO: docstring."""
+    """Get ontology essential information from IRI.
+
+    Args:
+        iri: IRI of the ontology expressed as ``versionIRI``.
+
+    Returns:
+        tuple ``(ontology_name, version_number)``. The ``ontology_name`` is ``emmo`` if the IRI points to EMMO,
+        while it is the domain name if it points to any EMMO-based domain ontology.
+
+    Raises:
+        ValueError: The IRI does not correspond to an EMMO IRI, i.e. it does not start with `https://w3id.org/emmo`.
+    """
     if iri == "https://w3id.org/1.0.3/emmo":
         # HACK: EMMO 1.0.3 inferred IRI is broken
         return ("emmo", "1.0.3")
@@ -205,7 +265,15 @@ def _iri_to_info(iri: str) -> tuple(str):
 def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.ontology.Ontology:
     """Load ontologies.
 
-    TODO: update.
+    If the IRI points to a local file, the cache parameter is ignored. Otherwise, the ontology is downloaded and
+    cached so that future loadings are faster.
+
+    Args:
+        iris: List of ``versionIRI`` strings of all ontologies to load.
+        use_cache: Whether to use cached ontologies.
+
+    Returns:
+        Loaded ontology.
     """
     if use_cache:
         logger.debug("Using caching of turtle files")
@@ -241,7 +309,10 @@ def _load_ontologies(iris: Iterable[str], use_cache: bool = True) -> ontopy.onto
 
 
 def _copy_packaged_ontology(destination: os.PathLike) -> None:
-    """TODO: docstring."""
+    """Copy packaged ontology to cache directory.
+
+    destination: path of the cached ontology.
+    """
     logger.info("Using local MagMO packaged with mammos-entity.")
     magmo = Path(__file__).parent / "ontology" / "magmo-inferred.ttl"
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -250,7 +321,12 @@ def _copy_packaged_ontology(destination: os.PathLike) -> None:
 
 
 def _download_ontology(url: str, destination: os.PathLike) -> None:
-    """TODO: docstring."""
+    """Download ontology.
+
+    Args:
+        url: URL to download.
+        destination: Path where to store the cached ontology.
+    """
     logger.info(f"Downloading {url} (inferred) to {destination}.")
     s = requests.Session()
     retries = urllib3.util.Retry(
@@ -269,21 +345,20 @@ mammos_ontology = Ontology()
 
 
 def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
-    """Search entity labels by name.
+    """Search entity labels by name in MagMO.
 
-    The string ``text`` is searched into ``label``, ``prefLabel``, and ``altLabel``
-    of all entities of the ontology MagMO. The match is case sensitive.
-    The returned label is always the ``prefLabel``.
+    The string ``text`` is searched into ``label``, ``prefLabel``, and ``altLabel`` of all entities of the magnetic
+    materials domain ontology (MagMO). The match is case sensitive. The returned label is always the ``prefLabel``.
+
+    If the object `mammos_entity.mammos_ontology` is not initialized, this function will initialize it.
 
     Args:
         text: String to match.
-        auto_wildcard: If True, the wildcard ``*`` is added at the beginning
-            and at the end of the string ``text``. This allows partial matches, finding
-            labels containing ``text``. If False, only labels identical to ``text``
-            are returned.
+        auto_wildcard: If True, the wildcard ``*`` is added at the beginning and at the end of the string ``text``.
+            This allows partial matches, finding labels containing ``text``. If False, only labels identical to
+            ``text`` are returned.
 
-            Passing ``"text", auto_wildcard=True`` is identical to passing
-            ``"*text*", auto_wildcard=False``.
+            Passing ``"text", auto_wildcard=True`` is identical to passing ``"*text*", auto_wildcard=False``.
 
     Examples:
         >>> import mammos_entity as me
@@ -293,8 +368,7 @@ def search_labels(text: str, auto_wildcard: bool = True) -> list[str]:
         >>> me.search_labels("Magnetization")
         ['MagneticMomentPerUnitMass', 'Magnetization', 'MassMagnetizationUnit', 'Remanence', 'SaturationMagnetization', 'SpontaneousMagnetization']
 
-        ``'MagneticMomentPerUnitMass'`` appears because ``'MassMagnetization'`` is
-        in its ``altLabel``.
+        ``'MagneticMomentPerUnitMass'`` appears because ``'MassMagnetization'`` is in its ``altLabel``.
 
         >>> me.search_labels("Magnetization", auto_wildcard=False)
         ['Magnetization']
