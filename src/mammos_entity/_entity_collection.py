@@ -289,8 +289,8 @@ class EntityCollection:
         collection. Keys are names of the (entities) attributes of the collection,
         values are dictionaries with:
 
-        - keys ``ontology_label``, ``unit`` and ``description`` if the attribute is an
-          entity
+        - keys ``ontology_label``, ``ontology_iri``, ``entity_iri``, ``unit``,
+          and ``description`` if the attribute is an entity
         - key ``unit`` if the attribute is a quantity
         - an empty dictionary otherwise
 
@@ -299,7 +299,7 @@ class EntityCollection:
             >>> import mammos_units as u
             >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
             >>> col.metadata()
-            {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+            {'Tc': {'ontology_label': 'CurieTemperature', 'ontology_iri': 'https://w3id.org/1.0.3/emmo', 'entity_iri': 'https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
 
         .. version-changed:: 0.14.0
            The collection description has been removed from the metadata to allow the
@@ -485,12 +485,13 @@ class EntityCollection:
             The new file has the following content:
 
             >>> print(Path("example.csv").read_text())
-            # mammos csv v3
+            # mammos csv v4
             #----------------------------------------
             # Test data
             #----------------------------------------
             ,SpontaneousMagnetization,,DemagnetizingFactor,
             ,Magnetization at 0 Kelvin,,,
+            ,https://w3id.org/emmo/domain/magnetic-materials/0.0.5,,https://w3id.org/emmo/domain/magnetic-materials/0.0.5,
             ,https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
             ,kA / m,s2,,
             index,Ms,alpha,DemagnetizingFactor,comment
@@ -648,7 +649,8 @@ class EntityCollection:
               Ms:
                 ontology_label: SpontaneousMagnetization
                 description: Magnetization at 0 Kelvin
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                 unit: kA / m
                 value: [100.0, 100.0, 100.0]
               alpha:
@@ -657,7 +659,8 @@ class EntityCollection:
               DemagnetizingFactor:
                 ontology_label: DemagnetizingFactor
                 description: ''
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
                 unit: ''
                 value: [1.0, 0.5, 0.5]
               comment:
@@ -666,7 +669,8 @@ class EntityCollection:
               Tc:
                 ontology_label: CurieTemperature
                 description: ''
-                ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+                ontology_iri: https://w3id.org/1.0.3/emmo
+                entity_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
                 unit: K
                 value: 300.0
             <BLANKLINE>
@@ -689,7 +693,7 @@ class EntityCollection:
             ... )
             >>> measurement.to_yaml("nested_example.yaml")
             >>> print(Path("nested_example.yaml").read_text())
-            # mammos yaml v2
+            # mammos yaml v3
             metadata: null
             description: measurement with device X
             data:
@@ -699,31 +703,36 @@ class EntityCollection:
                   Ms:
                     ontology_label: SpontaneousMagnetization
                     description: ''
-                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                    entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                     unit: kA / m
                     value: 1300.0
                   Tc:
                     ontology_label: CurieTemperature
                     description: ''
-                    ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+                    ontology_iri: https://w3id.org/1.0.3/emmo
+                    entity_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
                     unit: K
                     value: 1043.0
               T:
                 ontology_label: ThermodynamicTemperature
                 description: Measurement conditions
-                ontology_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
+                ontology_iri: https://w3id.org/1.0.3/emmo
+                entity_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
                 unit: K
                 value: 300.0
               H:
                 ontology_label: ExternalMagneticField
                 description: ''
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
                 unit: kA / m
                 value: [0.0, 50.0, 100.0]
               M:
                 ontology_label: Magnetization
                 description: ''
-                ontology_iri: https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37
+                ontology_iri: https://w3id.org/1.0.3/emmo
+                entity_iri: https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37
                 unit: kA / m
                 value: [100.0, 300.0, 500.0]
             <BLANKLINE>
