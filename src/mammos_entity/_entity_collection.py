@@ -355,14 +355,7 @@ class EntityCollection:
         if missing_keys := set(metadata) - set(dataframe.columns):
             raise ValueError(f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}")
 
-        # load ontologies
-        iris = set(
-            entity["ontology_iri"]
-            for entity in metadata.values()
-            if "ontology_iri" in entity and entity["ontology_iri"]
-        )
-        ontology = me.Ontology(iris=iris, initialize=True)
-
+        ontologies = {}
         collection = cls(description=description)
         for name in metadata:
             value = dataframe[name].to_numpy()
@@ -370,13 +363,17 @@ class EntityCollection:
                 value = value[0]
 
             if "ontology_label" in metadata[name]:
-                elem = me.Entity(
+                if (ontology_iri := metadata[name]["ontology_iri"]) in ontologies:
+                    onto = ontologies[ontology_iri]
+                else:
+                    onto = me.Ontology(iris=[ontology_iri], initialize=True)
+                    ontologies[ontology_iri] = onto
+                elem = onto.Entity(
                     ontology_label=metadata[name]["ontology_label"],
                     value=value,
                     unit=metadata[name].get("unit"),
                     iri=metadata[name]["entity_iri"],
                     description=metadata[name].get("description", ""),
-                    ontology=ontology,
                 )
             elif "unit" in metadata[name]:
                 elem = u.Quantity(
