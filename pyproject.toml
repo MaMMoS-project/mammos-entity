@@ -46,8 +46,7 @@ Issues = "https://github.com/MaMMoS-project/mammos-entity/issues"
 Changelog = "https://mammos-project.github.io/mammos/changelog"
 
 [project.scripts]
-download-ontologies = "mammos_entity.cli:download_ontology"
-mammos-entity-clear-cache = "mammos_entity.cli:clear_cache"
+mammos-entity = "mammos_entity.cli:main"
 
 [tool.ruff]
 target-version = "py311"
