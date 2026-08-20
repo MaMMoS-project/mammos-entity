@@ -288,7 +288,7 @@ def test_ontology_attributes_magmo():
     assert e.thing == me.mammos_ontology._ontopy_ontology.ExternalMagneticField
     e = me.Entity("AngularVelocity")
     assert e.ontology_label == "AngularVelocity"
-    assert e.ontology_iri == "https://w3id.org/1.0.3/emmo"
+    assert e.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials/0.0.5"
     assert e.entity_iri == "https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
     assert (
         e.ontology_label_with_iri == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
