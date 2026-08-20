@@ -9,6 +9,9 @@ from numpy import array  # noqa: F401  # required for repr eval
 import mammos_entity as me
 from mammos_entity import Entity  # noqa: F401  # required for repr eval
 
+if not me.mammos_ontology._initialized:
+    me.mammos_ontology.initialize()
+
 
 def test_init_float():
     """Initialize Entity instance with a float."""
@@ -219,27 +222,15 @@ def test_axis_labels():
     assert e_5.axis_label == "Planck Constant (J s)"
 
 
-@pytest.mark.parametrize("ontology_element", me.mammos_ontology.classes(imported=True))
-def test_all_labels_ontology(ontology_element):
-    """Test all labels in the ontology.
+def test_all_labels_magmo():
+    """Test all labels in magmo.
 
-    This test creates one Entity instance for each label in the ontology.
-
-    Entities `Person` and `Organization` do not have a `prefLabel`.
-    These are extreme, unfixable cases and we ignore them.
+    This test creates one Entity instance using the iri of each object in the ontology.
     """
-    if ontology_element.prefLabel:
-        prefLabel = str(ontology_element.prefLabel[0])
-        if prefLabel in [
-            "Electron",
-            "ElementaryCharge",
-            "Grain",
-            "Point",
-            "RelativePermeability",
-            "RelativePermittivity",
-        ]:
-            pytest.xfail(f"{prefLabel=} is ambiguous")
-        me.Entity(prefLabel, 42)
+    if not me.mammos_ontology._initialized:
+        me.mammos_ontology.initialize()
+    for ontology_element in me.mammos_ontology._ontopy_ontology.classes(imported=True):
+        me.Entity(iri=ontology_element.name)
 
 
 def test_default_unit():
@@ -280,33 +271,46 @@ def test_switch_to_pref_label():
     assert me.Entity("Js").ontology_label == "SpontaneousMagneticPolarization"
 
 
-def test_ontology_information_mammos():
-    """Test ontology label and IRI for an Entity in the MaMMoS ontology."""
+def test_ontology_attributes_magmo():
+    """Test ontology-related attributes of an Entity loaded from MagMO.
+
+    First we use an entity from MaGMO, then an imported entity from EMMO.
+    """
     e = me.Entity("ExternalMagneticField")
     assert e.ontology_label == "ExternalMagneticField"
-    assert e.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+    assert e.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials/0.0.5"
+    assert e.entity_iri == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
     assert (
         e.ontology_label_with_iri
         == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
     )
-    assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
-    assert e.ontology_label in me.mammos_ontology
-    H = me.mammos_ontology.get_by_label(e.ontology_label)
-    assert e.ontology_label_with_iri == f"{H.prefLabel[0]} {H.iri}"
-
-
-def test_ontology_information_EMMO():
-    """Test ontology label and IRI for an Entity in the EMMO."""
+    assert e.ontology == me.mammos_ontology
+    assert e.thing == me.mammos_ontology._ontopy_ontology.ExternalMagneticField
     e = me.Entity("AngularVelocity")
     assert e.ontology_label == "AngularVelocity"
-    assert e.ontology_iri == "https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
+    assert e.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials/0.0.5"
+    assert e.entity_iri == "https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
     assert (
         e.ontology_label_with_iri == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
     )
-    assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
-    assert e.ontology_label in me.mammos_ontology
-    omega = me.mammos_ontology.get_by_label(e.ontology_label)
-    assert e.ontology_label_with_iri == f"{omega.prefLabel[0]} {omega.iri}"
+    assert e.ontology == me.mammos_ontology
+    assert e.thing == me.mammos_ontology._ontopy_ontology.AngularVelocity
+
+
+def test_ontology_attributes_emmo():
+    """Test ontology-related attributes of an Entity loaded from EMMO."""
+    o = me.Ontology(["https://w3id.org/emmo/1.0.3"])
+    e = o.Entity("AngularVelocity")
+    assert e.ontology_label == "AngularVelocity"
+    # assert e.ontology_iri == "https://w3id.org/emmo/1.0.3"
+    assert e.ontology_iri == "https://w3id.org/1.0.3/emmo"
+    # EMMO has a broken IRI -> https://github.com/emmo-repo/EMMO/issues/410
+    assert e.entity_iri == "https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
+    assert (
+        e.ontology_label_with_iri == "AngularVelocity https://w3id.org/emmo#EMMO_bd325ef5_4127_420c_83d3_207b3e2184fd"
+    )
+    assert e.ontology == o
+    assert e.thing == o._ontopy_ontology.AngularVelocity
 
 
 def test_equality():

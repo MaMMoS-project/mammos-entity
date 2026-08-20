@@ -1,3 +1,4 @@
+import filecmp
 import textwrap
 
 import mammos_units as u
@@ -48,7 +49,16 @@ def test_write_read_yaml(tmp_path):
     assert read_data["description"] == collection["description"]
 
 
-def test_read_yaml_v1(tmp_path):
+def test_yaml_v1(tmp_path):
+    from mammos_entity._io._yaml_v1 import _to_yaml_v1
+
+    collection = me.EntityCollection(
+        Ms=me.Ms([600, 650, 700], "kA / m"),
+        T=me.T([1, 2, 3], "K"),
+        angle=[0, 0.5, 0.7] * u.rad,
+        demag_factor=me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]),
+        comment=["Some comment", "Some other comment", "A third comment"],
+    )
     file_content = textwrap.dedent(
         """\
         metadata:
@@ -57,7 +67,7 @@ def test_read_yaml_v1(tmp_path):
         data:
           Ms:
             ontology_label: SpontaneousMagnetization
-            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
             unit: kA / m
             value: [600.0, 650.0, 700.0]
           T:
@@ -72,7 +82,7 @@ def test_read_yaml_v1(tmp_path):
             value: [0.0, 0.5, 0.7]
           demag_factor:
             ontology_label: DemagnetizingFactor
-            ontology_iri: https://w3id.org/emmo/domain/magnetic_material#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
             unit: ''
             value: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
           comment:
@@ -85,6 +95,7 @@ def test_read_yaml_v1(tmp_path):
     (tmp_path / "data.yaml").write_text(file_content)
     read_data = me.from_yaml(tmp_path / "data.yaml")
 
+    # Reading tests
     assert read_data.description == ""
     assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
     assert me.T([1, 2, 3]) == read_data.T
@@ -95,6 +106,9 @@ def test_read_yaml_v1(tmp_path):
         "Some other comment",
         "A third comment",
     ]
+    # Writing tests
+    _to_yaml_v1(collection, tmp_path / "written.yaml")
+    assert filecmp.cmp(tmp_path / "written.yaml", tmp_path / "data.yaml")
 
 
 def test_read_yaml_v2_flat(tmp_path):
@@ -194,6 +208,108 @@ def test_read_yaml_v2_nested(tmp_path):
     assert read_data.T.description == "measurement conditions"
 
 
+def test_read_yaml_v3_flat(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos yaml v3
+        metadata: null
+        description: |-
+          File description.
+        data:
+          Ms:
+            ontology_label: SpontaneousMagnetization
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+            entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+            unit: kA / m
+            value: [600.0, 650.0, 700.0]
+            description: ''
+          T:
+            ontology_label: ThermodynamicTemperature
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+            entity_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
+            unit: K
+            value: [1.0, 2.0, 3.0]
+            description: from experiment 1
+          angle:
+            unit: rad
+            value: [0.0, 0.5, 0.7]
+          demag_factor:
+            ontology_label: DemagnetizingFactor
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+            entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+            unit: ''
+            value: [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
+            description: ''
+          comment:
+            value: [Some comment, Some other comment, A third comment]
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    read_data = me.from_yaml(tmp_path / "data.yaml")
+
+    assert read_data.description == "File description."
+    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert me.T([1, 2, 3]) == read_data.T
+    assert read_data.T.description == "from experiment 1"
+    assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
+    assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
+    assert list(read_data.comment) == [
+        "Some comment",
+        "Some other comment",
+        "A third comment",
+    ]
+
+
+def test_read_yaml_v3_nested(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos yaml v3
+        metadata: null
+        description: Top-level description.
+        data:
+          sample:
+            description: Sample 1
+            data:
+              properties:
+                description: Intrinsic properties
+                data:
+                  Ms:
+                    ontology_label: SpontaneousMagnetization
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                    entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                    unit: kA / m
+                    value: [600.0, 650.0, 700.0]
+                    description: ''
+                  angle:
+                    unit: rad
+                    value: [0.0, 0.5, 0.7]
+              notes:
+                value: measured in setup A
+          T:
+            ontology_label: ThermodynamicTemperature
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+            entity_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
+            unit: K
+            value: [300.0, 350.0, 400.0]
+            description: measurement conditions
+        """
+    )
+    (tmp_path / "data.yaml").write_text(file_content)
+    read_data = me.from_yaml(tmp_path / "data.yaml")
+
+    assert isinstance(read_data, me.EntityCollection)
+    assert read_data.description == "Top-level description."
+    assert isinstance(read_data.sample, me.EntityCollection)
+    assert read_data.sample.description == "Sample 1"
+    assert isinstance(read_data.sample.properties, me.EntityCollection)
+    assert read_data.sample.properties.description == "Intrinsic properties"
+    assert read_data.sample.properties.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert all(read_data.sample.properties.angle == [0, 0.5, 0.7] * u.rad)
+    assert read_data.sample.notes == "measured in setup A"
+    assert me.T([300, 350, 400], "K") == read_data.T
+    assert read_data.T.description == "measurement conditions"
+
+
 def test_write_yaml_key_types(tmp_path):
     sample = me.EntityCollection(
         description="Sample 1",
@@ -216,6 +332,7 @@ def test_write_yaml_key_types(tmp_path):
         "ontology_label",
         "description",
         "ontology_iri",
+        "entity_iri",
         "unit",
         "value",
     }
@@ -231,6 +348,7 @@ def test_write_yaml_key_types(tmp_path):
         "ontology_label",
         "description",
         "ontology_iri",
+        "entity_iri",
         "unit",
         "value",
     }
