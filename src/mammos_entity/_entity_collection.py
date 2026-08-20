@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import csv
 import os
 import textwrap
 from typing import TYPE_CHECKING
@@ -502,40 +501,7 @@ class EntityCollection:
             >>> Path("example.csv").unlink()
 
         """  # noqa: E501
-        if any(isinstance(element, EntityCollection) for _name, element in self):
-            raise ValueError("Nested collections cannot be saved to CSV.")
-        if len(self) == 0:
-            raise ValueError("Empty collections cannot be saved to CSV.")
-
-        # convert data first because that will catch incompatible shape
-        dataframe = self.to_dataframe()
-
-        # Header rows written in CSV format.
-        metadata_rows = [
-            [getattr(elem, "ontology_label", "") for _, elem in self],
-            [getattr(elem, "description", "") for _, elem in self],
-            [getattr(elem, "ontology_iri", "") for _, elem in self],
-            [getattr(elem, "entity_iri", "") for _, elem in self],
-            [str(getattr(elem, "unit", "")) for _, elem in self],
-        ]
-
-        with open(filename, "w", newline="") as csvfile:
-            csvfile.write(f"# mammos csv v4{os.linesep}")
-            if self.description:
-                csvfile.write("#" + "-" * 40 + os.linesep)
-                for line in self.description.splitlines():
-                    csvfile.write(f"# {line}{os.linesep}")
-                csvfile.write("#" + "-" * 40 + os.linesep)
-
-            writer = csv.writer(
-                csvfile,
-                delimiter=",",
-                quoting=csv.QUOTE_MINIMAL,
-                lineterminator=os.linesep,
-            )
-            writer.writerows(metadata_rows)
-
-            dataframe.to_csv(csvfile, index=False)
+        me._io._to_csv_v4(self, filename)
 
     def to_yaml(self, filename: str | os.PathLike) -> None:
         r"""Write collection to YAML file.

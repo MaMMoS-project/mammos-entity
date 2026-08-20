@@ -121,7 +121,12 @@ def _from_csv_v4(csvfile):
 
 
 def _to_csv_v4(collection: mammos_entity.EntityCollection, filename: os.PathLike) -> None:
-    """Write EntityCollection into mammos csv v4 format."""
+    """Write EntityCollection into mammos csv v4 format.
+
+    Args:
+        collection: EntityCollection to write to file.
+        filename: Path of the file to write.
+    """
     if any(isinstance(element, me.EntityCollection) for _name, element in collection):
         raise ValueError("Nested collections cannot be saved to CSV.")
     if len(collection) == 0:
