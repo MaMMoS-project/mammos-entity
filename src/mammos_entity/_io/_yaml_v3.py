@@ -57,11 +57,15 @@ from collections.abc import Mapping
 from typing import TYPE_CHECKING
 
 import mammos_units as u
+import numpy as np
 import yaml
 
 import mammos_entity as me
 
 if TYPE_CHECKING:
+    import mammos_units
+    import numpy.typing
+
     import mammos_entity
 
 
@@ -197,3 +201,103 @@ def _parse_yaml_leaf_v3(item: Mapping, key: str, ontologies: dict):
             f'Entry "{key_display}" is an invalid entity-like in mammos yaml v3: '
             f"invalid keys {sorted(keys)}; expected one of {expected}."
         )
+
+
+def _to_yaml_v3(collection: me.EntityCollection, filename: str | os.PathLike) -> None:
+    """Write MaMMoS YAML file v3.
+
+    Args:
+        collection: EntityCollection to write.
+        filename: Path of file to write.
+    """
+    if len(collection) == 0:
+        raise ValueError("Empty collections cannot be saved to YAML.")
+
+    entity_dict = {"metadata": None, **_serialize_collection(collection)}
+    with open(filename, "w") as f:
+        f.write("# mammos yaml v3\n")
+        yaml.dump(
+            entity_dict,
+            stream=f,
+            Dumper=get_dumper(),
+            default_flow_style=False,
+            sort_keys=False,
+        )
+
+
+def _serialize_entity_like(
+    element: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
+) -> dict:
+    if isinstance(element, me.Entity):
+        return {
+            "ontology_label": element.ontology_label,
+            "description": element.description,
+            "ontology_iri": element.ontology_iri,
+            "entity_iri": element.entity_iri,
+            "unit": str(element.unit),
+            "value": element.value.tolist(),
+        }
+    elif isinstance(element, u.Quantity):
+        return {
+            "unit": str(element.unit),
+            "value": element.value.tolist(),
+        }
+    else:
+        return {"value": np.asanyarray(element).tolist()}
+
+
+def _serialize_collection(collection: mammos_entity.EntityCollection) -> dict:
+    result = {"description": collection.description, "data": {}}
+    for name, element in collection:
+        if isinstance(element, me.EntityCollection):
+            result["data"][name] = _serialize_collection(element)
+        else:
+            result["data"][name] = _serialize_entity_like(element)
+    return result
+
+
+def get_dumper():
+    # custom dumper to change style of lists, tuples and multi-line strings
+    class _Dumper(yaml.SafeDumper):
+        pass
+
+    _Dumper.add_representer(list, _represent_sequence)
+    _Dumper.add_representer(tuple, _represent_sequence)
+    _Dumper.add_representer(str, _represent_string)
+    return _Dumper
+
+
+def _represent_sequence(dumper, value):
+    """Display sequence with flow style.
+
+    A list [1, 2, 3] for key `value` is written to file as::
+
+    value: [1, 2, 3]
+
+    instead of::
+
+    value:
+        - 1
+        - 2
+        - 3
+
+    """
+    return dumper.represent_sequence("tag:yaml.org,2002:seq", value, flow_style=True)
+
+
+def _represent_string(dumper, value):
+    """Control style of single-line and multi-line strings.
+
+    Single-line strings are written as::
+
+    some_key: Hello
+
+    Multi-line strings are written as::
+
+    some_key: |-
+        I am multi-line,
+        without a trailing new line.
+
+    """
+    style = "|" if "\n" in value else ""
+    return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
