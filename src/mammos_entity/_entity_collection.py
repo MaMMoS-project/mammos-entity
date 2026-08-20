@@ -11,7 +11,6 @@ import h5py
 import mammos_units as u
 import numpy as np
 import pandas as pd
-import yaml
 
 import mammos_entity as me
 from mammos_entity import _entity_collection_tree
@@ -704,92 +703,7 @@ class EntityCollection:
 
 
         """  # noqa: E501
-
-        def _serialize_entity_like(
-            element: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
-        ) -> dict:
-            if isinstance(element, me.Entity):
-                return {
-                    "ontology_label": element.ontology_label,
-                    "description": element.description,
-                    "ontology_iri": element.ontology_iri,
-                    "entity_iri": element.entity_iri,
-                    "unit": str(element.unit),
-                    "value": element.value.tolist(),
-                }
-            elif isinstance(element, u.Quantity):
-                return {
-                    "unit": str(element.unit),
-                    "value": element.value.tolist(),
-                }
-            else:
-                return {"value": np.asanyarray(element).tolist()}
-
-        if len(self) == 0:
-            raise ValueError("Empty collections cannot be saved to YAML.")
-
-        def _serialize_collection(collection: EntityCollection) -> dict:
-            result = {"description": collection.description, "data": {}}
-            for name, element in collection:
-                if isinstance(element, EntityCollection):
-                    result["data"][name] = _serialize_collection(element)
-                else:
-                    result["data"][name] = _serialize_entity_like(element)
-            return result
-
-        entity_dict = {"metadata": None, **_serialize_collection(self)}
-
-        # custom dumper to change style of lists, tuples and multi-line strings
-        class _Dumper(yaml.SafeDumper):
-            pass
-
-        def _represent_sequence(dumper, value):
-            """Display sequence with flow style.
-
-            A list [1, 2, 3] for key `value` is written to file as::
-
-            value: [1, 2, 3]
-
-            instead of::
-
-            value:
-                - 1
-                - 2
-                - 3
-
-            """
-            return dumper.represent_sequence("tag:yaml.org,2002:seq", value, flow_style=True)
-
-        def _represent_string(dumper, value):
-            """Control style of single-line and multi-line strings.
-
-            Single-line strings are written as::
-
-            some_key: Hello
-
-            Multi-line strings are written as::
-
-            some_key: |-
-                I am multi-line,
-                without a trailing new line.
-
-            """
-            style = "|" if "\n" in value else ""
-            return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
-
-        _Dumper.add_representer(list, _represent_sequence)
-        _Dumper.add_representer(tuple, _represent_sequence)
-        _Dumper.add_representer(str, _represent_string)
-
-        with open(filename, "w") as f:
-            f.write("# mammos yaml v3\n")
-            yaml.dump(
-                entity_dict,
-                stream=f,
-                Dumper=_Dumper,
-                default_flow_style=False,
-                sort_keys=False,
-            )
+        me._io._to_yaml_v3(self, filename)
 
     def to_hdf5(self, base: h5py.File | h5py.Group | str | os.PathLike, name: str | None = None) -> h5py.Group | None:
         """Write a collection to an HDF5 group.
