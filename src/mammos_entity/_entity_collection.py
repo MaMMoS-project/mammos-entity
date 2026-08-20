@@ -297,7 +297,7 @@ class EntityCollection:
             >>> import mammos_units as u
             >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
             >>> col.metadata()
-            {'Tc': {'ontology_label': 'CurieTemperature', 'ontology_iri': 'https://w3id.org/1.0.3/emmo', 'entity_iri': 'https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+            {'Tc': {'ontology_label': 'CurieTemperature', 'ontology_iri': 'https://w3id.org/emmo/domain/magnetic-materials/0.0.5', 'entity_iri': 'https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
 
         .. version-changed:: 0.14.0
            The collection description has been removed from the metadata to allow the
@@ -631,7 +631,7 @@ class EntityCollection:
               Tc:
                 ontology_label: CurieTemperature
                 description: ''
-                ontology_iri: https://w3id.org/1.0.3/emmo
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
                 entity_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
                 unit: K
                 value: 300.0
@@ -672,14 +672,14 @@ class EntityCollection:
                   Tc:
                     ontology_label: CurieTemperature
                     description: ''
-                    ontology_iri: https://w3id.org/1.0.3/emmo
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
                     entity_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
                     unit: K
                     value: 1043.0
               T:
                 ontology_label: ThermodynamicTemperature
                 description: Measurement conditions
-                ontology_iri: https://w3id.org/1.0.3/emmo
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
                 entity_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
                 unit: K
                 value: 300.0
@@ -693,7 +693,7 @@ class EntityCollection:
               M:
                 ontology_label: Magnetization
                 description: ''
-                ontology_iri: https://w3id.org/1.0.3/emmo
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
                 entity_iri: https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37
                 unit: kA / m
                 value: [100.0, 300.0, 500.0]
