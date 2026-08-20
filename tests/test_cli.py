@@ -63,17 +63,15 @@ def test_mammos_entity_ontology_download_multiple_iri():
 
 
 def test_mammos_entity_ontology_clear_cache():
-    """Test command that clears cache directory.
-
-    We run the command before and after we download an ontology.
-    """
+    """Test command that clears cache directory."""
     command = shlex.split("mammos-entity ontology clear-cache")
     res = subprocess.run(command)
     res.check_returncode()
     assert not os.listdir(me._CACHE_DIR)
-    command = shlex.split("mammos-entity ontology download https://w3id.org/emmo/1.0.3")
-    res = subprocess.run(command)
-    res.check_returncode()
+    (me._CACHE_DIR / "emmo" / "1.0.3").mkdir(parents=True)
+    (me._CACHE_DIR / "emmo" / "1.0.3" / "inferred.ttl").touch()  # fake ontology file
+    (me._CACHE_DIR / "magnetic-materials" / "0.0.5").mkdir(parents=True)
+    (me._CACHE_DIR / "magnetic-materials" / "0.0.5" / "inferred.ttl").touch()  # fake ontology file
     command = shlex.split("mammos-entity ontology clear-cache")
     res = subprocess.run(command)
     res.check_returncode()
