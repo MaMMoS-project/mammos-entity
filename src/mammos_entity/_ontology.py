@@ -182,7 +182,9 @@ class Ontology:
         match_by_prefLabel = set(self._ontopy_ontology.search(prefLabel=label))
         match_by_altLabel = set(self._ontopy_ontology.search(altLabel=label))
         possible_things = match_by_label | match_by_prefLabel | match_by_altLabel
-        return sorted(str(thing.prefLabel[0]) for thing in possible_things if hasattr(thing, "prefLabel"))
+        return sorted(
+            str(thing.get_preferred_label()) for thing in possible_things if hasattr(thing, "get_preferred_label")
+        )
 
     def Entity(
         self,
