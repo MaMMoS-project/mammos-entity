@@ -251,7 +251,7 @@ def _select_ontology_label(label: str) -> str:
     prefLabel_matches = mammos_ontology.search(prefLabel=label)
     n_matches = len(prefLabel_matches)
     if n_matches == 1:
-        return str(prefLabel_matches[0].prefLabel[0])
+        return str(prefLabel_matches[0].get_preferred_label())
     elif n_matches > 1:
         raise ValueError(
             f"The ontology contains more than one entry with the given label '{label}' "
