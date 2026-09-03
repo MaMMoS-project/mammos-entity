@@ -10,35 +10,37 @@ from mammos_entity.operations import concat_flat
 
 def test_concat_flat():
     """Test concat operation."""
-    e_1 = me.Ms(1)
-    e_2 = me.Ms(2)
-    assert concat_flat(e_1, e_2) == me.Ms([1, 2])
-    assert concat_flat(e_1, e_1, e_2) == me.Ms([1, 1, 2])
-    assert concat_flat(e_1, 4) == me.Ms([1, 4])
-    assert concat_flat(4, e_1) == me.Ms([4, 1])
-    assert concat_flat(e_1, [[2], [3]]) == me.Ms([1, 2, 3])
-    e_3 = me.Ms([1, 2])
-    assert concat_flat(e_3, e_1, 4) == me.Ms([1, 2, 1, 4])
+    e_1 = me.Entity("SpontaneousMagnetization", 1)
+    e_2 = me.Entity("SpontaneousMagnetization", 2)
+    assert concat_flat(e_1, e_2) == me.Entity("SpontaneousMagnetization", [1, 2])
+    assert concat_flat(e_1, e_1, e_2) == me.Entity("SpontaneousMagnetization", [1, 1, 2])
+    assert concat_flat(e_1, 4) == me.Entity("SpontaneousMagnetization", [1, 4])
+    assert concat_flat(4, e_1) == me.Entity("SpontaneousMagnetization", [4, 1])
+    assert concat_flat(e_1, [[2], [3]]) == me.Entity("SpontaneousMagnetization", [1, 2, 3])
+    e_3 = me.Entity("SpontaneousMagnetization", [1, 2])
+    assert concat_flat(e_3, e_1, 4) == me.Entity("SpontaneousMagnetization", [1, 2, 1, 4])
     ee = [e_1, e_2, e_3]
-    assert concat_flat(*ee) == me.Ms([1, 2, 1, 2])
-    assert concat_flat(*ee, 3) == me.Ms([1, 2, 1, 2, 3])
-    e_4 = me.Ms(1, unit=u.kA / u.m)
-    assert concat_flat(e_1, e_4) == me.Ms([1, 1000])
-    assert concat_flat(e_4, e_4) == me.Ms([1, 1], unit=u.kA / u.m)
+    assert concat_flat(*ee) == me.Entity("SpontaneousMagnetization", [1, 2, 1, 2])
+    assert concat_flat(*ee, 3) == me.Entity("SpontaneousMagnetization", [1, 2, 1, 2, 3])
+    e_4 = me.Entity("SpontaneousMagnetization", 1, unit=u.kA / u.m)
+    assert concat_flat(e_1, e_4) == me.Entity("SpontaneousMagnetization", [1, 1000])
+    assert concat_flat(e_4, e_4) == me.Entity("SpontaneousMagnetization", [1, 1], unit=u.kA / u.m)
     assert concat_flat(e_4, e_4).unit == u.kA / u.m
     assert np.allclose(concat_flat(e_4, e_4, unit=u.mA / u.m).value, [1e6, 1e6])
     assert concat_flat(e_4, e_4, unit=u.mA / u.m).unit == u.mA / u.m
-    assert concat_flat(me.Ms([[1, 2], [3, 4]]), 5) == me.Ms([1, 2, 3, 4, 5])
-    assert concat_flat([e_1, e_2]) == me.Ms([1, 2])
-    assert concat_flat([e_1, 2]) == me.Ms([1, 2])
+    assert concat_flat(me.Entity("SpontaneousMagnetization", [[1, 2], [3, 4]]), 5) == me.Entity(
+        "SpontaneousMagnetization", [1, 2, 3, 4, 5]
+    )
+    assert concat_flat([e_1, e_2]) == me.Entity("SpontaneousMagnetization", [1, 2])
+    assert concat_flat([e_1, 2]) == me.Entity("SpontaneousMagnetization", [1, 2])
     assert concat_flat(e_1, 3 * u.A / u.m)
 
 
 def test_concat_flat_description():
     """Test description attribute in the concat flat operation."""
-    e_1 = me.Ms(1, description="Entity 1.")
-    e_2 = me.Ms(2, description="Entity 2.")
-    e_3 = me.Ms(3)
+    e_1 = me.Entity("SpontaneousMagnetization", 1, description="Entity 1.")
+    e_2 = me.Entity("SpontaneousMagnetization", 2, description="Entity 2.")
+    e_3 = me.Entity("SpontaneousMagnetization", 3)
     with pytest.warns(UserWarning):
         assert concat_flat(e_1, e_2).description in (
             "Entity 1.|Entity 2.",
@@ -62,4 +64,4 @@ def test_failing_concat():
     with pytest.raises(ValueError):
         concat_flat([1, 2] * u.m, 3)
     with pytest.raises(ValueError):
-        concat_flat(me.Ms(1), me.Js(2))
+        concat_flat(me.Entity("SpontaneousMagnetization", 1), me.Entity("SpontaneousMagneticPolarization", 2))
