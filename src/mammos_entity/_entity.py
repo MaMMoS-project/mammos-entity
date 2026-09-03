@@ -471,8 +471,8 @@ class StringEntity(Entity):
         Args:
             ontology_label: Label of the respective ontology object.
             value: String value(s). It gets converted into a NumPy array of strings.
+            unit: Must be ``None`` or any other Python object equivalent to ``False``, such as an empty string or list.
             description: Information string to assign to ``description`` attribute.
-
 
         Examples:
             >>> import mammos_entity as me
