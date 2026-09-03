@@ -5,11 +5,9 @@ Entities are quantities (numbers with units) with an associated ontology label.
 This packages contains classes for defining, collecting and saving such entities (
 :py:class:`~mammos_entity.Entity` and :py:class:`~mammos_entity.EntityCollection`),
 the :py:func:`~mammos_entity.search_labels` function to search for partial
-or full matches of labels defined in the ontology, the reading routines
-:py:func:`~mammos_entity.from_csv`, :py:func:`~mammos_entity.from_hdf5`
-:py:func:`~mammos_entity.from_yaml`, and some pre-defined factory methods for
-magnetic entities (such as :py:class:`~mammos_entity.Ms`, :py:class:`~mammos_entity.A`,
-:py:class:`~mammos_entity.Ku`, and :py:class:`~mammos_entity.H`).
+or full matches of labels defined in the ontology, and the reading routines
+:py:func:`~mammos_entity.from_csv`, :py:func:`~mammos_entity.from_hdf5`, and
+:py:func:`~mammos_entity.from_yaml`.
 """
 
 import importlib.metadata
