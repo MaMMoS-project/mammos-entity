@@ -9,7 +9,7 @@ import mammos_entity as me
 
 def test_entity_to_hdf5_root():
     with h5py.File.in_memory() as f:
-        T = me.T(100, "K")
+        T = me.Entity("ThermodynamicTemperature", 100, "K")
         T.to_hdf5(f, "T")
         assert "T" in f
         assert f["T"][()] == T.value
@@ -22,7 +22,7 @@ def test_entity_to_hdf5_root():
 
 def test_entity_to_hdf5_group():
     with h5py.File.in_memory() as f:
-        Ms = me.Ms([[10, 20], [30, 40.0]], description="test")
+        Ms = me.Entity("SpontaneousMagnetization", [[10, 20], [30, 40.0]], description="test")
         Ms.to_hdf5(f, "/base/Ms")
         assert "base" in f
         assert "Ms" in f["base"]
@@ -35,7 +35,7 @@ def test_entity_to_hdf5_group():
 
 def test_entity_to_hdf5_existing_and_nested_groups():
     with h5py.File.in_memory() as f:
-        Ms = me.Ms([[10, 20], [30, 40.0]], description="test")
+        Ms = me.Entity("SpontaneousMagnetization", [[10, 20], [30, 40.0]], description="test")
         Ms.to_hdf5(f, "/base/Ms")
         Ms.to_hdf5(f["/base"], "Ms2")
         assert me.from_hdf5(f["/base/Ms2"]) == Ms
@@ -46,7 +46,7 @@ def test_entity_to_hdf5_existing_and_nested_groups():
 
 def test_entity_to_hdf5_overwrite_error():
     with h5py.File.in_memory() as f:
-        Ms = me.Ms([[10, 20], [30, 40.0]], description="test")
+        Ms = me.Entity("SpontaneousMagnetization", [[10, 20], [30, 40.0]], description="test")
         Ms.to_hdf5(f, "/base/Ms")
 
         with pytest.raises(ValueError, match="name already exists"):
@@ -57,9 +57,9 @@ def test_entity_collection_to_hdf5_group():
     with h5py.File.in_memory() as f:
         col = me.EntityCollection(
             description="intrinsic properties",
-            Ms=me.Ms([300, 250, 200], "kA/m"),
-            T=me.T([50, 100, 200]),
-            Tc=me.Tc(600, "K"),
+            Ms=me.Entity("SpontaneousMagnetization", [300, 250, 200], "kA/m"),
+            T=me.Entity("ThermodynamicTemperature", [50, 100, 200]),
+            Tc=me.Entity("CurieTemperature", 600, "K"),
         )
 
         col.to_hdf5(f, "/sample1/properties")
@@ -76,9 +76,9 @@ def test_entity_collection_to_hdf5_roundtrip():
     with h5py.File.in_memory() as f:
         col = me.EntityCollection(
             description="intrinsic properties",
-            Ms=me.Ms([300, 250, 200], "kA/m"),
-            T=me.T([50, 100, 200]),
-            Tc=me.Tc(600, "K"),
+            Ms=me.Entity("SpontaneousMagnetization", [300, 250, 200], "kA/m"),
+            T=me.Entity("ThermodynamicTemperature", [50, 100, 200]),
+            Tc=me.Entity("CurieTemperature", 600, "K"),
         )
         col["description"] = me.Entity("Length", [0, 0, 0])
         col.to_hdf5(f, "/sample1/properties")
@@ -97,9 +97,9 @@ def test_entity_collection_to_hdf5_extra_features_do_not_affect_read():
     with h5py.File.in_memory() as f:
         col = me.EntityCollection(
             description="intrinsic properties",
-            Ms=me.Ms([300, 250, 200], "kA/m"),
-            T=me.T([50, 100, 200]),
-            Tc=me.Tc(600, "K"),
+            Ms=me.Entity("SpontaneousMagnetization", [300, 250, 200], "kA/m"),
+            T=me.Entity("ThermodynamicTemperature", [50, 100, 200]),
+            Tc=me.Entity("CurieTemperature", 600, "K"),
         )
         group = col.to_hdf5(f, "/sample1/properties")
 
@@ -117,9 +117,9 @@ def test_nested_entity_collection_to_hdf5_roundtrip():
     with h5py.File.in_memory() as f:
         col = me.EntityCollection(
             description="intrinsic properties",
-            Ms=me.Ms([300, 250, 200], "kA/m"),
-            T=me.T([50, 100, 200]),
-            Tc=me.Tc(600, "K"),
+            Ms=me.Entity("SpontaneousMagnetization", [300, 250, 200], "kA/m"),
+            T=me.Entity("ThermodynamicTemperature", [50, 100, 200]),
+            Tc=me.Entity("CurieTemperature", 600, "K"),
         )
         sample = me.EntityCollection(
             description="produced by student",
@@ -149,9 +149,9 @@ def test_nested_entity_collection_to_hdf5_full_file_read():
     with h5py.File.in_memory() as f:
         col = me.EntityCollection(
             description="intrinsic properties",
-            Ms=me.Ms([300, 250, 200], "kA/m"),
-            T=me.T([50, 100, 200]),
-            Tc=me.Tc(600, "K"),
+            Ms=me.Entity("SpontaneousMagnetization", [300, 250, 200], "kA/m"),
+            T=me.Entity("ThermodynamicTemperature", [50, 100, 200]),
+            Tc=me.Entity("CurieTemperature", 600, "K"),
         )
         sample = me.EntityCollection(
             description="produced by student",
@@ -173,9 +173,9 @@ def test_nested_entity_collection_to_hdf5_version_propagation():
     with h5py.File.in_memory() as f:
         col = me.EntityCollection(
             description="intrinsic properties",
-            Ms=me.Ms([300, 250, 200], "kA/m"),
-            T=me.T([50, 100, 200]),
-            Tc=me.Tc(600, "K"),
+            Ms=me.Entity("SpontaneousMagnetization", [300, 250, 200], "kA/m"),
+            T=me.Entity("ThermodynamicTemperature", [50, 100, 200]),
+            Tc=me.Entity("CurieTemperature", 600, "K"),
         )
         sample = me.EntityCollection(
             description="produced by student",
@@ -186,8 +186,8 @@ def test_nested_entity_collection_to_hdf5_version_propagation():
         sample.to_hdf5(f, "sample1")
 
         col.to_hdf5(f, "sample1/extra")
-        me.A().to_hdf5(f, "sample1/a")
-        me.A().to_hdf5(f, "sample1/extra/a")
+        me.Entity("ExchangeStiffnessConstant").to_hdf5(f, "sample1/a")
+        me.Entity("ExchangeStiffnessConstant").to_hdf5(f, "sample1/extra/a")
 
         assert f["/sample1"].attrs["mammos_entity_version"] == me.__version__
         assert "mammos_entity_version" not in f["/sample1/properties"].attrs
@@ -202,7 +202,9 @@ def test_nested_entity_collection_to_hdf5_version_propagation():
 
 def test_to_new_hdf5_file_entity(tmp_path: Path):
     filename = tmp_path / "test.h5"
-    T = me.T()
+    T = me.Entity(
+        "ThermodynamicTemperature",
+    )
     T.to_hdf5(filename, "entity")
 
     assert filename.is_file()
@@ -215,11 +217,21 @@ def test_to_new_hdf5_file_entity(tmp_path: Path):
 def test_to_new_hdf5_file_overwrite_collection(tmp_path: Path):
     # First write an entity to the file
     filename = tmp_path / "test.h5"
-    T = me.T()
+    T = me.Entity(
+        "ThermodynamicTemperature",
+    )
     T.to_hdf5(filename, "entity")
 
     # Then overwrite the same file with a collection
-    c = me.EntityCollection(Tc=me.Tc(), Ms=me.Ms(), description="abc")
+    c = me.EntityCollection(
+        Tc=me.Entity(
+            "CurieTemperature",
+        ),
+        Ms=me.Entity(
+            "SpontaneousMagnetization",
+        ),
+        description="abc",
+    )
     c.to_hdf5(str(filename))
 
     content = me.from_hdf5(str(filename))
@@ -230,13 +242,25 @@ def test_to_new_hdf5_file_overwrite_collection(tmp_path: Path):
     # EntityCollection was created with Tc before Ms. This changes when we create
     # a group manually (see the next test), where insertion order is tracked.
     assert [name for name, _ in content] == ["Ms", "Tc"]
-    assert content.Ms == me.Ms()
-    assert content.Tc == me.Tc()
+    assert content.Ms == me.Entity(
+        "SpontaneousMagnetization",
+    )
+    assert content.Tc == me.Entity(
+        "CurieTemperature",
+    )
 
 
 def test_to_new_hdf5_file_ordered_group(tmp_path: Path):
     filename = tmp_path / "test_ordered.h5"
-    c = me.EntityCollection(Tc=me.Tc(), Ms=me.Ms(), description="abc")
+    c = me.EntityCollection(
+        Tc=me.Entity(
+            "CurieTemperature",
+        ),
+        Ms=me.Entity(
+            "SpontaneousMagnetization",
+        ),
+        description="abc",
+    )
     c.to_hdf5(str(filename), "ordered")
 
     content = me.from_hdf5(str(filename))

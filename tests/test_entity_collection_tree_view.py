@@ -62,7 +62,7 @@ def _assert_js_free(html_fragment: str) -> None:
 @pytest.mark.parametrize("description", ["", "desc"])
 def test_entity_repr_html_is_js_free_and_uses_details_only_for_long_values(count, description):
     value = 1.0 if count == 1 else np.arange(float(count))
-    entity = me.M(value, "A/m", description=description)
+    entity = me.Entity("Magnetization", value, "A/m", description=description)
 
     html_output = entity._repr_html_()
     fragment = entity._repr_html_fragment_()
@@ -85,7 +85,7 @@ def test_entity_repr_html_is_js_free_and_uses_details_only_for_long_values(count
 def test_collection_repr_html_is_static_js_free_and_wraps_descriptions():
     collection = me.EntityCollection(
         description="long collection description that should wrap",
-        M=me.M(np.arange(60.0), "A/m", description="long entity description that should wrap"),
+        M=me.Entity("Magnetization", np.arange(60.0), "A/m", description="long entity description that should wrap"),
     )
 
     html_output = collection._repr_html_()
@@ -183,7 +183,7 @@ def test_render_entity_collection_text_bounds_large_quantity_leaf_values():
 
 
 def test_render_entity_collection_text_bounds_large_entity_values():
-    collection = me.EntityCollection(M=me.M(np.arange(60.0), "A/m", description="desc"))
+    collection = me.EntityCollection(M=me.Entity("Magnetization", np.arange(60.0), "A/m", description="desc"))
 
     text_output = render_entity_collection_text(collection)
 
@@ -196,7 +196,7 @@ def test_render_entity_collection_text_bounds_large_entity_values():
 
 def test_repr_mimebundle_includes_widget_html_plain_and_avoids_collection_repr(monkeypatch):
     collection = me.EntityCollection(
-        alpha=me.EntityCollection(left=me.EntityCollection(a=me.M(1, "A/m"))),
+        alpha=me.EntityCollection(left=me.EntityCollection(a=me.Entity("Magnetization", 1, "A/m"))),
         beta=me.EntityCollection(right=me.EntityCollection(b=2)),
     )
 
@@ -388,7 +388,7 @@ def test_tree_session_defers_expanded_entity_formatting(monkeypatch):
         return original_formatter(value)
 
     monkeypatch.setattr(tree_html, "_format_array_repr_expanded", counted_formatter)
-    session = EntityCollectionTreeSession(me.EntityCollection(M=me.M(np.arange(60.0), "A/m")))
+    session = EntityCollectionTreeSession(me.EntityCollection(M=me.Entity("Magnetization", np.arange(60.0), "A/m")))
 
     page = session.render_lazy_node(session.root_node_id)
     leaf_id = _lazy_node_id(page["html"], "replace-self")
@@ -421,7 +421,7 @@ def test_tree_session_releases_registered_descendants():
 
 
 def test_tree_session_reuses_entity_fragment_for_eager_entities(monkeypatch):
-    collection = me.EntityCollection(M=me.M(1, "A/m"))
+    collection = me.EntityCollection(M=me.Entity("Magnetization", 1, "A/m"))
     custom_fragment = "<samp class='mammos-entity-inline'>custom eager fragment</samp>"
 
     monkeypatch.setattr(Entity, "_repr_html_fragment_", lambda self: custom_fragment)
@@ -435,7 +435,7 @@ def test_tree_session_reuses_entity_fragment_for_eager_entities(monkeypatch):
 
 
 def test_tree_session_large_entity_leaf_is_lazy_and_replaces_on_expand(monkeypatch):
-    collection = me.EntityCollection(M=me.M(np.arange(60.0), "A/m"))
+    collection = me.EntityCollection(M=me.Entity("Magnetization", np.arange(60.0), "A/m"))
 
     def broken_fragment(self):
         raise RuntimeError("lazy entity widget path should not call entity HTML fragments")
@@ -524,7 +524,9 @@ def test_widget_handles_load_all_request(monkeypatch):
 
 
 def test_widget_handles_lazy_leaf_replacement(monkeypatch):
-    widget = EntityCollectionTreeWidget(me.EntityCollection(M=me.M(np.arange(60.0), "A/m")), page_size=10)
+    widget = EntityCollectionTreeWidget(
+        me.EntityCollection(M=me.Entity("Magnetization", np.arange(60.0), "A/m")), page_size=10
+    )
     sent_messages = []
     monkeypatch.setattr(widget, "send", lambda content, buffers=None: sent_messages.append(content))
 
