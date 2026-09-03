@@ -458,7 +458,7 @@ class Entity:
 
         Examples:
             >>> import mammos_entity as me
-            >>> Ms = me.Ms([500, 600, 700], "kA/m")
+            >>> Ms = me.Entity("SpontaneousMagnetization", [500, 600, 700], "kA/m")
 
             Integer indexing returns a scalar entity:
 
@@ -518,11 +518,11 @@ class Entity:
 
         Examples:
             >>> import mammos_entity as me
-            >>> ms_1 = me.Ms(1, "kA/m")
-            >>> ms_2 = me.Ms(1e3, "A/m")
+            >>> ms_1 = me.Entity("SpontaneousMagnetization", 1, "kA/m")
+            >>> ms_2 = me.Entity("SpontaneousMagnetization", 1e3, "A/m")
             >>> ms_1 == ms_2
             True
-            >>> t = me.T(1, "K")
+            >>> t = me.Entity("ThermodynamicTemperature", 1, "K")
             >>> ms_1 == t
             False
         """

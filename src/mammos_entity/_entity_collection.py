@@ -56,7 +56,7 @@ class EntityCollection:
 
         When creating a new collection entities can be passed as keyword arguments:
 
-        >>> collection = me.EntityCollection("A description", Ms=me.Ms(), T=me.T())
+        >>> collection = me.EntityCollection("A description", Ms=me.Entity("SpontaneousMagnetization"), T=me.Entity("ThermodynamicTemperature"))
         >>> collection
         EntityCollection(
             description='A description',
@@ -77,7 +77,7 @@ class EntityCollection:
         dictionary-like interface):
 
         >>> collection.A = [1, 2, 3]
-        >>> collection["B"] = me.B([4, 5, 6])
+        >>> collection["B"] = me.Entity("MagneticFluxDensity", [4, 5, 6])
 
         Checking if an entity name exists in a collection can be done with:
 
@@ -297,7 +297,7 @@ class EntityCollection:
         Examples:
             >>> import mammos_entity as me
             >>> import mammos_units as u
-            >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
+            >>> col = me.EntityCollection("The description", Tc=me.Entity("CurieTemperature", ), x=1 * u.m, a=0)
             >>> col.metadata()
             {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
 
@@ -609,7 +609,7 @@ class EntityCollection:
             ...         "Comment in the second row",
             ...         "Comment in the third row",
             ...     ],
-            ...     Tc=me.Tc(300, "K"),
+            ...     Tc=me.Entity("CurieTemperature", 300, "K"),
             ... )
             >>> collection.to_yaml("example.yaml")
 
@@ -654,15 +654,15 @@ class EntityCollection:
 
             >>> properties = me.EntityCollection(
             ...     description="material properties",
-            ...     Ms=me.Ms(1.3e3, "kA/m"),
-            ...     Tc=me.Tc(1043, "K"),
+            ...     Ms=me.Entity("SpontaneousMagnetization", 1.3e3, "kA/m"),
+            ...     Tc=me.Entity("CurieTemperature", 1043, "K"),
             ... )
             >>> measurement = me.EntityCollection(
             ...     description="measurement with device X",
             ...     sample=properties,
-            ...     T=me.T(300, "K", description="Measurement conditions"),
-            ...     H=me.H([0, 50, 100], "kA/m"),
-            ...     M=me.M([100, 300, 500], "kA/m"),
+            ...     T=me.Entity("ThermodynamicTemperature", 300, "K", description="Measurement conditions"),
+            ...     H=me.Entity("ExternalMagneticField", [0, 50, 100], "kA/m"),
+            ...     M=me.Entity("Magnetization", [100, 300, 500], "kA/m"),
             ... )
             >>> measurement.to_yaml("nested_example.yaml")
             >>> print(Path("nested_example.yaml").read_text())
