@@ -101,16 +101,68 @@ def test_bad_description():
 
 
 def test_metadata():
+    onto_1 = me.Ontology(
+        iris=[
+            "https://w3id.org/emmo/domain/magnetic-materials/0.0.5",
+        ],
+        initialize=True,
+    )
+    onto_2 = me.Ontology(
+        iris=[
+            "https://w3id.org/emmo/1.0.3/inferred",
+        ],
+        initialize=True,
+    )
+    onto_3 = me.Ontology(
+        iris=[
+            "https://w3id.org/emmo/1.0.2/inferred",
+        ],
+        initialize=True,
+    )
+    onto_4 = me.Ontology(
+        iris=[
+            "https://w3id.org/emmo/domain/electrochemistry/0.37.2/",
+        ],
+        initialize=True,
+    )
     ec = me.EntityCollection(
         "descr",
-        M=me.M(1, "A/m"),
-        Tc=me.Tc(1, "K", description="low"),
+        Ms=onto_1.Entity("SpontaneousMagnetization", 1, "kA / m"),
+        T=onto_2.Entity("ThermodynamicTemperature", 2, "mK", description="low"),
+        T_old=onto_3.Entity("ThermodynamicTemperature", 2.55, "mK", description="low"),
+        DisCa=onto_4.Entity("DischargingCapacity", 3, "mA s"),
         T_q=me.T(1, "K").q,
         V=1,
     )
     reference = {
-        "M": {"ontology_label": "Magnetization", "unit": "A / m", "description": ""},
-        "Tc": {"ontology_label": "CurieTemperature", "unit": "K", "description": "low"},
+        "Ms": {
+            "ontology_label": "SpontaneousMagnetization",
+            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.5",
+            "entity_iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25",
+            "unit": "kA / m",
+            "description": "",
+        },
+        "T": {
+            "ontology_label": "ThermodynamicTemperature",
+            "ontology_iri": "https://w3id.org/1.0.3/emmo",
+            "entity_iri": "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f",
+            "unit": "mK",
+            "description": "low",
+        },
+        "T_old": {
+            "ontology_label": "ThermodynamicTemperature",
+            "ontology_iri": "https://w3id.org/emmo/1.0.2/emmo",
+            "entity_iri": "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f",
+            "unit": "mK",
+            "description": "low",
+        },
+        "DisCa": {
+            "ontology_label": "DischargingCapacity",
+            "ontology_iri": "https://w3id.org/emmo/domain/electrochemistry/0.37.2/electrochemistry",
+            "entity_iri": "https://w3id.org/emmo/domain/electrochemistry#electrochemistry_0141b5c2_9f15_46f4_82e6_92a104faa476",
+            "unit": "mA s",
+            "description": "",
+        },
         "T_q": {"unit": "K"},
         "V": {},
     }
@@ -160,21 +212,72 @@ def test_to_dataframe_unsupported():
 
 
 def test_from_dataframe():
-    data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
+    data = pd.DataFrame(
+        {"Ms": [1, 2], "T": [3, 4], "T_old": [3.5, 4.5], "DisCa": [10, 15], "T_q": [300, 400], "V": [7, 8]}
+    )
     metadata = {
-        "M": {"ontology_label": "Magnetization", "unit": "kA/m", "description": "abc"},
-        "T": {"ontology_label": "ThermodynamicTemperature"},
-        "l_q": {"unit": "m"},
-        "x": {},
+        "Ms": {
+            "ontology_label": "SpontaneousMagnetization",
+            "ontology_iri": "https://w3id.org/emmo/domain/magnetic-materials/0.0.5",
+            "entity_iri": "https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25",
+            "unit": "kA / m",
+            "description": "abc",
+        },
+        "T": {
+            "ontology_label": "ThermodynamicTemperature",
+            "ontology_iri": "https://w3id.org/1.0.3/emmo",
+            "entity_iri": "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f",
+            "unit": "mK",
+            "description": "low",
+        },
+        "T_old": {
+            "ontology_label": "ThermodynamicTemperature",
+            "ontology_iri": "https://w3id.org/emmo/1.0.2/emmo",
+            "entity_iri": "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f",
+            "unit": "mK",
+            "description": "low",
+        },
+        "DisCa": {
+            "ontology_label": "DischargingCapacity",
+            "ontology_iri": "https://w3id.org/emmo/domain/electrochemistry/0.37.2/electrochemistry",
+            "entity_iri": "https://w3id.org/emmo/domain/electrochemistry#electrochemistry_0141b5c2_9f15_46f4_82e6_92a104faa476",
+            "unit": "mA s",
+            "description": "",
+        },
+        "T_q": {"unit": "K"},
+        "V": {},
     }
     collection = me.EntityCollection.from_dataframe(data, metadata, description="desc")
     assert collection.description == "desc"
-    assert me.M([1, 2], "kA/m") == collection.M
-    assert collection.M.description == "abc"
-    assert me.T([3, 4], "K") == collection.T
-    assert all([5, 6] * u.m == collection.l_q)
-    assert all(collection.x == [7, 8])
-    assert [name for name, _entity in collection] == ["M", "T", "l_q", "x"]
+    assert u.allclose(collection.Ms.q, [1, 2] * u.kA / u.m)
+    assert collection.Ms.ontology_label == "SpontaneousMagnetization"
+    assert collection.Ms.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials/0.0.5"
+    assert (
+        collection.Ms.entity_iri
+        == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25"
+    )
+    assert collection.Ms.description == "abc"
+    assert u.allclose(collection.T.q, [3, 4] * u.mK)
+    assert collection.T.ontology_label == "ThermodynamicTemperature"
+    assert collection.T.ontology_iri == "https://w3id.org/1.0.3/emmo"
+    assert collection.T.entity_iri == "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f"
+    assert collection.T.description == "low"
+    assert u.allclose(collection.T_old.q, [3.5, 4.5] * u.mK)
+    assert collection.T_old.ontology_label == "ThermodynamicTemperature"
+    assert collection.T_old.ontology_iri == "https://w3id.org/emmo/1.0.2/emmo"
+    assert collection.T_old.entity_iri == "https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f"
+    assert collection.T_old.description == "low"
+    assert u.allclose(collection.DisCa.q, [10, 15] * u.mA * u.s)
+    assert collection.DisCa.ontology_label == "DischargingCapacity"
+    assert collection.DisCa.ontology_iri == "https://w3id.org/emmo/domain/electrochemistry/0.37.2/electrochemistry"
+    assert (
+        collection.DisCa.entity_iri
+        == "https://w3id.org/emmo/domain/electrochemistry#electrochemistry_0141b5c2_9f15_46f4_82e6_92a104faa476"
+    )
+    assert collection.DisCa.description == ""
+    assert u.allclose([300, 400] * u.K, collection.T_q)
+    assert all(collection.V == [7, 8])
+    assert [name for name, _entity in collection] == ["Ms", "T", "T_old", "DisCa", "T_q", "V"]
 
 
 def test_dataframe_roundtrip():

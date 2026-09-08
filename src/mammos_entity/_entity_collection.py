@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import csv
 import os
 import textwrap
 from typing import TYPE_CHECKING
@@ -12,7 +11,6 @@ import h5py
 import mammos_units as u
 import numpy as np
 import pandas as pd
-import yaml
 
 import mammos_entity as me
 from mammos_entity import _entity_collection_tree
@@ -289,8 +287,8 @@ class EntityCollection:
         collection. Keys are names of the (entities) attributes of the collection,
         values are dictionaries with:
 
-        - keys ``ontology_label``, ``unit`` and ``description`` if the attribute is an
-          entity
+        - keys ``ontology_label``, ``ontology_iri``, ``entity_iri``, ``unit``,
+          and ``description`` if the attribute is an entity
         - key ``unit`` if the attribute is a quantity
         - an empty dictionary otherwise
 
@@ -299,7 +297,7 @@ class EntityCollection:
             >>> import mammos_units as u
             >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
             >>> col.metadata()
-            {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+            {'Tc': {'ontology_label': 'CurieTemperature', 'ontology_iri': 'https://w3id.org/emmo/domain/magnetic-materials/0.0.5', 'entity_iri': 'https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
 
         .. version-changed:: 0.14.0
            The collection description has been removed from the metadata to allow the
@@ -310,6 +308,8 @@ class EntityCollection:
             element = {}
             if isinstance(entity_like, me.Entity):
                 element["ontology_label"] = entity_like.ontology_label
+                element["ontology_iri"] = entity_like.ontology_iri
+                element["entity_iri"] = entity_like.entity_iri
                 element["unit"] = str(entity_like.unit)
                 element["description"] = entity_like.description
             elif isinstance(entity_like, u.Quantity):
@@ -353,6 +353,7 @@ class EntityCollection:
         if missing_keys := set(metadata) - set(dataframe.columns):
             raise ValueError(f"Entity_Metadata is missing for columns: {', '.join(missing_keys)}")
 
+        ontologies = {}
         collection = cls(description=description)
         for name in metadata:
             value = dataframe[name].to_numpy()
@@ -360,10 +361,16 @@ class EntityCollection:
                 value = value[0]
 
             if "ontology_label" in metadata[name]:
-                elem = me.Entity(
+                if (ontology_iri := metadata[name]["ontology_iri"]) in ontologies:
+                    onto = ontologies[ontology_iri]
+                else:
+                    onto = me.Ontology(iris=[ontology_iri], initialize=True)
+                    ontologies[ontology_iri] = onto
+                elem = onto.Entity(
                     ontology_label=metadata[name]["ontology_label"],
                     value=value,
                     unit=metadata[name].get("unit"),
+                    iri=metadata[name]["entity_iri"],
                     description=metadata[name].get("description", ""),
                 )
             elif "unit" in metadata[name]:
@@ -393,7 +400,8 @@ class EntityCollection:
           dashed lines
         - (optional, only for entities) the preferred ontology label
         - (optional, only for entities) a description string
-        - (optional, only for entities) the ontology IRI
+        - (optional, only for entities) the ontology base IRI (with version)
+        - (optional, only for entities) the entity IRI in the ontology
         - (optional, for entities and quantities) units
         - the short labels used to refer to individual columns when working with the
           data,  e.g. in a :py:class:`pandas.DataFrame` (omitting spaces in this string
@@ -423,6 +431,9 @@ class EntityCollection:
         .. version-changed:: v3
            Ontology labels, entity descriptions, IRIs, and units are no longer
            commented.
+
+        .. version-changed:: v4
+           Each entity IRI is split into ontology base IRI and entity IRI.
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -469,12 +480,13 @@ class EntityCollection:
             The new file has the following content:
 
             >>> print(Path("example.csv").read_text())
-            # mammos csv v3
+            # mammos csv v4
             #----------------------------------------
             # Test data
             #----------------------------------------
             ,SpontaneousMagnetization,,DemagnetizingFactor,
             ,Magnetization at 0 Kelvin,,,
+            ,https://w3id.org/emmo/domain/magnetic-materials/0.0.5,,https://w3id.org/emmo/domain/magnetic-materials/0.0.5,
             ,https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
             ,kA / m,s2,,
             index,Ms,alpha,DemagnetizingFactor,comment
@@ -488,39 +500,7 @@ class EntityCollection:
             >>> Path("example.csv").unlink()
 
         """  # noqa: E501
-        if any(isinstance(element, EntityCollection) for _name, element in self):
-            raise ValueError("Nested collections cannot be saved to CSV.")
-        if len(self) == 0:
-            raise ValueError("Empty collections cannot be saved to CSV.")
-
-        # convert data first because that will catch incompatible shape
-        dataframe = self.to_dataframe()
-
-        # Header rows written in CSV format.
-        metadata_rows = [
-            [getattr(elem, "ontology_label", "") for _, elem in self],
-            [getattr(elem, "description", "") for _, elem in self],
-            [getattr(elem, "ontology_iri", "") for _, elem in self],
-            [str(getattr(elem, "unit", "")) for _, elem in self],
-        ]
-
-        with open(filename, "w", newline="") as csvfile:
-            csvfile.write(f"# mammos csv v3{os.linesep}")
-            if self.description:
-                csvfile.write("#" + "-" * 40 + os.linesep)
-                for line in self.description.splitlines():
-                    csvfile.write(f"# {line}{os.linesep}")
-                csvfile.write("#" + "-" * 40 + os.linesep)
-
-            writer = csv.writer(
-                csvfile,
-                delimiter=",",
-                quoting=csv.QUOTE_MINIMAL,
-                lineterminator=os.linesep,
-            )
-            writer.writerows(metadata_rows)
-
-            dataframe.to_csv(csvfile, index=False)
+        me._io._to_csv_v4(self, filename)
 
     def to_yaml(self, filename: str | os.PathLike) -> None:
         r"""Write collection to YAML file.
@@ -539,6 +519,7 @@ class EntityCollection:
         Collection nodes are recursive and have two keys ``description`` and ``data``:
 
         - ``description``: a (multi-line) string with arbitrary content
+        - ``ontologies``: a list of ontology IRI strings (with version)
         - ``data``: mapping from entry names to entity-like entries or nested
           collection nodes
 
@@ -548,7 +529,8 @@ class EntityCollection:
 
           - ``ontology_label``: label in the ontology
           - ``description``: description string
-          - ``ontology_iri``: IRI of the entity
+          - ``ontology_iri`` (str): the IRI (with version) identifying the ontology
+          - ``entity_iri`` (str): the IRI identifying the entry in the ontology
           - ``unit``: unit of the entity (``""`` for dimensionless)
           - ``value``: value of the data
 
@@ -573,6 +555,10 @@ class EntityCollection:
              ``metadata:description``.
            - Non-entity entries no longer store null-valued ontology keys.
            - Nested collections are supported recursively.
+
+        .. version-changed:: v3
+           Each entity IRI is split into the ``ontology_iri`` (the ontology versionIRI)
+           and the ``entity_iri`` (the IRI of the specific entity inside the ontology).
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -616,7 +602,7 @@ class EntityCollection:
             The new file has the following content:
 
             >>> print(Path("example.yaml").read_text())
-            # mammos yaml v2
+            # mammos yaml v3
             metadata: null
             description: Test data
             data:
@@ -625,7 +611,8 @@ class EntityCollection:
               Ms:
                 ontology_label: SpontaneousMagnetization
                 description: Magnetization at 0 Kelvin
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                 unit: kA / m
                 value: [100.0, 100.0, 100.0]
               alpha:
@@ -634,7 +621,8 @@ class EntityCollection:
               DemagnetizingFactor:
                 ontology_label: DemagnetizingFactor
                 description: ''
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
                 unit: ''
                 value: [1.0, 0.5, 0.5]
               comment:
@@ -643,7 +631,8 @@ class EntityCollection:
               Tc:
                 ontology_label: CurieTemperature
                 description: ''
-                ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
                 unit: K
                 value: 300.0
             <BLANKLINE>
@@ -666,7 +655,7 @@ class EntityCollection:
             ... )
             >>> measurement.to_yaml("nested_example.yaml")
             >>> print(Path("nested_example.yaml").read_text())
-            # mammos yaml v2
+            # mammos yaml v3
             metadata: null
             description: measurement with device X
             data:
@@ -676,31 +665,36 @@ class EntityCollection:
                   Ms:
                     ontology_label: SpontaneousMagnetization
                     description: ''
-                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                    entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                     unit: kA / m
                     value: 1300.0
                   Tc:
                     ontology_label: CurieTemperature
                     description: ''
-                    ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                    entity_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
                     unit: K
                     value: 1043.0
               T:
                 ontology_label: ThermodynamicTemperature
                 description: Measurement conditions
-                ontology_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
                 unit: K
                 value: 300.0
               H:
                 ontology_label: ExternalMagneticField
                 description: ''
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
                 unit: kA / m
                 value: [0.0, 50.0, 100.0]
               M:
                 ontology_label: Magnetization
                 description: ''
-                ontology_iri: https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37
+                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials/0.0.5
+                entity_iri: https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37
                 unit: kA / m
                 value: [100.0, 300.0, 500.0]
             <BLANKLINE>
@@ -709,91 +703,7 @@ class EntityCollection:
 
 
         """  # noqa: E501
-
-        def _serialize_entity_like(
-            element: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
-        ) -> dict:
-            if isinstance(element, me.Entity):
-                return {
-                    "ontology_label": element.ontology_label,
-                    "description": element.description,
-                    "ontology_iri": element.ontology_iri,
-                    "unit": str(element.unit),
-                    "value": element.value.tolist(),
-                }
-            elif isinstance(element, u.Quantity):
-                return {
-                    "unit": str(element.unit),
-                    "value": element.value.tolist(),
-                }
-            else:
-                return {"value": np.asanyarray(element).tolist()}
-
-        if len(self) == 0:
-            raise ValueError("Empty collections cannot be saved to YAML.")
-
-        def _serialize_collection(collection: EntityCollection) -> dict:
-            result = {"description": collection.description, "data": {}}
-            for name, element in collection:
-                if isinstance(element, EntityCollection):
-                    result["data"][name] = _serialize_collection(element)
-                else:
-                    result["data"][name] = _serialize_entity_like(element)
-            return result
-
-        entity_dict = {"metadata": None, **_serialize_collection(self)}
-
-        # custom dumper to change style of lists, tuples and multi-line strings
-        class _Dumper(yaml.SafeDumper):
-            pass
-
-        def _represent_sequence(dumper, value):
-            """Display sequence with flow style.
-
-            A list [1, 2, 3] for key `value` is written to file as::
-
-            value: [1, 2, 3]
-
-            instead of::
-
-            value:
-                - 1
-                - 2
-                - 3
-
-            """
-            return dumper.represent_sequence("tag:yaml.org,2002:seq", value, flow_style=True)
-
-        def _represent_string(dumper, value):
-            """Control style of single-line and multi-line strings.
-
-            Single-line strings are written as::
-
-            some_key: Hello
-
-            Multi-line strings are written as::
-
-            some_key: |-
-                I am multi-line,
-                without a trailing new line.
-
-            """
-            style = "|" if "\n" in value else ""
-            return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
-
-        _Dumper.add_representer(list, _represent_sequence)
-        _Dumper.add_representer(tuple, _represent_sequence)
-        _Dumper.add_representer(str, _represent_string)
-
-        with open(filename, "w") as f:
-            f.write("# mammos yaml v2\n")
-            yaml.dump(
-                entity_dict,
-                stream=f,
-                Dumper=_Dumper,
-                default_flow_style=False,
-                sort_keys=False,
-            )
+        me._io._to_yaml_v3(self, filename)
 
     def to_hdf5(self, base: h5py.File | h5py.Group | str | os.PathLike, name: str | None = None) -> h5py.Group | None:
         """Write a collection to an HDF5 group.
@@ -805,8 +715,8 @@ class EntityCollection:
           attribute.
         - Each element of the collection becomes a child of the group:
           - :py:class:`~mammos_entity.Entity` objects are stored as HDF5 datasets
-            with attributes ``ontology_label``, ``ontology_iri``, ``unit``,
-            ``description`` (see :py:func:`mammos_entity.Entity.to_hdf5`).
+            with attributes ``ontology_label``, ``ontology_iri``, ``entity_iri``,
+             ``unit``, ``description`` (see :py:func:`mammos_entity.Entity.to_hdf5`).
           - :py:class:`~mammos_units.Quantity` objects are stored as datasets
             with a ``unit`` attribute.
           - Plain values are stored as datasets without mammos-specific attributes.
@@ -834,49 +744,4 @@ class EntityCollection:
            :py:func:`mammos_entity.Entity.to_hdf5`
            :py:func:`mammos_entity.from_hdf5`
         """
-        return _to_hdf5(self, base, name)
-
-
-def _to_hdf5(
-    data: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike | mammos_entity.EntityCollection,
-    base: h5py.File | h5py.Group | str | os.PathLike,
-    name: str | None,
-    record_mammos_entity_version: bool = True,
-) -> h5py.Dataset | h5py.Group | None:
-    """Internal implementation with additional options required for recursion.
-
-    Args:
-        data: <see public method>
-        base: <see public method>
-        name: <see public method>
-        record_mammos_entity_version: add mammos_entity version to group/dataset
-            attributes.
-    """
-    if isinstance(base, str | os.PathLike):
-        with h5py.File(base, "w") as f:
-            _to_hdf5(data, f, name)
-            return
-
-    if isinstance(data, EntityCollection):
-        group = base.create_group(name, track_order=True) if name is not None else base
-        group.attrs["description"] = data.description
-        if record_mammos_entity_version:
-            group.attrs["mammos_entity_version"] = me.__version__
-        for name, entity_like in data:
-            _to_hdf5(entity_like, group, name, record_mammos_entity_version=False)
-        return group
-    else:
-        if name is None:
-            raise ValueError("'name' must not be None when 'data' is entity-like.")
-
-        if isinstance(data, me.Entity):
-            dset = data._to_hdf5(base, name, record_mammos_entity_version=False)
-        elif isinstance(data, u.Quantity):
-            dset = base.create_dataset(name, data=data.value)
-            dset.attrs["unit"] = str(data.unit)
-        else:
-            dset = base.create_dataset(name, data=data)
-
-        if record_mammos_entity_version:
-            dset.attrs["mammos_entity_version"] = me.__version__
-        return dset
+        return me._io._to_hdf5_v2(self, base, name)
