@@ -15,7 +15,9 @@ import mammos_entity as me
 
 
 def test_scalar_column_csv(tmp_path):
-    data = me.EntityCollection(A=1.0, Ms=2 * u.A / u.m, Ku=me.Ku(3))
+    data = me.EntityCollection(
+        A=1.0, Ms=2 * u.A / u.m, Ku=me.Ku(3), comp=me.StringEntity("ChemicalComposition", "Nd2Fe14B")
+    )
     data.to_csv(tmp_path / "test.csv")
 
     read_data = me.from_csv(tmp_path / "test.csv")
@@ -23,6 +25,7 @@ def test_scalar_column_csv(tmp_path):
     assert data["A"] == read_data.A
     assert data["Ms"] == read_data.Ms
     assert data["Ku"] == read_data.Ku
+    assert data["comp"] == read_data.comp
 
 
 def test_write_read_csv(tmp_path):
@@ -30,6 +33,7 @@ def test_write_read_csv(tmp_path):
         description="Test file description.\nTest second line.",
         Ms=me.Ms([1e6, 2e6, 3e6], description="evaluated\nexperimentally"),
         T=me.T([1, 2, 3], description="description, with comma"),
+        comp=me.StringEntity("ChemicalComposition", ["Nd2Fe14B", "Nd2Fe14B", "Nd2Fe14B"]),
         theta_angle=[0, 0.5, 0.7] * u.rad,
         demag_factor=me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]),
         comments=["Some comment", "Some other comment", "A third comment"],
@@ -45,6 +49,7 @@ def test_write_read_csv(tmp_path):
     assert read_data.Ms == collection.Ms
     assert read_data.Ms.description == collection.Ms.description
     assert read_data.T == collection.T
+    assert read_data.comp == collection.comp
     assert read_data.T.description == collection.T.description
     # Floating-point comparisons with == should ensure that we do not loose precision
     # when writing the data to file.
@@ -58,6 +63,7 @@ def test_write_read_csv(tmp_path):
     assert list(df_without_units.columns) == [
         "Ms",
         "T",
+        "comp",
         "theta_angle",
         "demag_factor",
         "comments",
@@ -69,6 +75,7 @@ def test_write_read_csv(tmp_path):
     assert list(df_with_units.columns) == [
         "Ms (A / m)",
         "T (K)",
+        "comp",
         "theta_angle (rad)",
         "demag_factor",
         "comments",
@@ -148,14 +155,14 @@ def test_read_csv_v3(tmp_path):
         # Test file description.
         # Test 1, 2, 3.
         #----------------------------------------
-        SpontaneousMagnetization,ThermodynamicTemperature,,
-        "first line{description_newline}second line","description, with a comma",,
-        https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
-        kA / m,K,rad,
-        Ms,T,angle,comment
-        600.0,1.0,0.0,Some comment
-        650.0,2.0,0.5,Some other comment
-        700.0,3.0,0.7,A third comment
+        SpontaneousMagnetization,ThermodynamicTemperature,,,ChemicalComposition
+        "first line{description_newline}second line","description, with a comma",,,
+        https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,https://w3id.org/emmo#EMMO_7efd64d1_05a1_49cd_a7f0_783ca050d4f3
+        kA / m,K,rad,,
+        Ms,T,angle,comment,composition
+        600.0,1.0,0.0,Some comment,Nd2Fe14B
+        650.0,2.0,0.5,Some other comment,Nd2Fe14B
+        700.0,3.0,0.7,A third comment,Nd2Fe14B
         """
         )
         .replace("\n", os.linesep)
@@ -175,6 +182,7 @@ def test_read_csv_v3(tmp_path):
         "Some other comment",
         "A third comment",
     ]
+    assert read_data.composition == me.Entity("ChemicalComposition", ["Nd2Fe14B", "Nd2Fe14B", "Nd2Fe14B"])
 
 
 def test_wrong_file_version_csv(tmp_path):

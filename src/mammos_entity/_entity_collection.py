@@ -56,21 +56,21 @@ class EntityCollection:
 
         When creating a new collection entities can be passed as keyword arguments:
 
-        >>> collection = me.EntityCollection("A description", Ms=me.Ms(), T=me.T())
+        >>> collection = me.EntityCollection("A description", Ms=me.Ms(), comp=me.StringEntity("ChemicalComposition", "Nd2Fe14B"))
         >>> collection
         EntityCollection(
             description='A description',
-            Ms=Entity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m'),
-            T=Entity(ontology_label='ThermodynamicTemperature', value=np.float64(0.0), unit='K'),
+            Ms=QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m'),
+            comp=StringEntity(ontology_label='ChemicalComposition', value=array('Nd2Fe14B', dtype=StringDType())),
         )
 
         Entities in the collection can be accessed either via attribute or a
         dictionary-like interface:
 
         >>> collection.Ms
-        Entity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')
-        >>> collection["T"]
-        Entity(ontology_label='ThermodynamicTemperature', value=np.float64(0.0), unit='K')
+        QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')
+        >>> collection["comp"]
+        StringEntity(ontology_label='ChemicalComposition', value=array('Nd2Fe14B', dtype=StringDType()))
 
         Additional elements can be added using both interfaces ("private" elements, i.e.
         entity names starting with an underscore can only be set/retrieved using the
@@ -88,13 +88,13 @@ class EntityCollection:
 
         Elements can be removed using:
 
-        >>> del collection.T
+        >>> del collection.comp
         >>> del collection.B
 
         The collection is iterable, elements are tuples ``(name, entity-like)``:
 
         >>> list(collection)
-        [('Ms', Entity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')), ('A', [1, 2, 3])]
+        [('Ms', QuantityEntity(ontology_label='SpontaneousMagnetization', value=np.float64(0.0), unit='A / m')), ('A', [1, 2, 3])]
 
         An entity with key ``description`` can only be set/accessed via the
         dictionary-like interface as it collides with the `description` property of the
@@ -275,12 +275,14 @@ class EntityCollection:
             else:
                 return ""
 
-        return pd.DataFrame(
-            {
-                f"{key}{unit(key) if include_units else ''}": np.atleast_1d(getattr(val, "value", val))
-                for key, val in self
-            }
-        )
+        df_items = {}
+        dtypes = {}
+        for key, val in self:
+            dataframe_key = f"{key}{unit(key) if include_units else ''}"
+            if isinstance(val, me.StringEntity):
+                dtypes[dataframe_key] = "str"  # Enforce dtype str on StringEntity
+            df_items[dataframe_key] = np.atleast_1d(getattr(val, "value", val))
+        return pd.DataFrame(df_items).astype(dtypes)
 
     def metadata(self) -> dict[str, dict[str, str]]:
         """Get entity metadata as dictionary.
@@ -290,16 +292,18 @@ class EntityCollection:
         values are dictionaries with:
 
         - keys ``ontology_label``, ``unit`` and ``description`` if the attribute is an
-          entity
+          :py:class:`~mammos_entity.QuantityEntity`.
+        - keys ``ontology_label`` and ``description`` if the attribute is a
+          :py:class:`~mammos_entity.StringEntity`.
         - key ``unit`` if the attribute is a quantity
         - an empty dictionary otherwise
 
         Examples:
             >>> import mammos_entity as me
             >>> import mammos_units as u
-            >>> col = me.EntityCollection("The description", Tc=me.Tc(), x=1 * u.m, a=0)
+            >>> col = me.EntityCollection("The description", Tc=me.Tc(), comp=me.Entity("ChemicalComposition", "H2O"), x=1 * u.m, a=0)
             >>> col.metadata()
-            {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
+            {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'comp': {'ontology_label': 'ChemicalComposition', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
 
         .. version-changed:: 0.14.0
            The collection description has been removed from the metadata to allow the
@@ -310,7 +314,8 @@ class EntityCollection:
             element = {}
             if isinstance(entity_like, me.Entity):
                 element["ontology_label"] = entity_like.ontology_label
-                element["unit"] = str(entity_like.unit)
+                if isinstance(entity_like, me.QuantityEntity):
+                    element["unit"] = str(entity_like.unit)
                 element["description"] = entity_like.description
             elif isinstance(entity_like, u.Quantity):
                 element["unit"] = str(entity_like.unit)
@@ -363,7 +368,7 @@ class EntityCollection:
                 elem = me.Entity(
                     ontology_label=metadata[name]["ontology_label"],
                     value=value,
-                    unit=metadata[name].get("unit"),
+                    unit=metadata[name].get("unit", None),
                     description=metadata[name].get("description", ""),
                 )
             elif "unit" in metadata[name]:
@@ -544,12 +549,19 @@ class EntityCollection:
 
         Entity-like entries have the following keys:
 
-        - For :py:class:`~mammos_entity.Entity`:
+        - For :py:class:`~mammos_entity.QuantityEntity`:
 
           - ``ontology_label``: label in the ontology
           - ``description``: description string
           - ``ontology_iri``: IRI of the entity
           - ``unit``: unit of the entity (``""`` for dimensionless)
+          - ``value``: value of the data
+
+        - For :py:class:`~mammos_entity.StringEntity`:
+
+          - ``ontology_label``: label in the ontology
+          - ``description``: description string
+          - ``ontology_iri``: IRI of the entity
           - ``value``: value of the data
 
         - For :py:class:`~mammos_units.Quantity`:
@@ -604,6 +616,7 @@ class EntityCollection:
             ...     Ms=me.Entity("SpontaneousMagnetization", [1e2, 1e2, 1e2], "kA/m", description="Magnetization at 0 Kelvin"),
             ...     alpha=[1.2, 3.4, 5.6] * u.s**2,
             ...     DemagnetizingFactor=me.Entity("DemagnetizingFactor", [1, 0.5, 0.5]),
+            ...     comp=me.Entity("ChemicalComposition", ["Nd2Fe14B", "Nd2Fe14B", "Nd2Fe14B"]),
             ...     comment=[
             ...         "Comment in the first row",
             ...         "Comment in the second row",
@@ -637,6 +650,11 @@ class EntityCollection:
                 ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
                 unit: ''
                 value: [1.0, 0.5, 0.5]
+              comp:
+                ontology_label: ChemicalComposition
+                description: ''
+                ontology_iri: https://w3id.org/emmo#EMMO_7efd64d1_05a1_49cd_a7f0_783ca050d4f3
+                value: [Nd2Fe14B, Nd2Fe14B, Nd2Fe14B]
               comment:
                 value: [Comment in the first row, Comment in the second row, Comment in the third
                     row]
@@ -714,13 +732,15 @@ class EntityCollection:
             element: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
         ) -> dict:
             if isinstance(element, me.Entity):
-                return {
+                serialized_entity = {
                     "ontology_label": element.ontology_label,
                     "description": element.description,
                     "ontology_iri": element.ontology_iri,
-                    "unit": str(element.unit),
-                    "value": element.value.tolist(),
                 }
+                if isinstance(element, me.QuantityEntity):
+                    serialized_entity["unit"] = str(element.unit)
+                serialized_entity["value"] = element.value.tolist()
+                return serialized_entity
             elif isinstance(element, u.Quantity):
                 return {
                     "unit": str(element.unit),

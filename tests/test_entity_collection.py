@@ -105,12 +105,14 @@ def test_metadata():
         "descr",
         M=me.M(1, "A/m"),
         Tc=me.Tc(1, "K", description="low"),
+        comp=me.Entity("ChemicalComposition", "Nd2Fe14B", description="single grain"),
         T_q=me.T(1, "K").q,
         V=1,
     )
     reference = {
         "M": {"ontology_label": "Magnetization", "unit": "A / m", "description": ""},
         "Tc": {"ontology_label": "CurieTemperature", "unit": "K", "description": "low"},
+        "comp": {"ontology_label": "ChemicalComposition", "description": "single grain"},
         "T_q": {"unit": "K"},
         "V": {},
     }
@@ -124,12 +126,14 @@ def test_to_dataframe():
         x=[0, 0, 1, 1],
         M=me.M([1, 2, 3, 4]),
         T=me.T([100, 200, 300, 400], "mK"),
+        comp=me.Entity("ChemicalComposition", ["Nd2Fe14B"] * 4, description="single grain"),
     )
     df = pd.DataFrame(
         {
             "x": [0, 0, 1, 1],
             "M": [1.0, 2.0, 3.0, 4.0],
             "T": [100.0, 200.0, 300.0, 400.0],
+            "comp": ["Nd2Fe14B", "Nd2Fe14B", "Nd2Fe14B", "Nd2Fe14B"],
         }
     )
     assert df.equals(ec.to_dataframe())
@@ -138,14 +142,15 @@ def test_to_dataframe():
             "x": [0, 0, 1, 1],
             "M (A / m)": [1.0, 2.0, 3.0, 4.0],
             "T (mK)": [100.0, 200.0, 300.0, 400.0],
+            "comp": ["Nd2Fe14B", "Nd2Fe14B", "Nd2Fe14B", "Nd2Fe14B"],
         }
     )
     assert df_with_units.equals(ec.to_dataframe(include_units=True))
 
 
 def test_to_dataframe_scalar():
-    ec = me.EntityCollection(Ms=me.Ms(0), Tc=me.Tc(0))
-    df = pd.DataFrame({"Ms": 0.0, "Tc": 0.0}, index=[0])
+    ec = me.EntityCollection(Ms=me.Ms(0), Tc=me.Tc(0), comp=me.Entity("ChemicalComposition", "Nd2Fe14B"))
+    df = pd.DataFrame({"Ms": 0.0, "Tc": 0.0, "comp": "Nd2Fe14B"}, index=[0])
     assert df.equals(ec.to_dataframe())
 
 
@@ -160,10 +165,11 @@ def test_to_dataframe_unsupported():
 
 
 def test_from_dataframe():
-    data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "l_q": [5, 6], "x": [7, 8]})
+    data = pd.DataFrame({"M": [1, 2], "T": [3, 4], "comp": ["Nd2Fe14B", "Nd2Fe14B"], "l_q": [5, 6], "x": [7, 8]})
     metadata = {
         "M": {"ontology_label": "Magnetization", "unit": "kA/m", "description": "abc"},
         "T": {"ontology_label": "ThermodynamicTemperature"},
+        "comp": {"ontology_label": "ChemicalComposition"},
         "l_q": {"unit": "m"},
         "x": {},
     }
@@ -172,25 +178,29 @@ def test_from_dataframe():
     assert me.M([1, 2], "kA/m") == collection.M
     assert collection.M.description == "abc"
     assert me.T([3, 4], "K") == collection.T
+    assert me.Entity("ChemicalComposition", ["Nd2Fe14B", "Nd2Fe14B"]) == collection.comp
     assert all([5, 6] * u.m == collection.l_q)
     assert all(collection.x == [7, 8])
-    assert [name for name, _entity in collection] == ["M", "T", "l_q", "x"]
+    assert [name for name, _entity in collection] == ["M", "T", "comp", "l_q", "x"]
 
 
 def test_dataframe_roundtrip():
     M = me.M([1, 2])
+    comp = me.Entity("ChemicalComposition", ["Nd2Fe14B", "Nd2Fe14B"])
     Tq = me.T([3, 4]).q
     V = [5, 6]
-    col = me.EntityCollection("descr", M=M, Tq=Tq, V=V)
+    col = me.EntityCollection("descr", M=M, comp=comp, Tq=Tq, V=V)
     col["name with spaces"] = [0, 0]
     col["description"] = [1, 1]
     col_new = me.EntityCollection.from_dataframe(col.to_dataframe(), col.metadata(), col.description)
     assert col_new.M == M
+    assert col_new.comp == comp
     assert all(col_new.Tq == Tq)
     assert all(col_new.V == V)
     assert col_new.description == "descr"
     assert [name for name, _entity in col_new] == [
         "M",
+        "comp",
         "Tq",
         "V",
         "name with spaces",

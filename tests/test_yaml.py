@@ -23,6 +23,7 @@ def test_write_read_yaml(tmp_path):
         description="Test file description.\nTest second line.",
         Ms=me.Ms([1e6, 2e6, 3e6], description="evaluated\nexperimentally"),
         T=me.T([1, 2, 3], description="description, with comma"),
+        comp=me.StringEntity("ChemicalComposition", "H2O"),
         theta_angle=[0, 0.5, 0.7] * u.rad,
         demag_factor=me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]),
         comments=["Some comment", "Some other comment", "A third comment"],
@@ -39,6 +40,7 @@ def test_write_read_yaml(tmp_path):
     assert read_data.Ms.description == collection.Ms.description
     assert read_data.T == collection.T
     assert read_data.T.description == collection.T.description
+    assert read_data.comp == collection.comp
     # Floating-point comparisons with == should ensure that we do not loose precision
     # when writing the data to file.
     assert all(read_data.theta_angle == collection.theta_angle)
@@ -117,6 +119,11 @@ def test_read_yaml_v2_flat(tmp_path):
             unit: K
             value: [1.0, 2.0, 3.0]
             description: from experiment 1
+          comp:
+            ontology_label: ChemicalComposition
+            ontology_iri: https://w3id.org/emmo#EMMO_7efd64d1_05a1_49cd_a7f0_783ca050d4f3
+            value: [Nd2Fe14B, Nd2Fe14B, Nd2Fe14B]
+            description: ''
           angle:
             unit: rad
             value: [0.0, 0.5, 0.7]
@@ -137,6 +144,7 @@ def test_read_yaml_v2_flat(tmp_path):
     assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
     assert me.T([1, 2, 3]) == read_data.T
     assert read_data.T.description == "from experiment 1"
+    assert me.StringEntity("ChemicalComposition", ["Nd2Fe14B"] * 3) == read_data.comp
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
     assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     assert list(read_data.comment) == [
@@ -342,6 +350,55 @@ def test_read_yaml_error_for_null_ontology_label(tmp_path):
 
     message = str(exc_info.value)
     assert ('Entry "Ms" is an invalid entity-like in mammos yaml v2: key "ontology_label" must be a string') in message
+
+
+def test_read_yaml_error_unit_for_string_entity(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos yaml v2
+        metadata: null
+        description: Top-level description.
+        data:
+          comp:
+            ontology_label: ChemicalComposition
+            description: ''
+            ontology_iri: https://w3id.org/emmo#EMMO_7efd64d1_05a1_49cd_a7f0_783ca050d4f3
+            unit: m
+            value: Nd2Fe14B
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+
+    message = str(exc_info.value)
+    assert ("keys should match") in message
+
+
+def test_read_yaml_error_missing_unit_for_quantity_entity(tmp_path):
+    file_content = textwrap.dedent(
+        """\
+        # mammos yaml v2
+        metadata: null
+        description: Top-level description.
+        data:
+          Ms:
+            ontology_label: SpontaneousMagnetization
+            description: ''
+            ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+            value: [600.0, 650.0, 700.0]
+        """
+    )
+    filename = tmp_path / "data.yaml"
+    filename.write_text(file_content)
+
+    with pytest.raises(RuntimeError) as exc_info:
+        me.from_yaml(filename)
+
+    message = str(exc_info.value)
+    assert 'Entry "Ms" is an invalid quantity entity in mammos yaml v2: keys should match' in message
 
 
 def test_read_yaml_error_for_invalid_top_level_description_type(tmp_path):
