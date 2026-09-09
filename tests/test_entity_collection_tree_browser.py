@@ -11,7 +11,7 @@ pytestmark = pytest.mark.browser
 @pytest.mark.parametrize(
     "value",
     [
-        pytest.param(me.M(np.arange(60.0), "A/m"), id="entity"),
+        pytest.param(me.Entity("Magnetization", np.arange(60.0), "A/m"), id="entity"),
         pytest.param(u.Quantity(np.arange(60.0), "A/m"), id="quantity"),
         pytest.param(np.arange(60.0), id="array"),
         pytest.param(list(range(60)), id="list"),

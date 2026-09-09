@@ -8,7 +8,7 @@ import mammos_entity as me
 
 
 def test_scalar_column_yaml(tmp_path):
-    data = me.EntityCollection(A=1.0, Ms=2 * u.A / u.m, Ku=me.Ku(3))
+    data = me.EntityCollection(A=1.0, Ms=2 * u.A / u.m, Ku=me.Entity("UniaxialAnisotropyConstant", 3))
     data.to_yaml(tmp_path / "test.yaml")
 
     read_data = me.from_yaml(tmp_path / "test.yaml")
@@ -21,8 +21,8 @@ def test_scalar_column_yaml(tmp_path):
 def test_write_read_yaml(tmp_path):
     collection = me.EntityCollection(
         description="Test file description.\nTest second line.",
-        Ms=me.Ms([1e6, 2e6, 3e6], description="evaluated\nexperimentally"),
-        T=me.T([1, 2, 3], description="description, with comma"),
+        Ms=me.Entity("SpontaneousMagnetization", [1e6, 2e6, 3e6], description="evaluated\nexperimentally"),
+        T=me.Entity("ThermodynamicTemperature", [1, 2, 3], description="description, with comma"),
         theta_angle=[0, 0.5, 0.7] * u.rad,
         demag_factor=me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]),
         comments=["Some comment", "Some other comment", "A third comment"],
@@ -86,8 +86,8 @@ def test_read_yaml_v1(tmp_path):
     read_data = me.from_yaml(tmp_path / "data.yaml")
 
     assert read_data.description == ""
-    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
-    assert me.T([1, 2, 3]) == read_data.T
+    assert read_data.Ms == me.Entity("SpontaneousMagnetization", [600, 650, 700], "kA/m")
+    assert me.Entity("ThermodynamicTemperature", [1, 2, 3]) == read_data.T
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
     assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     assert list(read_data.comment) == [
@@ -134,8 +134,8 @@ def test_read_yaml_v2_flat(tmp_path):
     read_data = me.from_yaml(tmp_path / "data.yaml")
 
     assert read_data.description == "File description."
-    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
-    assert me.T([1, 2, 3]) == read_data.T
+    assert read_data.Ms == me.Entity("SpontaneousMagnetization", [600, 650, 700], "kA/m")
+    assert me.Entity("ThermodynamicTemperature", [1, 2, 3]) == read_data.T
     assert read_data.T.description == "from experiment 1"
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
     assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
@@ -187,20 +187,20 @@ def test_read_yaml_v2_nested(tmp_path):
     assert read_data.sample.description == "Sample 1"
     assert isinstance(read_data.sample.properties, me.EntityCollection)
     assert read_data.sample.properties.description == "Intrinsic properties"
-    assert read_data.sample.properties.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert read_data.sample.properties.Ms == me.Entity("SpontaneousMagnetization", [600, 650, 700], "kA/m")
     assert all(read_data.sample.properties.angle == [0, 0.5, 0.7] * u.rad)
     assert read_data.sample.notes == "measured in setup A"
-    assert me.T([300, 350, 400], "K") == read_data.T
+    assert me.Entity("ThermodynamicTemperature", [300, 350, 400], "K") == read_data.T
     assert read_data.T.description == "measurement conditions"
 
 
 def test_write_yaml_key_types(tmp_path):
     sample = me.EntityCollection(
         description="Sample 1",
-        Tc=me.Tc(600, "K"),
+        Tc=me.Entity("CurieTemperature", 600, "K"),
         properties=me.EntityCollection(
             description="Intrinsic properties",
-            Ms=me.Ms([600, 650, 700], "kA/m"),
+            Ms=me.Entity("SpontaneousMagnetization", [600, 650, 700], "kA/m"),
             angle=[0, 0.5, 0.7] * u.rad,
         ),
         notes="measured in setup A",
@@ -549,8 +549,8 @@ def test_read_yaml_error_prefers_entity_like_when_leaf_hints_are_present(tmp_pat
 
 
 def test_write_read_yaml_multi_shape(tmp_path):
-    T = me.T([1, 2, 3])
-    Tc = me.Tc(100)
+    T = me.Entity("ThermodynamicTemperature", [1, 2, 3])
+    Tc = me.Entity("CurieTemperature", 100)
     multi_index = [[1, 2], [3, 4]]
 
     me.EntityCollection(
