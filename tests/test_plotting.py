@@ -1,12 +1,13 @@
 """Test plotting submodule."""
 
 import mammos_units as u
+import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 from matplotlib.units import ConversionError
 
 import mammos_entity as me
-import mammos_entity.pyplot as plt
+from mammos_entity._plotting import _EntityArray
 
 
 @pytest.mark.parametrize(
@@ -48,33 +49,9 @@ import mammos_entity.pyplot as plt
             r"DemagnetizingFactor",
             "",
         ),
-    ],
-)
-def test_plot_conversion(x, y_1, y_2, expected_xlabel, expected_ylabel, expected_unit):
-    fig, ax = plt.subplots()
-    ax.plot(x, y_1)
-    ax.plot(x, y_2)
-    assert len(ax.lines) == 2
-    # Test that the lines contain the data we defined
-    assert ax.lines[0].get_xdata().item() == x
-    assert ax.lines[0].get_ydata().item() == y_1
-    assert ax.lines[1].get_xdata().item() == x
-    assert ax.lines[1].get_ydata().item() == y_2
-    # Test the axes labels
-    assert ax.get_xlabel() == expected_xlabel
-    assert ax.get_ylabel() == expected_ylabel
-    # Test that conversion would work as expected
-    np.testing.assert_allclose(ax.convert_yunits(ax.lines[0].get_ydata()), y_1.q.to(expected_unit).value)
-    np.testing.assert_allclose(ax.convert_yunits(ax.lines[1].get_ydata()), y_2.q.to(expected_unit).value)
-
-
-@pytest.mark.parametrize(
-    "x_1,x_2,y_1,y_2,expected_xlabel,expected_ylabel,expected_unit",
-    [
         (
             # Entity and Quantity
             me.Entity("ThermodynamicTemperature", [10, 20, 30], "K"),
-            [10, 20, 30] * u.K,
             me.Entity("Magnetization", [300, 200, 100], "kA/m"),
             [0.4, 0.35, 0.3] * u.MA / u.m,
             r"ThermodynamicTemperature ($\mathrm{K}$)",
@@ -83,30 +60,42 @@ def test_plot_conversion(x, y_1, y_2, expected_xlabel, expected_ylabel, expected
         ),
         (
             # Quantity and Entity
-            [10, 20, 30] * u.K,
             me.Entity("ThermodynamicTemperature", [10, 20, 30], "K"),
             [0.4, 0.35, 0.3] * u.MA / u.m,
             me.Entity("Magnetization", [300, 200, 100], "kA/m"),
-            r"($\mathrm{K}$)",
+            r"ThermodynamicTemperature ($\mathrm{K}$)",
             r"($\mathrm{MA\,m^{-1}}$)",
             "MA/m",
         ),
     ],
 )
-def test_plot_conversion_different_type(x_1, x_2, y_1, y_2, expected_xlabel, expected_ylabel, expected_unit):
+def test_plot_conversion(x, y_1, y_2, expected_xlabel, expected_ylabel, expected_unit):
     fig, ax = plt.subplots()
-    ax.plot(x_1, y_1)
-    ax.plot(x_2, y_2)
+    with me.enable_plotting():
+        ax.plot(x, y_1)
+        ax.plot(x, y_2)
     assert len(ax.lines) == 2
-    # Test that the lines contain the data we defined
+
     # quantities appear as array data, entities appear as `array([e])`.
-    assert all(ax.lines[0].get_xdata() == ([x_1] if isinstance(x_1, me.Entity) else x_1))
-    assert all(ax.lines[0].get_ydata() == ([y_1] if isinstance(y_1, me.Entity) else y_1))
-    assert all(ax.lines[1].get_xdata() == ([x_2] if isinstance(x_2, me.Entity) else x_2))
-    assert all(ax.lines[1].get_ydata() == ([y_2] if isinstance(y_2, me.Entity) else y_2))
+    if isinstance(x, me.Entity):
+        assert all(ax.lines[0].get_xdata() == _EntityArray(x.value, x.ontology_label, x.unit))
+        assert all(ax.lines[1].get_xdata() == _EntityArray(x.value, x.ontology_label, x.unit))
+    else:
+        assert all(ax.lines[0].get_xdata() == x)
+        assert all(ax.lines[1].get_xdata() == x)
+    if isinstance(y_1, me.Entity):
+        assert all(ax.lines[0].get_ydata() == _EntityArray(y_1.value, y_1.ontology_label, y_1.unit))
+    else:
+        assert all(ax.lines[0].get_ydata() == y_1)
+    if isinstance(y_2, me.Entity):
+        assert all(ax.lines[1].get_ydata() == _EntityArray(y_2.value, y_2.ontology_label, y_2.unit))
+    else:
+        assert all(ax.lines[1].get_ydata() == y_2)
+
     # Test the axes labels
     assert ax.get_xlabel() == expected_xlabel
     assert ax.get_ylabel() == expected_ylabel
+
     # Test that conversion would work as expected
     converted_y_1 = y_1.q.to(expected_unit).value if isinstance(y_1, me.Entity) else y_1.to(expected_unit).value
     converted_y_2 = y_2.q.to(expected_unit).value if isinstance(y_2, me.Entity) else y_2.to(expected_unit).value
@@ -115,10 +104,10 @@ def test_plot_conversion_different_type(x_1, x_2, y_1, y_2, expected_xlabel, exp
 
 
 def test_plot_conversion_error():
-    T = (me.Entity("ThermodynamicTemperature", [10, 20, 30], "K"),)
-    M = (me.Entity("Magnetization", [0.4, 0.35, 0.3], "MA/m"),)
-    B = (me.Entity("MagneticFluxDensity", [300, 200, 100], "mT"),)
-    with pytest.raises(ConversionError):
+    T = me.Entity("ThermodynamicTemperature", [10, 20, 30], "K")
+    M = me.Entity("Magnetization", [0.4, 0.35, 0.3], "MA/m")
+    B = me.Entity("MagneticFluxDensity", [300, 200, 100], "mT")
+    with me.enable_plotting(), pytest.raises(ConversionError):
         fig, ax = plt.subplots()
         ax.plot(T, M)
         ax.plot(T, B)
@@ -126,11 +115,11 @@ def test_plot_conversion_error():
 
 def test_plot_conversion_with_extra_equivalency():
     """Test plotting of non-compatible entities with enabled equivalency layer."""
-    T = (me.Entity("ThermodynamicTemperature", [10, 20, 30], "K"),)
-    M = (me.Entity("Magnetization", [0.4, 0.35, 0.3], "MA/m"),)
-    B = (me.Entity("MagneticFluxDensity", [300, 200, 100], "mT"),)
+    T = me.Entity("ThermodynamicTemperature", [10, 20, 30], "K")
+    M = me.Entity("Magnetization", [0.4, 0.35, 0.3], "MA/m")
+    B = me.Entity("MagneticFluxDensity", [300, 200, 100], "mT")
     fig, ax = plt.subplots()
-    with u.set_enabled_equivalencies(u.magnetic_flux_field()):
+    with me.enable_plotting(), u.set_enabled_equivalencies(u.magnetic_flux_field()):
         ax.plot(T, M)
         ax.plot(T, B)
     assert len(ax.lines) == 2
