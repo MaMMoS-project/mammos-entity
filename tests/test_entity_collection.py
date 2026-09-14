@@ -7,11 +7,13 @@ import mammos_entity as me
 
 def test_entity_collection_with_description():
     """Check that the description of an EntityCollection is well defined."""
-    ec = me.EntityCollection("Magnetization on a grid.", x=[0, 0, 1, 1], y=[0, 1, 0, 1], M=me.M([1, 2, 3, 4]))
+    ec = me.EntityCollection(
+        "Magnetization on a grid.", x=[0, 0, 1, 1], y=[0, 1, 0, 1], M=me.Entity("Magnetization", [1, 2, 3, 4])
+    )
     assert ec.description == "Magnetization on a grid."
     assert [name for name, _entity in ec] == ["x", "y", "M"]
 
-    ec.T = me.T(2)
+    ec.T = me.Entity("ThermodynamicTemperature", 2)
     assert [name for name, _entity in ec] == ["x", "y", "M", "T"]
 
     # changing class elements does not change the entities
@@ -23,18 +25,28 @@ def test_entity_collection_with_description():
 
 
 def test_entity_name_clash():
-    ec = me.EntityCollection(to_dataframe=me.Ms())
+    ec = me.EntityCollection(
+        to_dataframe=me.Entity(
+            "SpontaneousMagnetization",
+        )
+    )
     assert [name for name, _entity in ec] == ["to_dataframe"]
     assert callable(ec.to_dataframe)
-    assert ec["to_dataframe"] == me.Ms()
+    assert ec["to_dataframe"] == me.Entity(
+        "SpontaneousMagnetization",
+    )
 
     ec.to_dataframe = "missing"
     assert [name for name, _entity in ec] == ["to_dataframe"]
     assert ec.to_dataframe == "missing"
-    assert ec["to_dataframe"] == me.Ms()
+    assert ec["to_dataframe"] == me.Entity(
+        "SpontaneousMagnetization",
+    )
 
     # 'description' can be used as entity-like name if accessed via dict interface
-    ec["description"] = me.T()
+    ec["description"] = me.Entity(
+        "ThermodynamicTemperature",
+    )
     assert isinstance(ec["description"], me.Entity)
     assert ec.description == ""
 
@@ -42,22 +54,32 @@ def test_entity_name_clash():
 def test_entity_name_must_be_string():
     ec = me.EntityCollection()
     with pytest.raises(TypeError, match="Name must be a string"):
-        ec[1] = me.Ms()
+        ec[1] = me.Entity(
+            "SpontaneousMagnetization",
+        )
 
 
 def test_add_remove_entities():
     ec = me.EntityCollection()
     assert [name for name, _entity in ec] == []
 
-    ec.Ms = me.Ms()
-    ec.A = me.A()
-    ec["T center"] = me.T()
+    ec.Ms = me.Entity(
+        "SpontaneousMagnetization",
+    )
+    ec.A = me.Entity("ExchangeStiffnessConstant")
+    ec["T center"] = me.Entity(
+        "ThermodynamicTemperature",
+    )
 
     assert [name for name, _entity in ec] == ["Ms", "A", "T center"]
 
-    assert ec["Ms"] == me.Ms()
-    assert me.A() == ec.A
-    assert ec["T center"] == me.T()
+    assert ec["Ms"] == me.Entity(
+        "SpontaneousMagnetization",
+    )
+    assert me.Entity("ExchangeStiffnessConstant") == ec.A
+    assert ec["T center"] == me.Entity(
+        "ThermodynamicTemperature",
+    )
 
     del ec.Ms
     del ec["A"]
@@ -68,15 +90,19 @@ def test_add_remove_entities():
 
 
 def test_iter():
-    Ms = me.Ms([1, 2, 3])
-    T = me.T(100)
+    Ms = me.Entity("SpontaneousMagnetization", [1, 2, 3])
+    T = me.Entity("ThermodynamicTemperature", 100)
     ec = me.EntityCollection(Ms=Ms, T=T)
 
     assert list(ec) == [("Ms", Ms), ("T", T)]
 
 
 def test_contains():
-    ec = me.EntityCollection(Ms=me.Ms())
+    ec = me.EntityCollection(
+        Ms=me.Entity(
+            "SpontaneousMagnetization",
+        )
+    )
 
     assert "Ms" in ec
     assert "Js" not in ec
@@ -87,8 +113,14 @@ def test_contains():
 
 
 def test_dir():
-    ec = me.EntityCollection(Ms=me.Ms())
-    ec["T center"] = me.T()
+    ec = me.EntityCollection(
+        Ms=me.Entity(
+            "SpontaneousMagnetization",
+        )
+    )
+    ec["T center"] = me.Entity(
+        "ThermodynamicTemperature",
+    )
 
     assert "Ms" in dir(ec)
     assert "T center" in dir(ec)
@@ -103,9 +135,9 @@ def test_bad_description():
 def test_metadata():
     ec = me.EntityCollection(
         "descr",
-        M=me.M(1, "A/m"),
-        Tc=me.Tc(1, "K", description="low"),
-        T_q=me.T(1, "K").q,
+        M=me.Entity("Magnetization", 1, "A/m"),
+        Tc=me.Entity("CurieTemperature", 1, "K", description="low"),
+        T_q=me.Entity("ThermodynamicTemperature", 1, "K").q,
         V=1,
     )
     reference = {
@@ -122,8 +154,8 @@ def test_to_dataframe():
     ec = me.EntityCollection(
         "Magnetization on a grid.",
         x=[0, 0, 1, 1],
-        M=me.M([1, 2, 3, 4]),
-        T=me.T([100, 200, 300, 400], "mK"),
+        M=me.Entity("Magnetization", [1, 2, 3, 4]),
+        T=me.Entity("ThermodynamicTemperature", [100, 200, 300, 400], "mK"),
     )
     df = pd.DataFrame(
         {
@@ -144,17 +176,22 @@ def test_to_dataframe():
 
 
 def test_to_dataframe_scalar():
-    ec = me.EntityCollection(Ms=me.Ms(0), Tc=me.Tc(0))
+    ec = me.EntityCollection(Ms=me.Entity("SpontaneousMagnetization", 0), Tc=me.Entity("CurieTemperature", 0))
     df = pd.DataFrame({"Ms": 0.0, "Tc": 0.0}, index=[0])
     assert df.equals(ec.to_dataframe())
 
 
 def test_to_dataframe_unsupported():
-    col1 = me.EntityCollection(Ms=me.Ms([[1, 2], [3, 4]]))
+    col1 = me.EntityCollection(Ms=me.Entity("SpontaneousMagnetization", [[1, 2], [3, 4]]))
     with pytest.raises(ValueError):
         col1.to_dataframe()
 
-    col2 = me.EntityCollection(Ms=me.Ms(), sub=me.EntityCollection())
+    col2 = me.EntityCollection(
+        Ms=me.Entity(
+            "SpontaneousMagnetization",
+        ),
+        sub=me.EntityCollection(),
+    )
     with pytest.raises(ValueError, match="Nested collection"):
         col2.to_dataframe()
 
@@ -169,17 +206,17 @@ def test_from_dataframe():
     }
     collection = me.EntityCollection.from_dataframe(data, metadata, description="desc")
     assert collection.description == "desc"
-    assert me.M([1, 2], "kA/m") == collection.M
+    assert me.Entity("Magnetization", [1, 2], "kA/m") == collection.M
     assert collection.M.description == "abc"
-    assert me.T([3, 4], "K") == collection.T
+    assert me.Entity("ThermodynamicTemperature", [3, 4], "K") == collection.T
     assert all([5, 6] * u.m == collection.l_q)
     assert all(collection.x == [7, 8])
     assert [name for name, _entity in collection] == ["M", "T", "l_q", "x"]
 
 
 def test_dataframe_roundtrip():
-    M = me.M([1, 2])
-    Tq = me.T([3, 4]).q
+    M = me.Entity("Magnetization", [1, 2])
+    Tq = me.Entity("ThermodynamicTemperature", [3, 4]).q
     V = [5, 6]
     col = me.EntityCollection("descr", M=M, Tq=Tq, V=V)
     col["name with spaces"] = [0, 0]

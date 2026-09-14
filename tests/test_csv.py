@@ -15,7 +15,7 @@ import mammos_entity as me
 
 
 def test_scalar_column_csv(tmp_path):
-    data = me.EntityCollection(A=1.0, Ms=2 * u.A / u.m, Ku=me.Ku(3))
+    data = me.EntityCollection(A=1.0, Ms=2 * u.A / u.m, Ku=me.Entity("UniaxialAnisotropyConstant", 3))
     data.to_csv(tmp_path / "test.csv")
 
     read_data = me.from_csv(tmp_path / "test.csv")
@@ -28,8 +28,8 @@ def test_scalar_column_csv(tmp_path):
 def test_write_read_csv(tmp_path):
     collection = me.EntityCollection(
         description="Test file description.\nTest second line.",
-        Ms=me.Ms([1e6, 2e6, 3e6], description="evaluated\nexperimentally"),
-        T=me.T([1, 2, 3], description="description, with comma"),
+        Ms=me.Entity("SpontaneousMagnetization", [1e6, 2e6, 3e6], description="evaluated\nexperimentally"),
+        T=me.Entity("ThermodynamicTemperature", [1, 2, 3], description="description, with comma"),
         theta_angle=[0, 0.5, 0.7] * u.rad,
         demag_factor=me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3]),
         comments=["Some comment", "Some other comment", "A third comment"],
@@ -96,8 +96,8 @@ def test_read_csv_v1(tmp_path):
     (tmp_path / "data.csv").write_text(file_content)
     read_data = me.from_csv(tmp_path / "data.csv")
     assert read_data.description == ""
-    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
-    assert me.T([1, 2, 3]) == read_data.T
+    assert read_data.Ms == me.Entity("SpontaneousMagnetization", [600, 650, 700], "kA/m")
+    assert me.Entity("ThermodynamicTemperature", [1, 2, 3]) == read_data.T
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
     assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     assert list(read_data.comment) == [
@@ -127,8 +127,8 @@ def test_read_csv_v2(tmp_path):
     read_data = me.from_csv(tmp_path / "data.csv")
 
     assert read_data.description == "File description."
-    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
-    assert me.T([1, 2, 3]) == read_data.T
+    assert read_data.Ms == me.Entity("SpontaneousMagnetization", [600, 650, 700], "kA/m")
+    assert me.Entity("ThermodynamicTemperature", [1, 2, 3]) == read_data.T
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
     assert read_data.demag_factor == me.Entity("DemagnetizingFactor", [1 / 3, 1 / 3, 1 / 3])
     assert list(read_data.comment) == [
@@ -165,9 +165,9 @@ def test_read_csv_v3(tmp_path):
     read_data = me.from_csv(tmp_path / "data.csv")
 
     assert read_data.description == "Test file description.\nTest 1, 2, 3."
-    assert read_data.Ms == me.Ms([600, 650, 700], "kA/m")
+    assert read_data.Ms == me.Entity("SpontaneousMagnetization", [600, 650, 700], "kA/m")
     assert read_data.Ms.description == "first line\nsecond line"
-    assert me.T([1, 2, 3]) == read_data.T
+    assert me.Entity("ThermodynamicTemperature", [1, 2, 3]) == read_data.T
     assert read_data.T.description == "description, with a comma"
     assert all(read_data.angle == [0, 0.5, 0.7] * u.rad)
     assert list(read_data.comment) == [
@@ -290,15 +290,15 @@ def test_csv_empty_collection_not_supported(tmp_path):
 def test_no_mixed_shape_in_csv():
     with pytest.raises(ValueError):
         me.EntityCollection(
-            T=me.T([1, 2, 3]),
-            Tc=me.Tc(100),
+            T=me.Entity("ThermodynamicTemperature", [1, 2, 3]),
+            Tc=me.Entity("CurieTemperature", 100),
         ).to_csv("will-not-be-written.csv")
 
 
 def test_no_multi_dim_in_csv():
     with pytest.raises(ValueError):
         me.EntityCollection(
-            T=me.T([[1, 2, 3]]),
+            T=me.Entity("ThermodynamicTemperature", [[1, 2, 3]]),
         ).to_csv("will-not-be-written.csv")
 
 

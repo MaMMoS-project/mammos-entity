@@ -42,7 +42,7 @@ def concat_flat(
     Examples:
         >>> import mammos_entity as me
         >>> import mammos_units as u
-        >>> Ms = me.Ms([500, 600], "kA/m")
+        >>> Ms = me.Entity("SpontaneousMagnetization", [500, 600], "kA/m")
         >>> me.operations.concat_flat(Ms, 0.3, 700000 * u.A / u.m, unit="MA/m", description="Merge XRD and literature values")
         Entity(ontology_label='SpontaneousMagnetization', value=array([0.5, 0.6, 0.3, 0.7]), unit='MA / m', description='Merge XRD and literature values')
 
