@@ -15,6 +15,7 @@ import importlib.metadata
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 from mammos_entity._ontology import mammos_ontology, search_labels
+from mammos_entity._plotting import enable_plotting
 from mammos_entity._read_files import from_csv, from_hdf5, from_yaml
 
 from . import operations
@@ -40,6 +41,7 @@ __all__ = [
     "Ms",
     "T",
     "Tc",
+    "enable_plotting",
     "mammos_ontology",
     "operations",
     "search_labels",
