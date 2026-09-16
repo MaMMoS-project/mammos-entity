@@ -103,7 +103,7 @@ def test_plot_conversion(x, y_1, y_2, expected_xlabel, expected_ylabel, expected
     np.testing.assert_allclose(ax.convert_yunits(ax.lines[1].get_ydata()), converted_y_2)
 
 
-def test_plot_conversion_error():
+def test_plot_conversion_error_wrong_label():
     T = me.Entity("ThermodynamicTemperature", [10, 20, 30], "K")
     M = me.Entity("Magnetization", [0.4, 0.35, 0.3], "MA/m")
     B = me.Entity("MagneticFluxDensity", [300, 200, 100], "mT")
@@ -111,6 +111,16 @@ def test_plot_conversion_error():
         fig, ax = plt.subplots()
         ax.plot(T, M)
         ax.plot(T, B)
+
+
+def test_plot_conversion_error_wrong_unit():
+    T = me.Entity("ThermodynamicTemperature", [10, 20, 30], "K")
+    M = me.Entity("Magnetization", [0.4, 0.35, 0.3], "MA/m")
+    B = me.Entity("MagneticFluxDensity", [300, 200, 100], "mT")
+    with me.enable_plotting(), pytest.raises(ConversionError):
+        fig, ax = plt.subplots()
+        ax.plot(T, M)
+        ax.plot(T, B.q)
 
 
 def test_plot_conversion_with_extra_equivalency():
