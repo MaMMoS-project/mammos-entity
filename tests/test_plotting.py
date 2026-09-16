@@ -7,7 +7,7 @@ import pytest
 from matplotlib.units import ConversionError
 
 import mammos_entity as me
-from mammos_entity._plotting import _EntityArray
+from mammos_entity.plotting import _EntityArray
 
 
 @pytest.mark.parametrize(

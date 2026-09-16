@@ -5,9 +5,10 @@ Entities are quantities (numbers with units) with an associated ontology label.
 This packages contains classes for defining, collecting and saving such entities (
 :py:class:`~mammos_entity.Entity` and :py:class:`~mammos_entity.EntityCollection`),
 the :py:func:`~mammos_entity.search_labels` function to search for partial
-or full matches of labels defined in the ontology, and the reading routines
+or full matches of labels defined in the ontology, the reading routines
 :py:func:`~mammos_entity.from_csv`, :py:func:`~mammos_entity.from_hdf5`, and
-:py:func:`~mammos_entity.from_yaml`.
+:py:func:`~mammos_entity.from_yaml`,  and plotting functionalities in
+:py:mod:`mammos_entity.plotting`.
 """
 
 import importlib.metadata
@@ -15,10 +16,10 @@ import importlib.metadata
 from mammos_entity._entity import Entity
 from mammos_entity._entity_collection import EntityCollection
 from mammos_entity._ontology import mammos_ontology, search_labels
-from mammos_entity._plotting import enable_plotting
 from mammos_entity._read_files import from_csv, from_hdf5, from_yaml
+from mammos_entity.plotting import enable_plotting
 
-from . import operations
+from . import operations, plotting
 
 __version__ = importlib.metadata.version(__package__)
 
@@ -44,6 +45,7 @@ __all__ = [
     "enable_plotting",
     "mammos_ontology",
     "operations",
+    "plotting",
     "search_labels",
     "units",
     "from_csv",
