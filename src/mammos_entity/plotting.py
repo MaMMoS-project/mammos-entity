@@ -14,8 +14,11 @@ from mammos_entity._entity import Entity
 
 if TYPE_CHECKING:
     import astropy.units
+    import mammos_units
     import matplotlib.axis
     import numpy.typing
+
+    import mammos_entity
 
 
 # inspirations:
@@ -29,7 +32,7 @@ class _EntityArray(np.ndarray):
     """
 
     def __new__(
-        cls, value: np.typing.ArrayLike, ontology_label: str, unit: astropy.units.Unit | None = None
+        cls, value: numpy.typing.ArrayLike, ontology_label: str, unit: astropy.units.Unit | None = None
     ) -> _EntityArray:
         """Create new `_`EntityArray``.
 
@@ -78,7 +81,7 @@ class EntityLikeConverter(ConversionInterface, ContextDecorator):
     """Matplotlib converter for all entity-like objects.
 
     This converter covers :py:class:`mammos_entity.Entity` and :py:class:`mammos_units.Quantity` objects.
-    Simple arrays are covered by default from ``matplotlib`` and they do not require a unit converter.
+    Simple arrays are covered by default from :py:mod:`matplotlib` and they do not require a unit converter.
     """
 
     def __init__(self):
@@ -86,7 +89,8 @@ class EntityLikeConverter(ConversionInterface, ContextDecorator):
 
         In this converter the :py:class:`mammos_entity.Entity` class is provided with an ``__array__`` method in order
         to be plotted with :py:mod:`matplotlib` with unit support. Calling ``Entity.__array__`` will generate an
-        ``_EntityArray`` object (subclassed from `numpy.ndarray`) containing necessary information to plot an entity.
+        ``_EntityArray`` object (subclassed from :py:class:`numpy.ndarray`) containing necessary information to plot
+        an entity.
 
         The same converter is defined for :py:class:`mammos_entity.Entity` and :py:class:`mammos_units.Quantity` so
         they can be plotted in the same figure.
@@ -111,16 +115,13 @@ class EntityLikeConverter(ConversionInterface, ContextDecorator):
         registry[_EntityArray] = self
 
     @staticmethod
-    def axisinfo(unit: tuple[str, astropy.units.Unit], axis: matplotlib.axis.Axis) -> AxisInfo:
+    def axisinfo(unit: tuple[str, astropy.units.Unit], axis: matplotlib.axis.Axis) -> matplotlib.units.AxisInfo:
         """Define axis information.
 
-        Axis is in the shape ``entity_label (physical_unit)``. If the physical unit is equivalent to dimensionless,
-        it will not appear in the axis. If the object is a :py:class:`mammos_units.Quantity`, it will have no
-        entity label.
-
         Args:
-            unit: tuple of `(ontology_label, physical_unit)` to describe the Entity-like to be plotted. If the object
-                to plot is a :py:class:`mammos_units.Quantity`, the `ontology_label` will be an empty string.
+            unit: tuple ``(ontology_label, physical_unit)`` to describe the Entity-like to be plotted. If the object
+                to plot is a :py:class:`mammos_units.Quantity`, the `ontology_label` will be an empty string. If the
+                physical unit is equivalent to ``Unit(dimensionless)``, it will not appear in the axis label.
             axis: X or Y axis. In this implementation this parameter is ignored.
 
         Returns:
@@ -140,31 +141,41 @@ class EntityLikeConverter(ConversionInterface, ContextDecorator):
     ) -> numpy.typing.ArrayLike:
         """Define conversion.
 
-        This function is called when an object of nonstandard type is added to an axis containing already an object.
-        The object is converted to the given `unit`.
+        This function is called when an object of nonstandard type is added to an axis already containing an object.
+        The object is converted to the given ``unit``.
 
         Args:
             x: array to be converted to the correct unit.
-            unit: tuple `(ontology_label, physical_unit)` for conversion. If `x.ontology_label` of the given `x` is
-                different than the one defined in the `unit` argument,
-                `ontology_label`, the conversion fails. If the
-            axis: ...
+            unit: tuple ``(ontology_label, physical_unit)`` for conversion. The conversion fails if ``x.ontology_label``
+                is different than the ontology label stored in the ``unit`` argument, or if ``x.unit`` is incompatible
+                with the physical unit stored in the ``unit`` argument.
+            axis: Matplotlib axis object.
+
+        Returns:
+            Converted array to plot.
+
+        Raises:
+            RuntimeError: Incompatible entity labels. Argument ``x`` is a :py:class:`~mammos_entity.Entity` different
+                than the ontology label of the first object added to the plot.
+            RuntimeError: Unit conversion error. Argument ``x`` has a unit incompatible with the unit of the first
+                object added to the plot.
+            TypeError: Unexpected type. Argument ``x`` is neither a standard :py:class:`~numpy.ndarray` nor a
+                :py:class:`~mammos_entity.Entity` nor a :py:class:`~mammos_units.Quantity`.
 
         """
-        # TODO: finish docstring
         if unit[0] and getattr(x, "ontology_label", False) and x.ontology_label != unit[0]:
             # `ontology_label` is defined in the axis and `x` is an Entity of different label
             raise RuntimeError(
                 f"Incompatible entity labels. Axis is defined with ontology label {unit[0]} and given argument {x} "
                 f"is an Entity with ontology_label {x.ontology_label}."
-            )  # TODO: test this error
-        # TODO: add raises to docstring
+            )
 
         if not x.unit.is_equivalent(unit[1]):
             raise RuntimeError(
                 f"Unit conversion error in plotting. Unit {x.unit} of input "
                 f"{x} and {unit[1]} of '{unit[0]}' are not equivalent."
             )
+
         if isinstance(x, u.Quantity):
             q = x
         elif isinstance(x, _EntityArray):
@@ -174,24 +185,30 @@ class EntityLikeConverter(ConversionInterface, ContextDecorator):
         return q.to_value(unit[1])
 
     @staticmethod
-    def default_units(x, axis) -> tuple[str, astropy.units.Unit]:
+    def default_units(
+        x: mammos_entity.Entity | mammos_units.Quantity, axis: matplotlib.axis.Axis
+    ) -> tuple[str, astropy.units.Unit]:
         """Define the default plotting unit.
 
-        In this case, the plotting unit is a tuple ``(label, unit)``, where the label is the ontology label of an
-        ``Entity``. For a ``Quantity`` the label is an empty string.
+        Args:
+            x: First object plotted in an axis object.
+            axis: Matplotlib axis object.
+
+        Returns:
+            Entity information of argument ``x`` in the form ``(ontology_label, physical_unit)``.
+            For a ``Quantity``, the ontology label is an empty string.
+
         """
-        # TODO: finish type hint
-        # TODO: docstring
         label = getattr(x, "ontology_label", "")
         physical_unit = u.CompositeUnit(scale=1, bases=x.unit.bases, powers=x.unit.powers)
         return (label, physical_unit)
 
     def __enter__(self):
-        """TODO: add type hint and docstring."""
+        """Enter the runtime context."""
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        """TODO: add type hint and docstring."""
+        """Exit the runtime context."""
         Entity.__array__ = None
         del registry[u.Quantity]
         del registry[_EntityArray]
@@ -205,10 +222,31 @@ def enable_plotting() -> EntityLikeConverter:
     If used in a ``with`` context it guarantees the changes to be valid only inside of the context.
 
     Returns:
-        # TODO: write returns
+        Matplotlib converter to represent and plot :py:class:`~mammos_entity.Entity` and
+        :py:class:`~mammos_units.Quantity` objects with units support and implicit conversion.
 
     Examples:
-        # TODO: write examples
+        This function can be called in a ``with`` statement:
 
-    """
+        >>> import mammos_entity as me
+        >>> import matplotlib.pyplot as plt
+        >>> with me.enable_plotting():
+        ...     fig, ax = plt.subplots()
+        ...     ax.plot(me.Entity("ThermodynamicTemperature", [100, 200], "K"), me.Entity("Magnetization", [400, 300], "kA/m"))
+        ...     ax.plot(me.Entity("ThermodynamicTemperature", [100, 200], "K"), me.Entity("Magnetization", [0.5, 0.4], "MA/m"))  # doctest: +ELLIPSIS
+        [<matplotlib.lines.Line2D object at 0x...>]
+
+        Or it can be activated once in the Jupyter Notebook or Python script:
+
+        >>> import mammos_entity as me
+        >>> import matplotlib.pyplot as pltp
+        >>> me.enable_plotting()  # doctest: +ELLIPSIS
+        <mammos_entity.plotting.EntityLikeConverter object at 0x...>
+        >>> fig, ax = plt.subplots()
+        >>> ax.plot(me.Entity("ThermodynamicTemperature", [100, 200], "K"), me.Entity("Magnetization", [400, 300], "kA/m"))  # doctest: +ELLIPSIS
+        [<matplotlib.lines.Line2D object at 0x...>]
+        >>> ax.plot(me.Entity("ThermodynamicTemperature", [100, 200], "K"), me.Entity("Magnetization", [0.5, 0.4], "MA/m"))  # doctest: +ELLIPSIS
+        [<matplotlib.lines.Line2D object at 0x...>]
+
+    """  # noqa: E501
     return EntityLikeConverter()
