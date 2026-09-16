@@ -121,5 +121,5 @@ def test_plot_conversion_with_extra_equivalency():
     fig, ax = plt.subplots()
     with me.enable_plotting(), u.set_enabled_equivalencies(u.magnetic_flux_field()):
         ax.plot(T, M)
-        ax.plot(T, B)
+        ax.plot(T, B.q)
     assert len(ax.lines) == 2
