@@ -154,15 +154,15 @@ class EntityLikeConverter(ConversionInterface, ContextDecorator):
         # TODO: finish docstring
         if unit[0] and getattr(x, "ontology_label", False) and x.ontology_label != unit[0]:
             # `ontology_label` is defined in the axis and `x` is an Entity of different label
-            raise ValueError(
-                f"Incompatible entities. Axis is defined with ontology label {unit[0]} and given argument {x} "
+            raise RuntimeError(
+                f"Incompatible entity labels. Axis is defined with ontology label {unit[0]} and given argument {x} "
                 f"is an Entity with ontology_label {x.ontology_label}."
             )  # TODO: test this error
         # TODO: add raises to docstring
 
         if not x.unit.is_equivalent(unit[1]):
             raise RuntimeError(
-                f"Conversion error in plotting. Unit {x.unit} of input "
+                f"Unit conversion error in plotting. Unit {x.unit} of input "
                 f"{x} and {unit[1]} of '{unit[0]}' are not equivalent."
             )
         if isinstance(x, u.Quantity):
