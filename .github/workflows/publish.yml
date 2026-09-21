@@ -85,7 +85,7 @@ jobs:
       id-token: write
     steps:
     - name: Download dists
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: dist
         path: dist/
@@ -102,12 +102,12 @@ jobs:
       id-token: write  # IMPORTANT: mandatory for sigstore
     steps:
     - name: Download dists
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@v8
       with:
         name: dist
         path: dist/
     - name: Sign the dists with Sigstore
-      uses: sigstore/gh-action-sigstore-python@v3.4.0
+      uses: sigstore/gh-action-sigstore-python@v3.5.0
       with:
         inputs: >-
           ./dist/*.tar.gz
