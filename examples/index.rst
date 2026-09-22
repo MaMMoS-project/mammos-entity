@@ -13,3 +13,4 @@ mammos-entity
    csv
    hdf5
    useful_operations
+   plotting
