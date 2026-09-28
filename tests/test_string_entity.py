@@ -52,7 +52,7 @@ def test_init_entity():
     assert e2.value == "Nd2Fe14B"
     assert e2.description == "new entity"
     with pytest.raises(ValueError):
-        me.StringEntity("ChemicalComposition", value=me.Hc())
+        me.StringEntity("ChemicalComposition", value=me.Entity("CoercivityHcExternal"))
 
 
 def test_init_different_types():
