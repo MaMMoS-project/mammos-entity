@@ -12,7 +12,7 @@ or full matches of labels defined in the ontology, and the reading routines
 
 import importlib.metadata
 
-from mammos_entity._entity import Entity
+from mammos_entity._entity import Entity, QuantityEntity, StringEntity
 from mammos_entity._entity_collection import EntityCollection
 from mammos_entity._ontology import mammos_ontology, search_labels
 from mammos_entity._read_files import from_csv, from_hdf5, from_yaml
@@ -24,6 +24,8 @@ __version__ = importlib.metadata.version(__package__)
 
 __all__ = [
     "Entity",
+    "QuantityEntity",
+    "StringEntity",
     "EntityCollection",
     "A",
     "B",
