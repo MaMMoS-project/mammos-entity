@@ -284,10 +284,12 @@ def test_ontology_information_mammos():
     """Test ontology label and IRI for an Entity in the MaMMoS ontology."""
     e = me.Entity("ExternalMagneticField")
     assert e.ontology_label == "ExternalMagneticField"
-    assert e.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+    assert (
+        e.ontology_iri == "https://w3id.org/emmo/domain/magnetic-materials#MagMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+    )
     assert (
         e.ontology_label_with_iri
-        == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic-materials#EMMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
+        == "ExternalMagneticField https://w3id.org/emmo/domain/magnetic-materials#MagMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3"
     )
     assert e.ontology_label_with_iri == f"{e.ontology.prefLabel[0]} {e.ontology.iri}"
     assert e.ontology_label in me.mammos_ontology
