@@ -225,21 +225,29 @@ def test_all_labels_ontology(ontology_element):
 
     This test creates one Entity instance for each label in the ontology.
 
-    Entities `Person` and `Organization` do not have a `prefLabel`.
-    These are extreme, unfixable cases and we ignore them.
+    Some cases are known to fail: label of classes `Person` and `Organization`
+    can be found via `get_preferred_label` but do not have a `prefLabel`.
+
+    Furthermore, we should exclude all those labels that are ambiguous (i.e.
+    define multiple objects in the ontology) and are caused by problem
+    upstream (in the imported ontology EMMO).
     """
-    if ontology_element.prefLabel:
-        prefLabel = str(ontology_element.prefLabel[0])
-        if prefLabel in [
-            "Electron",
-            "ElementaryCharge",
-            "Grain",
-            "Point",
-            "RelativePermeability",
-            "RelativePermittivity",
-        ]:
-            pytest.xfail(f"{prefLabel=} is ambiguous")
-        me.Entity(prefLabel, 42)
+    prefLabel = str(ontology_element.get_preferred_label())
+    if prefLabel in [
+        "Person",
+        "Organization",
+    ]:
+        pytest.xfail(f"{prefLabel=} is an edge case.")
+    if prefLabel in [
+        "Electron",
+        "ElementaryCharge",
+        "Grain",
+        "Point",
+        "RelativePermeability",
+        "RelativePermittivity",
+    ]:
+        pytest.xfail(f"{prefLabel=} is ambiguous.")
+    me.Entity(prefLabel, 42)
 
 
 def test_default_unit():
