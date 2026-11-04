@@ -282,7 +282,7 @@ class EntityCollection:
             }
         )
 
-    def metadata(self) -> dict[str, dict[str, str]]:
+    def metadata(self) -> dict[str, dict]:
         """Get entity metadata as dictionary.
 
         This method creates a dictionary containing metadata for all entities in the
@@ -292,6 +292,8 @@ class EntityCollection:
         - keys ``ontology_label``, ``unit`` and ``description`` if the attribute is an
           entity
         - key ``unit`` if the attribute is a quantity
+        - a dictionary with the same structure if the attribute is a nested
+          :py:class:`~mammos_entity.EntityCollection`
         - an empty dictionary otherwise
 
         Examples:
@@ -301,6 +303,15 @@ class EntityCollection:
             >>> col.metadata()
             {'Tc': {'ontology_label': 'CurieTemperature', 'unit': 'K', 'description': ''}, 'x': {'unit': 'm'}, 'a': {}}
 
+        Nested collections are handled recursively:
+
+            >>> col = me.EntityCollection(
+            ...     properties=me.EntityCollection(Ms=me.Entity("SpontaneousMagnetization", 1, "A/m")),
+            ...     T=me.Entity("ThermodynamicTemperature", 300, "K"),
+            ... )
+            >>> col.metadata()["properties"]
+            {'Ms': {'ontology_label': 'SpontaneousMagnetization', 'unit': 'A / m', 'description': ''}}
+
         .. version-changed:: 0.14.0
            The collection description has been removed from the metadata to allow the
            name ``description`` as key for an entity-like.
@@ -308,7 +319,9 @@ class EntityCollection:
         result = {}
         for name, entity_like in self._entities.items():
             element = {}
-            if isinstance(entity_like, me.Entity):
+            if isinstance(entity_like, EntityCollection):
+                element = entity_like.metadata()
+            elif isinstance(entity_like, me.Entity):
                 element["ontology_label"] = entity_like.ontology_label
                 element["unit"] = str(entity_like.unit)
                 element["description"] = entity_like.description
