@@ -149,6 +149,41 @@ def test_metadata():
     assert ec.metadata() == reference
 
 
+def test_metadata_nested():
+    ec = me.EntityCollection(
+        intrinsic_properties=me.EntityCollection(
+            Ms=me.Entity("SpontaneousMagnetization", 1),
+            A=me.Entity("ExchangeStiffnessConstant", 2),
+        ),
+        measurements=me.EntityCollection(
+            description="Measurements performed at different locations on the sample",
+            H=me.Entity("MagneticFieldStrength", [10, 20, 30], "kA/m"),
+            conditions=me.EntityCollection(
+                T=me.Entity("ThermodynamicTemperature", 300, "K"),
+                pressure=1 * u.Pa,
+                number_of_points=3,
+            ),
+        ),
+        T=me.Entity("ThermodynamicTemperature", 300, "K"),
+    )
+    reference = {
+        "intrinsic_properties": {
+            "Ms": {"ontology_label": "SpontaneousMagnetization", "unit": "A / m", "description": ""},
+            "A": {"ontology_label": "ExchangeStiffnessConstant", "unit": "J / m", "description": ""},
+        },
+        "measurements": {
+            "H": {"ontology_label": "MagneticFieldStrength", "unit": "kA / m", "description": ""},
+            "conditions": {
+                "T": {"ontology_label": "ThermodynamicTemperature", "unit": "K", "description": ""},
+                "pressure": {"unit": "Pa"},
+                "number_of_points": {},
+            },
+        },
+        "T": {"ontology_label": "ThermodynamicTemperature", "unit": "K", "description": ""},
+    }
+    assert ec.metadata() == reference
+
+
 def test_to_dataframe():
     """Check that the conversion to DataFrame works as intended."""
     ec = me.EntityCollection(
