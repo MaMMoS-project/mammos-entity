@@ -237,7 +237,10 @@ def test_all_labels_ontology(ontology_element):
         "Person",
         "Organization",
     ]:
-        pytest.xfail(f"{prefLabel=} is an edge case.")
+        pytest.xfail(
+            f"{prefLabel=} is an edge case. It is not possible to create entities with this label because "
+            "this object in the ontology does not have a `prefLabel` annotation."
+        )
     if prefLabel in [
         "Electron",
         "ElementaryCharge",
@@ -246,7 +249,10 @@ def test_all_labels_ontology(ontology_element):
         "RelativePermeability",
         "RelativePermittivity",
     ]:
-        pytest.xfail(f"{prefLabel=} is ambiguous.")
+        pytest.xfail(
+            f"{prefLabel=} is ambiguous, as multiple entities have this `prefLabel`. "
+            "These are unresolved issues in EMMO 1.0.3."
+        )
     me.Entity(prefLabel, 42)
 
 
