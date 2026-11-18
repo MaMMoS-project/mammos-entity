@@ -1,4 +1,54 @@
 {
+  "creators": [
+    {
+      "name": "Pathak, Swapneel Amit",
+      "orcid": "0000-0003-3840-955X",
+      "affiliation": "Max Planck Institute for the Structure and Dynamics of Matter"
+    },
+    {
+      "name": "Petrocchi, Andrea",
+      "orcid": "0009-0005-1867-6732",
+      "affiliation": "Max Planck Institute for the Structure and Dynamics of Matter"
+    },
+    {
+      "name": "Holt, Samuel",
+      "orcid": "0000-0003-3323-8958",
+      "affiliation": "Max Planck Institute for the Structure and Dynamics of Matter"
+    },
+    {
+      "name": "Lang, Martin",
+      "orcid": "0000-0001-7104-7867",
+      "affiliation": "Max Planck Institute for the Structure and Dynamics of Matter"
+    },
+    {
+      "name": "Hortschitz, Wilfried",
+      "affiliation": "University for Continuing Education Krems"
+    },
+    {
+      "name": "Pile, Santa",
+      "affiliation": "University for Continuing Education Krems"
+    },
+    {
+      "name": "Dobiasch, Martin",
+      "affiliation": "University for Continuing Education Krems"
+    },
+    {
+      "name": "Fangohr, Hans",
+      "orcid": "0000-0001-5494-7193",
+      "affiliation": "Max Planck Institute for the Structure and Dynamics of Matter, European XFEL GmbH, University of Southampton"
+    }
+  ],
+  "title": "mammos-entity",
+  "description": "Python package to specify material parameters for MaMMoS simulation suite.",
+  "upload_type": "software",
+  "language": "eng",
+  "keywords": [
+    "magnetic materials",
+    "ontology",
+    "semantic interoperability",
+    "physical quantities",
+    "MaMMoS"
+  ],
   "grants": [
     {
       "id": "10.13039/501100000780::101135546"
