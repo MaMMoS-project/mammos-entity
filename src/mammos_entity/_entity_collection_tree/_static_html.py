@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.resources
 from functools import cache
+from html import escape
 
 from ._common import (
     _STATIC_ELLIPSIS_CHILD,
@@ -24,6 +25,7 @@ from ._html_helpers import (
     _render_row,
     _render_static_preview_note,
 )
+from ._plain_text import render_entity_collection_text
 
 
 def _render_static_branch(
@@ -144,7 +146,18 @@ def _tree_css() -> str:
 def render_entity_collection_html(collection: _EntityCollectionLike) -> str:
     """Render the bounded static HTML fallback for EntityCollection."""
     summary_html = _render_root_collection_summary(collection)
-    outer_prefix = f"<details class='mammos-entity-collection root-node' open><summary>{summary_html}</summary>"
+    # The tree must be hidden with an inline style on a <div>, not in the
+    # stylesheet: GitHub drops <style> and the <details>/<summary> tags with
+    # their attributes, but keeps a <div> and its style attribute. _styles.css
+    # reveals the tree with !important and hides this text fallback.
+    text_fallback_html = (
+        f"<pre class='mammos-entity-text-fallback'>{escape(render_entity_collection_text(collection))}</pre>"
+    )
+    outer_prefix = (
+        "<div class='mammos-entity-collection-root' style='display:none'>"
+        "<details class='mammos-entity-collection root-node' open>"
+        f"<summary>{summary_html}</summary>"
+    )
     child_result = _render_static_children(collection, depth=0, remaining_nodes=_STATIC_MAX_TOTAL_NODES - 1)
     preview_note_html = _render_static_preview_note(_STATIC_PREVIEW_NOTE) if not child_result.complete else ""
-    return f"{_tree_css()}{outer_prefix}{child_result.html}{preview_note_html}</details>"
+    return f"{_tree_css()}{text_fallback_html}{outer_prefix}{child_result.html}{preview_note_html}</details></div>"
