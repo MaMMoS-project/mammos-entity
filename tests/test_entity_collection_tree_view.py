@@ -42,6 +42,12 @@ def _lazy_node_id(html_fragment: str, patch: str) -> str:
     return match.group(1)
 
 
+def _css_rule(css: str, selector: str) -> str:
+    match = re.search(rf"{re.escape(selector)} \{{[^}}]*\}}", css)
+    assert match is not None, f"missing CSS rule for {selector}"
+    return match.group(0)
+
+
 def _structured_leaf_cases() -> list[tuple[str, object, str]]:
     return [
         ("quantity", u.Quantity(np.arange(60.0), "A / m"), "shape=(60,)"),
@@ -91,12 +97,24 @@ def test_collection_repr_html_is_static_js_free_and_wraps_descriptions():
     html_output = collection._repr_html_()
 
     assert html_output.startswith("<style>")
+    assert "<div class='mammos-entity-collection-root' style='display:none'>" in html_output
     assert "<details class='mammos-entity-collection root-node' open>" in html_output
     _assert_js_free(html_output)
     assert "long&nbsp;collection&nbsp;description" not in html_output
     assert "long&nbsp;entity&nbsp;description" not in html_output
     assert "overflow-wrap: anywhere;" in html_output
     assert "white-space: pre-wrap;" in html_output
+
+
+def test_collection_repr_html_keeps_text_fallback_visible_without_stylesheet():
+    collection = me.EntityCollection(data=u.Quantity([0.0, 0.5, 1.0], "A / m"))
+    text_output = render_entity_collection_text(collection)
+
+    html_output = collection._repr_html_()
+
+    assert f"<pre class='mammos-entity-text-fallback'>{html.escape(text_output)}</pre>" in html_output
+    assert "display: none;" in _css_rule(html_output, ".mammos-entity-text-fallback")
+    assert "display: block !important;" in _css_rule(html_output, ".mammos-entity-collection-root")
 
 
 def test_structured_leaf_open_state_css_targets_details_element():

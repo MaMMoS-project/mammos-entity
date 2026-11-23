@@ -31,11 +31,19 @@
   line-height: 1.45;
 }
 
+.mammos-entity-collection-root {
+  display: block !important;
+}
+
 .mammos-entity-collection {
   --branch-gap: 0.3rem;
   --branch-join: 0.82em;
   --branch-tick: 0.55rem;
   --branch-trunk: calc(var(--branch-gap) + var(--branch-tick));
+}
+
+.mammos-entity-text-fallback {
+  display: none;
 }
 
 .mammos-entity-collection samp {
