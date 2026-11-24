@@ -42,13 +42,6 @@
   "description": "Python package to specify material parameters for MaMMoS simulation suite.",
   "upload_type": "software",
   "language": "eng",
-  "keywords": [
-    "magnetic materials",
-    "ontology",
-    "semantic interoperability",
-    "physical quantities",
-    "MaMMoS"
-  ],
   "grants": [
     {
       "id": "10.13039/501100000780::101135546"
