@@ -614,8 +614,10 @@ class Entity:
                 return
 
         dset = base.create_dataset(name, data=self.value)
-        dset.attrs["ontology_label"] = self.ontology_label
-        dset.attrs["ontology_iri"] = self.ontology.iri
+        dset.attrs["label"] = self.ontology_label
+        ontology_iri = me.mammos_ontology.get_version(as_iri=True)
+        dset.attrs["ontology"] = ontology_iri
+        dset.attrs["iri"] = self.ontology.iri
         dset.attrs["unit"] = str(self.unit)
         dset.attrs["description"] = self.description
 

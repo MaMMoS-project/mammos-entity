@@ -213,14 +213,16 @@ def test_write_yaml_key_types(tmp_path):
         file_content = yaml.safe_load(f)
 
     assert set(file_content["data"]["Tc"]) == {
-        "ontology_label",
+        "label",
         "description",
-        "ontology_iri",
+        "ontology",
+        "iri",
         "unit",
         "value",
     }
     assert isinstance(file_content["data"]["Tc"]["description"], str)
-    assert isinstance(file_content["data"]["Tc"]["ontology_iri"], str)
+    assert isinstance(file_content["data"]["Tc"]["ontology"], str)
+    assert isinstance(file_content["data"]["Tc"]["iri"], str)
     assert isinstance(file_content["data"]["Tc"]["unit"], str)
     assert set(file_content["data"]["notes"]) == {"value"}
 
@@ -228,9 +230,10 @@ def test_write_yaml_key_types(tmp_path):
     assert set(properties) == {"description", "data"}
     assert isinstance(properties["description"], str)
     assert set(properties["data"]["Ms"]) == {
-        "ontology_label",
+        "label",
         "description",
-        "ontology_iri",
+        "ontology",
+        "iri",
         "unit",
         "value",
     }
