@@ -76,7 +76,7 @@ def from_csv(filename: str | os.PathLike) -> mammos_entity.EntityCollection:
                 csvfile,
                 delimiter=",",
                 quoting=csv.QUOTE_MINIMAL,
-                lineterminator="\n",
+                lineterminator=os.linesep,
             )
             try:
                 ontology_labels = next(reader)
@@ -311,7 +311,7 @@ def _check_entity_keys_types_v3(entity, key_display):
     if not isinstance(entity["label"], str):
         raise RuntimeError(
             f'Entry "{key_display}" is an invalid entity-like in mammos yaml v3: '
-            f'key "label" must be a string, found {type(entity["ontology_label"]).__name__}.'
+            f'key "label" must be a string, found {type(entity["label"]).__name__}.'
         )
     if not isinstance(entity["description"], str):
         raise RuntimeError(

@@ -152,17 +152,19 @@ def test_read_csv_v2(tmp_path):
     ]
 
 
-def test_read_csv_v3(tmp_path):
-    file_content = textwrap.dedent(
-        """\
+# Embedded newlines in quoted fields stay "\n"; only row ends follow the line separator.
+@pytest.mark.parametrize("linesep", ["\n", "\r\n"])
+def test_read_csv_v3(tmp_path, linesep):
+    file_content = (
+        textwrap.dedent(
+            """\
         # mammos csv v3
         #----------------------------------------
         # Test file description.
         # Test 1, 2, 3.
         #----------------------------------------
         SpontaneousMagnetization,ThermodynamicTemperature,,
-        "first line
-        second line","description, with a comma",,
+        "first line{nl}second line","description, with a comma",,
         https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
         kA / m,K,rad,
         Ms,T,angle,comment
@@ -170,8 +172,11 @@ def test_read_csv_v3(tmp_path):
         650.0,2.0,0.5,Some other comment
         700.0,3.0,0.7,A third comment
         """
+        )
+        .replace("\n", linesep)
+        .format(nl="\n")
     )
-    (tmp_path / "data.csv").write_text(file_content, newline="\n")
+    (tmp_path / "data.csv").write_text(file_content, newline="")
     read_data = me.from_csv(tmp_path / "data.csv")
 
     assert read_data.description == "Test file description.\nTest 1, 2, 3."
@@ -187,17 +192,19 @@ def test_read_csv_v3(tmp_path):
     ]
 
 
-def test_read_csv_v4(tmp_path):
-    file_content = textwrap.dedent(
-        """\
+# Embedded newlines in quoted fields stay "\n"; only row ends follow the line separator.
+@pytest.mark.parametrize("linesep", ["\n", "\r\n"])
+def test_read_csv_v4(tmp_path, linesep):
+    file_content = (
+        textwrap.dedent(
+            """\
         # mammos csv v4
         #----------------------------------------
         # Test file description.
         # Test 1, 2, 3.
         #----------------------------------------
         #SpontaneousMagnetization,ThermodynamicTemperature,,
-        #"first line
-        #second line","description, with a comma",,
+        #"first line{nl}#second line","description, with a comma",,
         #https://w3id.org/emmo/domain/magnetic-materials/0.0.6,https://w3id.org/emmo/domain/magnetic-materials/0.0.6,,
         #https://w3id.org/emmo/domain/magnetic-materials#EMMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f,,
         #kA / m,K,rad,
@@ -206,8 +213,11 @@ def test_read_csv_v4(tmp_path):
         650.0,2.0,0.5,Some other comment
         700.0,3.0,0.7,A third comment
         """
+        )
+        .replace("\n", linesep)
+        .format(nl="\n")
     )
-    (tmp_path / "data.csv").write_text(file_content, newline="\n")
+    (tmp_path / "data.csv").write_text(file_content, newline="")
     read_data = me.from_csv(tmp_path / "data.csv")
 
     assert read_data.description == "Test file description.\nTest 1, 2, 3."

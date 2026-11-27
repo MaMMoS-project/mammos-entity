@@ -528,12 +528,12 @@ class EntityCollection:
         ]
 
         with open(filename, "w", newline="") as f:
-            f.write("# mammos csv v4\n")
+            f.write(f"# mammos csv v4{os.linesep}")
             if self.description:
-                f.write("#" + "-" * 40 + "\n")
+                f.write("#" + "-" * 40 + os.linesep)
                 for line in self.description.splitlines():
-                    f.write(f"# {line}\n")
-                f.write("#" + "-" * 40 + "\n")
+                    f.write(f"# {line}{os.linesep}")
+                f.write("#" + "-" * 40 + os.linesep)
 
             writer = csv.writer(f, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator=os.linesep)
             for row in metadata_rows:
