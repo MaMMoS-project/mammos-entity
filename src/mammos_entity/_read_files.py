@@ -11,7 +11,7 @@ import mammos_units as u
 import pandas as pd
 import yaml
 
-from mammos_entity._entity import Entity
+from mammos_entity._entity import Entity, QuantityEntity, StringEntity, _is_quantity_entity
 from mammos_entity._entity_collection import EntityCollection
 
 if TYPE_CHECKING:
@@ -108,12 +108,19 @@ def from_csv(filename: str | os.PathLike) -> mammos_entity.EntityCollection:
     for name, ontology_label, description, unit in columns:
         data_values = data[name].values if not scalar_data else data[name].values[0]
         if ontology_label:
-            entity = Entity(
-                ontology_label=ontology_label,
-                value=data_values,
-                unit=unit,
-                description=description,
-            )
+            if _is_quantity_entity(ontology_label):
+                entity = QuantityEntity(
+                    ontology_label=ontology_label,
+                    value=data_values,
+                    unit=unit,
+                    description=description,
+                )
+            else:
+                entity = StringEntity(
+                    ontology_label=ontology_label,
+                    value=data_values,
+                    description=description,
+                )
             collection[name] = entity
         elif unit:
             collection[name] = u.Quantity(data_values, unit)
@@ -227,11 +234,12 @@ def _parse_yaml_leaf_v2(item: Mapping, key: str):
         )
 
     keys = set(item)
-    entity_keys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
+    quantity_entity_keys = {"ontology_label", "description", "ontology_iri", "unit", "value"}
+    string_entity_keys = {"ontology_label", "description", "ontology_iri", "value"}
     quantity_keys = {"unit", "value"}
     value_keys = {"value"}
 
-    if keys == entity_keys:
+    if keys in (quantity_entity_keys, string_entity_keys):
         if not isinstance(item["ontology_label"], str):
             raise RuntimeError(
                 f'Entry "{key_display}" is an invalid entity-like in mammos yaml v2: '
@@ -250,19 +258,39 @@ def _parse_yaml_leaf_v2(item: Mapping, key: str):
                 f'key "ontology_iri" must be a string, found '
                 f"{type(item['ontology_iri']).__name__}."
             )
-        entity = Entity(
-            ontology_label=item["ontology_label"],
-            value=item["value"],
-            unit=item["unit"],
-            description=item["description"],
-        )
+        ontology_label = item["ontology_label"]
+        if _is_quantity_entity(ontology_label):
+            if keys != quantity_entity_keys:
+                raise RuntimeError(
+                    f'Entry "{key_display}" is an invalid quantity entity in mammos yaml v2: '
+                    f"keys should match {quantity_entity_keys}. "
+                    f"Available keys on file: {keys}."
+                )
+            entity = QuantityEntity(
+                ontology_label=item["ontology_label"],
+                value=item["value"],
+                unit=item["unit"],
+                description=item["description"],
+            )
+        else:
+            if keys != string_entity_keys:
+                raise RuntimeError(
+                    f'Entry "{key_display}" is an invalid quantity like in mammos yaml v2: '
+                    f"keys should match {string_entity_keys}. "
+                    f"Available keys on file: {keys}."
+                )
+            entity = StringEntity(
+                ontology_label=item["ontology_label"],
+                value=item["value"],
+                description=item["description"],
+            )
         return entity
     elif keys == quantity_keys:
         return u.Quantity(item["value"], item["unit"])
     elif keys == value_keys:
         return item["value"]
     else:
-        expected = [sorted(entity_keys), sorted(quantity_keys), sorted(value_keys)]
+        expected = [sorted(quantity_entity_keys), sorted(string_entity_keys), sorted(quantity_keys), sorted(value_keys)]
         raise RuntimeError(
             f'Entry "{key_display}" is an invalid entity-like in mammos yaml v2: '
             f"invalid keys {sorted(keys)}; expected one of {expected}."
@@ -339,8 +367,9 @@ def from_hdf5(
     - HDF5 datasets are converted depending on their attributes:
 
       * If the dataset has all of the attributes ``ontology_label``,
-        ``ontology_iri``, ``description`` and ``unit``, it is converted to an
-        :py:class:`~mammos_entity.Entity`.
+        ``ontology_iri``, and ``description``, it is converted to an
+        :py:class:`~mammos_entity.Entity`. The attribute ``unit`` is passed if
+        present, i.e. only for :py:class:`~mammos_entity.QuantityEntity`.
       * If the dataset has only a ``unit`` attribute (but not the ontology-related
         attributes), it is converted to a :py:class:`~mammos_units.Quantity`.
       * Otherwise the dataset is returned as a numpy array, a scalar, or a string
@@ -378,13 +407,20 @@ def from_hdf5(
         for name, sub in element.items():
             collection[name] = from_hdf5(sub)
         return collection
-    elif "ontology_label" in element.attrs:
-        return Entity(
-            ontology_label=element.attrs["ontology_label"],
-            value=element[()],
-            unit=element.attrs["unit"],
-            description=element.attrs["description"],
-        )
+    elif ontology_label := element.attrs.get("ontology_label", None):
+        if _is_quantity_entity(ontology_label):
+            return QuantityEntity(
+                ontology_label=element.attrs["ontology_label"],
+                value=element[()],
+                unit=element.attrs["unit"],
+                description=element.attrs["description"],
+            )
+        else:
+            return StringEntity(
+                ontology_label=element.attrs["ontology_label"],
+                value=element[()],
+                description=element.attrs["description"],
+            )
     elif "unit" in element.attrs:
         return u.Quantity(element[()], element.attrs["unit"])
     else:
