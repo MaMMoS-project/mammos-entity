@@ -404,10 +404,11 @@ class EntityCollection:
           regex v\d+)
         - (commented, optional) a description of the file, appearing delimited by
           dashed lines
-        - (optional, only for entities) the preferred ontology label
-        - (optional, only for entities) a description string
-        - (optional, only for entities) the ontology IRI
-        - (optional, for entities and quantities) units
+        - (commented, only for entities) the preferred label in the ontology
+        - (commented, optional, only for entities) a description string
+        - (commented, only for entities) the ontology IRI specifying the ontology's version
+        - (commented, only for entities) the entity IRI in the ontology
+        - (commented, for entities and quantities) units
         - the short labels used to refer to individual columns when working with the
           data,  e.g. in a :py:class:`pandas.DataFrame` (omitting spaces in this string
           is advisable; ideally this string is the short ontology label)
@@ -436,6 +437,12 @@ class EntityCollection:
         .. version-changed:: v3
            Ontology labels, entity descriptions, IRIs, and units are no longer
            commented.
+
+        .. version-added:: v4
+           Additional description metadata row containing the IRI of the ontology used.
+
+        .. version-changed:: v4
+           All metadata rows except for the short labels are now commented.
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -482,14 +489,15 @@ class EntityCollection:
             The new file has the following content:
 
             >>> print(Path("example.csv").read_text())
-            # mammos csv v3
+            # mammos csv v4
             #----------------------------------------
             # Test data
             #----------------------------------------
-            ,SpontaneousMagnetization,,DemagnetizingFactor,
-            ,Magnetization at 0 Kelvin,,,
-            ,https://w3id.org/emmo/domain/magnetic-materials#MagMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic-materials#MagMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
-            ,kA / m,s2,,
+            #,SpontaneousMagnetization,,DemagnetizingFactor,
+            #,Magnetization at 0 Kelvin,,,
+            #,https://w3id.org/emmo/domain/magnetic-materials/0.0.6,,https://w3id.org/emmo/domain/magnetic-materials/0.0.6,
+            #,https://w3id.org/emmo/domain/magnetic-materials#MagMO_032731f8-874d-5efb-9c9d-6dafaa17ef25,,https://w3id.org/emmo/domain/magnetic-materials#MagMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e,
+            #,kA / m,s2,,
             index,Ms,alpha,DemagnetizingFactor,comment
             0,100.0,1.2,1.0,Comment in the first row
             1,100.0,3.4,0.5,Comment in the second row
@@ -510,30 +518,29 @@ class EntityCollection:
         dataframe = self.to_dataframe()
 
         # Header rows written in CSV format.
+        ontology_iri = me.mammos_ontology.get_version(as_iri=True)
         metadata_rows = [
             [getattr(elem, "ontology_label", "") for _, elem in self],
-            [getattr(elem, "description", "") for _, elem in self],
+            [getattr(elem, "description", "").replace("\n", "\n#") for _, elem in self],
+            [ontology_iri if isinstance(elem, me.Entity) else "" for _, elem in self],
             [getattr(elem, "ontology_iri", "") for _, elem in self],
             [str(getattr(elem, "unit", "")) for _, elem in self],
         ]
 
-        with open(filename, "w", newline="") as csvfile:
-            csvfile.write(f"# mammos csv v3{os.linesep}")
+        with open(filename, "w", newline="") as f:
+            f.write(f"# mammos csv v4{os.linesep}")
             if self.description:
-                csvfile.write("#" + "-" * 40 + os.linesep)
+                f.write("#" + "-" * 40 + os.linesep)
                 for line in self.description.splitlines():
-                    csvfile.write(f"# {line}{os.linesep}")
-                csvfile.write("#" + "-" * 40 + os.linesep)
+                    f.write(f"# {line}{os.linesep}")
+                f.write("#" + "-" * 40 + os.linesep)
 
-            writer = csv.writer(
-                csvfile,
-                delimiter=",",
-                quoting=csv.QUOTE_MINIMAL,
-                lineterminator=os.linesep,
-            )
-            writer.writerows(metadata_rows)
+            writer = csv.writer(f, delimiter=",", quoting=csv.QUOTE_MINIMAL, lineterminator=os.linesep)
+            for row in metadata_rows:
+                f.write("#")
+                writer.writerow(row)
 
-            dataframe.to_csv(csvfile, index=False)
+            dataframe.to_csv(f, index=False)
 
     def to_yaml(self, filename: str | os.PathLike) -> None:
         r"""Write collection to YAML file.
@@ -559,9 +566,10 @@ class EntityCollection:
 
         - For :py:class:`~mammos_entity.Entity`:
 
-          - ``ontology_label``: label in the ontology
+          - ``label``: label in the ontology
           - ``description``: description string
-          - ``ontology_iri``: IRI of the entity
+          - ``ontology``: IRI of the ontology where the information comes from
+          - ``iri``: IRI of the entity in given the ontology
           - ``unit``: unit of the entity (``""`` for dimensionless)
           - ``value``: value of the data
 
@@ -586,6 +594,12 @@ class EntityCollection:
              ``metadata:description``.
            - Non-entity entries no longer store null-valued ontology keys.
            - Nested collections are supported recursively.
+
+        .. version-added:: v3
+           The ``ontology`` key for each object.
+
+        .. version-changed:: v3
+           The ``ontology_label`` key was renamed to ``label`` and ``ontology_iri`` to ``iri``.
 
         Args:
             filename: Name of the generated file. An existing file with the same name
@@ -629,34 +643,37 @@ class EntityCollection:
             The new file has the following content:
 
             >>> print(Path("example.yaml").read_text())
-            # mammos yaml v2
+            # mammos yaml v3
             metadata: null
             description: Test data
             data:
               index:
                 value: [0, 1, 2]
               Ms:
-                ontology_label: SpontaneousMagnetization
+                label: SpontaneousMagnetization
                 description: Magnetization at 0 Kelvin
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#MagMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                ontology: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                iri: https://w3id.org/emmo/domain/magnetic-materials#MagMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                 unit: kA / m
                 value: [100.0, 100.0, 100.0]
               alpha:
                 unit: s2
                 value: [1.2, 3.4, 5.6]
               DemagnetizingFactor:
-                ontology_label: DemagnetizingFactor
+                label: DemagnetizingFactor
                 description: ''
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#MagMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
+                ontology: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                iri: https://w3id.org/emmo/domain/magnetic-materials#MagMO_0f2b5cc9-d00a-5030-8448-99ba6b7dfd1e
                 unit: ''
                 value: [1.0, 0.5, 0.5]
               comment:
                 value: [Comment in the first row, Comment in the second row, Comment in the third
                     row]
               Tc:
-                ontology_label: CurieTemperature
+                label: CurieTemperature
                 description: ''
-                ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+                ontology: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
                 unit: K
                 value: 300.0
             <BLANKLINE>
@@ -679,7 +696,7 @@ class EntityCollection:
             ... )
             >>> measurement.to_yaml("nested_example.yaml")
             >>> print(Path("nested_example.yaml").read_text())
-            # mammos yaml v2
+            # mammos yaml v3
             metadata: null
             description: measurement with device X
             data:
@@ -687,33 +704,38 @@ class EntityCollection:
                 description: material properties
                 data:
                   Ms:
-                    ontology_label: SpontaneousMagnetization
+                    label: SpontaneousMagnetization
                     description: ''
-                    ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#MagMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
+                    ontology: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                    iri: https://w3id.org/emmo/domain/magnetic-materials#MagMO_032731f8-874d-5efb-9c9d-6dafaa17ef25
                     unit: kA / m
                     value: 1300.0
                   Tc:
-                    ontology_label: CurieTemperature
+                    label: CurieTemperature
                     description: ''
-                    ontology_iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
+                    ontology: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                    iri: https://w3id.org/emmo#EMMO_6b5af5a8_a2d8_4353_a1d6_54c9f778343d
                     unit: K
                     value: 1043.0
               T:
-                ontology_label: ThermodynamicTemperature
+                label: ThermodynamicTemperature
                 description: Measurement conditions
-                ontology_iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
+                ontology: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                iri: https://w3id.org/emmo#EMMO_affe07e4_e9bc_4852_86c6_69e26182a17f
                 unit: K
                 value: 300.0
               H:
-                ontology_label: ExternalMagneticField
+                label: ExternalMagneticField
                 description: ''
-                ontology_iri: https://w3id.org/emmo/domain/magnetic-materials#MagMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
+                ontology: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                iri: https://w3id.org/emmo/domain/magnetic-materials#MagMO_da08f0d3-fe19-58bc-8fb6-ecc8992d5eb3
                 unit: kA / m
                 value: [0.0, 50.0, 100.0]
               M:
-                ontology_label: Magnetization
+                label: Magnetization
                 description: ''
-                ontology_iri: https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37
+                ontology: https://w3id.org/emmo/domain/magnetic-materials/0.0.6
+                iri: https://w3id.org/emmo#EMMO_b23e7251_a488_4732_8268_027ad76d7e37
                 unit: kA / m
                 value: [100.0, 300.0, 500.0]
             <BLANKLINE>
@@ -726,11 +748,13 @@ class EntityCollection:
         def _serialize_entity_like(
             element: mammos_entity.Entity | mammos_units.Quantity | numpy.typing.ArrayLike,
         ) -> dict:
+            ontology_iri = me.mammos_ontology.get_version(as_iri=True)
             if isinstance(element, me.Entity):
                 return {
-                    "ontology_label": element.ontology_label,
+                    "label": element.ontology_label,
                     "description": element.description,
-                    "ontology_iri": element.ontology_iri,
+                    "ontology": ontology_iri,
+                    "iri": element.ontology_iri,
                     "unit": str(element.unit),
                     "value": element.value.tolist(),
                 }
@@ -799,7 +823,7 @@ class EntityCollection:
         _Dumper.add_representer(str, _represent_string)
 
         with open(filename, "w") as f:
-            f.write("# mammos yaml v2\n")
+            f.write("# mammos yaml v3\n")
             yaml.dump(
                 entity_dict,
                 stream=f,
@@ -818,7 +842,7 @@ class EntityCollection:
           attribute.
         - Each element of the collection becomes a child of the group:
           - :py:class:`~mammos_entity.Entity` objects are stored as HDF5 datasets
-            with attributes ``ontology_label``, ``ontology_iri``, ``unit``,
+            with attributes ``label``, ``ontology``, ``iri``, ``unit``,
             ``description`` (see :py:func:`mammos_entity.Entity.to_hdf5`).
           - :py:class:`~mammos_units.Quantity` objects are stored as datasets
             with a ``unit`` attribute.
