@@ -8,13 +8,11 @@ version = "0.14.0"
 description = "Python package to specify material parameters for MaMMoS simulation suite."
 readme = "README.md"
 authors = [
-  { name = "Swapneel Amit Pathak" },
   { name = "Andrea Petrocchi" },
-  { name = "Sam Holt" },
   { name = "Martin Lang" },
-  { name = "Wilfried Hortschitz" },
-  { name = "Santa Pile" },
-  { name = "Martin Dobiasch" },
+  { name = "Samuel Holt" },
+  { name = "Swapneel Amit Pathak" },
+  { name = "Michael Adams" },
   { name = "Hans Fangohr" },
 ]
 license = "MIT AND CC-BY-4.0"
