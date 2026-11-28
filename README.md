@@ -67,12 +67,12 @@ doi: [10.1109/TMAG.2026.3689962](https://doi.org/10.1109/TMAG.2026.3689962).
 The software is also archived on Zenodo. To cite it independently of a specific
 release, use the Concept DOI:
 
-S. A. Pathak et al., *mammos-entity* [Software], Zenodo, 2025,
+A. Petrocchi et al., *mammos-entity* [Software], Zenodo, 2025,
 doi: [10.5281/zenodo.15754818](https://doi.org/10.5281/zenodo.15754818).
 
 ```bibtex
 @software{mammos_entity_zenodo,
-  author={Pathak, Swapneel Amit and Petrocchi, Andrea and Holt, Samuel and Lang, Martin and Hortschitz, Wilfried and Pile, Santa and Dobiasch, Martin and Fangohr, Hans},
+  author={Petrocchi, Andrea and Lang, Martin and Holt, Samuel and Pathak, Swapneel Amit and Adams, Michael and Hortschitz, Wilfried and Pile, Santa and Dobiasch, Martin and Winkler, Jonas and Schrefl, Thomas and Fangohr, Hans},
   title={mammos-entity},
   year={2025},
   publisher={Zenodo},
